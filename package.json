@@ -1,0 +1,26 @@
+{
+  "name": "puzed-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.19.2",
+    "final-stream": "^1.1.0",
+    "postgres-fp": "^1.2.2",
+    "routemeup": "^1.5.0",
+    "rqlite-fp": "^2.10.0",
+    "tap": "^14.10.8",
+    "tape": "^5.0.1",
+    "uuid": "^8.3.0",
+    "write-response": "^1.2.2"
+  },
+  "devDependencies": {
+    "async-bugs": "^1.1.2"
+  }
+}
