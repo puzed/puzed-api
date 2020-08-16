@@ -18,7 +18,7 @@ test('projects > create > valid item', async t => {
       }
     },
 
-    '/repos/exampleowner/exampleproject/keys': {
+    '/repos/markwylde/minthril-demo/keys': {
       POST: function (request, response) {
         writeResponse(200, {}, response);
       }
@@ -29,12 +29,13 @@ test('projects > create > valid item', async t => {
   const projects = await axios(`${server.url}/projects`, {
     method: 'post',
     data: {
+      image: 'node:12',
       domain: 'example.com',
-      name: 'exampleowner/exampleproject',
-      owner: 'exampleowner',
-      repo: 'exampleproject',
-      username: 'exampleowner',
-      webport: 8080
+      name: 'markwylde/minthril-demo',
+      owner: 'markwylde',
+      repo: 'minthril-demo',
+      username: 'markwylde',
+      webport: 8000
     },
     headers: {
       authorization: 'token test'
@@ -44,11 +45,12 @@ test('projects > create > valid item', async t => {
   delete projects.data.id;
 
   t.deepEqual(projects.data, {
-    name: 'exampleowner/exampleproject',
-    webport: '8080',
+    name: 'markwylde/minthril-demo',
+    image: 'node:12',
+    webport: '8000',
     domain: 'example.com',
-    owner: 'exampleowner',
-    repo: 'exampleproject',
+    owner: 'markwylde',
+    repo: 'minthril-demo',
     username: 'testuser'
   });
 

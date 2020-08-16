@@ -58,6 +58,7 @@ test('projects > list > with items', async t => {
     data: {
       domain: 'example.com',
       name: 'exampleowner/exampleproject',
+      image: 'node:12',
       owner: 'exampleowner',
       repo: 'exampleproject',
       username: 'exampleowner',
@@ -77,6 +78,7 @@ test('projects > list > with items', async t => {
   delete projects.data[0].id;
   t.deepEqual(projects.data[0], {
     name: 'exampleowner/exampleproject',
+    image: 'node:12',
     webport: '8080',
     domain: 'example.com',
     owner: 'exampleowner',

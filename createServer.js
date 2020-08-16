@@ -4,6 +4,29 @@ const postgres = require('postgres-fp/promises');
 const axios = require('axios');
 const routemeup = require('routemeup');
 
+async function proxyToDeployment ({db}, request, response) {
+  const record = await postgres.getOne(db, `
+    SELECT dockerhost, dockerid, dockerport
+      FROM deployments
+ LEFT JOIN projects ON projects.id = deployments.projectId
+     WHERE domain = $1
+  ORDER BY random()
+     LIMIT 1
+  `, [request.headers.host])
+
+  if (!record) {
+    response.writeHead(404);
+    response.end(`Domain ${request.headers.host} is not hosted here`);
+    return
+  }
+
+  const proxyRequest = http.request(`http://${record.dockerhost}:${record.dockerport}${request.url}`, function (proxyResponse) {
+    proxyResponse.pipe(response)
+  })
+
+  proxyRequest.end()
+}
+
 async function createServer (config) {
   const db = await postgres.connect(config.cockroach);
 
@@ -11,12 +34,23 @@ async function createServer (config) {
     CREATE TABLE IF NOT EXISTS projects (
       id varchar,
       name varchar,
+      image varchar,
       webport varchar,
       domain varchar,
       owner varchar,
       repo varchar,
       username varchar
-    )
+    );
+
+    CREATE TABLE IF NOT EXISTS deployments (
+      id varchar,
+      projectId varchar,
+      dockerPort varchar,
+      dockerHost varchar,
+      dockerId varchar,
+      buildLog text,
+      status varchar
+    );
   `);
 
   const routes = {
@@ -62,7 +96,13 @@ async function createServer (config) {
     config,
     db
   };
+
   const server = http.createServer(function (request, response) {
+    if (!config.domains.includes(request.headers.host) && request.headers.host !== 'localhost:' + server.address().port) {
+      proxyToDeployment(scope, request, response);
+      return;
+    }
+
     response.setHeader('Access-Control-Allow-Origin', '*');
     response.setHeader('Access-Control-Allow-Headers', 'authorization');
 
