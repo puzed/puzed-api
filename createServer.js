@@ -4,7 +4,7 @@ const postgres = require('postgres-fp/promises');
 const axios = require('axios');
 const routemeup = require('routemeup');
 
-async function proxyToDeployment ({db}, request, response) {
+async function proxyToDeployment ({ db }, request, response) {
   const record = await postgres.getOne(db, `
     SELECT dockerhost, dockerid, dockerport
       FROM deployments
@@ -12,19 +12,19 @@ async function proxyToDeployment ({db}, request, response) {
      WHERE domain = $1
   ORDER BY random()
      LIMIT 1
-  `, [request.headers.host])
+  `, [request.headers.host]);
 
   if (!record) {
     response.writeHead(404);
     response.end(`Domain ${request.headers.host} is not hosted here`);
-    return
+    return;
   }
 
   const proxyRequest = http.request(`http://${record.dockerhost}:${record.dockerport}${request.url}`, function (proxyResponse) {
-    proxyResponse.pipe(response)
-  })
+    proxyResponse.pipe(response);
+  });
 
-  proxyRequest.end()
+  proxyRequest.end();
 }
 
 async function createServer (config) {
@@ -39,6 +39,8 @@ async function createServer (config) {
       domain varchar,
       owner varchar,
       repo varchar,
+      publicKey varchar,
+      privateKey varchar,
       username varchar
     );
 

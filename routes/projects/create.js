@@ -5,11 +5,12 @@ const finalStream = promisify(require('final-stream'));
 const writeResponse = require('write-response');
 const axios = require('axios');
 const postgres = require('postgres-fp/promises');
+const NodeRSA = require('node-rsa');
 
 const deployRepositoryToServer = require('../../common/deployRepositoryToServer');
 const handleError = require('../../common/handleError');
 
-function ensureDeployKeyOnProject (config, owner, repo, authorization) {
+function ensureDeployKeyOnProject (config, owner, repo, publicKey, authorization) {
   return axios({
     url: `${config.githubApiUrl}/repos/${owner}/${repo}/keys`,
     method: 'post',
@@ -17,7 +18,7 @@ function ensureDeployKeyOnProject (config, owner, repo, authorization) {
       authorization: authorization
     },
     data: JSON.stringify({
-      key: config.rsaPublicKey
+      key: publicKey.trim()
     })
   }).catch(error => {
     if (!error.response || !error.response.data || !error.response.data.errors) {
@@ -42,7 +43,12 @@ async function createProject ({ db, config }, request, response) {
       }
     });
 
-    await ensureDeployKeyOnProject(config, body.owner, body.repo, request.headers.authorization);
+    const key = new NodeRSA({ b: 2048 }, 'openssh');
+
+    const publicKey = key.exportKey('openssh-public');
+    const privateKey = key.exportKey('openssh');
+
+    await ensureDeployKeyOnProject(config, body.owner, body.repo, publicKey, request.headers.authorization);
 
     const projectId = uuidv4();
 
@@ -54,6 +60,8 @@ async function createProject ({ db, config }, request, response) {
       domain: body.domain,
       owner: body.owner,
       repo: body.repo,
+      publicKey,
+      privateKey,
       username: user.data.login
     });
 
@@ -62,6 +70,8 @@ async function createProject ({ db, config }, request, response) {
     `, [projectId]);
 
     await deployRepositoryToServer({ db, config }, project);
+
+    delete project.privatekey;
 
     writeResponse(200, project, response);
   } catch (error) {

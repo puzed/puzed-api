@@ -6,11 +6,11 @@ const NodeSSH = require('node-ssh').NodeSSH;
 
 const selectRandomItemFromArray = require('../common/selectRandomItemFromArray');
 
-const ignoreSshHostFileCheck = 'GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"';
-
 async function deployRepositoryToServer ({ db, config }, options) {
   const deploymentId = uuidv4();
   const dockerHost = selectRandomItemFromArray(config.dockerHosts);
+
+  const ignoreSshHostFileCheck = `GIT_SSH_COMMAND="ssh -i /tmp/${deploymentId}.key -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"`;
 
   let log = '';
 
@@ -34,7 +34,10 @@ async function deployRepositoryToServer ({ db, config }, options) {
   };
 
   async function execCommand (...args) {
-    log = log + '\n> ' + args[0].replace(ignoreSshHostFileCheck, '').trim() + '\n';
+    log = log + '\n> ' + args[0]
+      .replace(ignoreSshHostFileCheck, '')
+      .replace(options.privatekey, '[hidden]')
+      .trim() + '\n';
 
     const result = await ssh.execCommand(...args);
     if (result.code) {
@@ -48,6 +51,11 @@ async function deployRepositoryToServer ({ db, config }, options) {
   }
 
   try {
+    console.log('Adding ssh key');
+    await execCommand(`
+      echo "${options.privatekey}" > /tmp/${deploymentId}.key && chmod 600 /tmp/${deploymentId}.key
+    `, { ...output });
+
     console.log('Cloning repo from github');
     await execCommand(`
       ${ignoreSshHostFileCheck} git clone git@github.com:${options.owner}/${options.repo}.git /data/${deploymentId}
@@ -79,6 +87,7 @@ async function deployRepositoryToServer ({ db, config }, options) {
 
     console.log('Cleaning up build directory');
     await execCommand(`rm -rf /data/${deploymentId}`, { cwd: '/data', ...output });
+    await execCommand(`rm -rf /tmp/${deploymentId}.key`, { cwd: '/data', ...output });
 
     await postgres.insert(db, 'deployments', {
       id: deploymentId,
@@ -93,6 +102,7 @@ async function deployRepositoryToServer ({ db, config }, options) {
     console.log(error);
     console.log('Cleaning up build directory');
     await execCommand(`rm -rf /data/${deploymentId}`, { cwd: '/data', ...output });
+    await execCommand(`rm -rf /tmp/${deploymentId}.key`, { cwd: '/data', ...output });
 
     await postgres.insert(db, 'deployments', {
       id: deploymentId,

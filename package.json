@@ -13,6 +13,7 @@
     "axios": "^0.19.2",
     "docker-ssh-http-agent": "^1.0.2",
     "final-stream": "^1.1.0",
+    "node-rsa": "^1.1.1",
     "node-ssh": "^11.0.0",
     "postgres-fp": "^1.3.2",
     "routemeup": "^1.5.0",
@@ -23,6 +24,7 @@
     "write-response": "^1.2.2"
   },
   "devDependencies": {
-    "async-bugs": "^1.1.2"
+    "async-bugs": "^1.1.2",
+    "semistandard": "^14.2.3"
   }
 }
