@@ -1,8 +1,17 @@
 const http = require('http');
+const https = require('https');
+const fs = require('fs');
 
 const postgres = require('postgres-fp/promises');
 const axios = require('axios');
 const routemeup = require('routemeup');
+
+const { getCertificate, handleHttpChallenge } = require('./common/acmeUtilities');
+
+const defaultCertificates = {
+  key: fs.readFileSync('./config/default.key', 'ascii'),
+  cert: fs.readFileSync('./config/default.cert', 'ascii')
+};
 
 async function proxyToDeployment ({ db }, request, response) {
   const record = await postgres.getOne(db, `
@@ -99,8 +108,10 @@ async function createServer (config) {
     db
   };
 
-  const server = http.createServer(function (request, response) {
-    if (!config.domains.includes(request.headers.host) && request.headers.host !== 'localhost:' + server.address().port) {
+  async function handler (request, response) {
+    console.log('https: Incoming request:', request.method, request.headers.host, request.url);
+
+    if (!config.domains.includes(request.headers.host)) {
       proxyToDeployment(scope, request, response);
       return;
     }
@@ -119,14 +130,42 @@ async function createServer (config) {
     }
 
     response.writeHead(404);
-    response.end('Not Found');
+    response.end(`Path ${request.url} not found`);
+  }
+
+  const httpsServer = https.createServer({
+    SNICallback: getCertificate(scope, { defaultCertificates })
+  }, handler);
+  httpsServer.on('listening', () => {
+    console.log('Listening (https) on port:', httpsServer.address().port);
+  });
+  httpsServer.listen(443);
+
+  const httpServer = http.createServer(async function (request, response) {
+    console.log('http: Incoming request:', request.method, request.headers.host, request.url);
+
+    if (await handleHttpChallenge(scope, request, response)) {
+      return;
+    }
+
+    response.writeHead(302, { location: 'https://' + request.headers.host + request.url });
+    response.end();
   });
 
-  server.on('close', function () {
+  httpServer.on('listening', () => {
+    console.log('Listening (http) on port:', httpServer.address().port);
+  });
+
+  httpServer.on('close', function () {
     postgres.close(db);
   });
 
-  return server;
+  httpServer.listen(80);
+
+  return {
+    httpServer,
+    httpsServer
+  };
 }
 
 module.exports = createServer;
