@@ -3,6 +3,10 @@ const axios = require('axios');
 const postgres = require('postgres-fp/promises');
 
 async function listProjects ({ db, config }, request, response) {
+  if (!request.headers.authorization) {
+    throw Object.assign(new Error('unauthorized'), {statusCode: 401})
+  }
+
   const user = await axios(config.githubApiUrl + '/user', {
     headers: {
       authorization: request.headers.authorization

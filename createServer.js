@@ -6,6 +6,7 @@ const postgres = require('postgres-fp/promises');
 const axios = require('axios');
 const routemeup = require('routemeup');
 
+const handleError = require('./common/handleError');
 const { getCertificate, handleHttpChallenge } = require('./common/acmeUtilities');
 
 const defaultCertificates = {
@@ -69,6 +70,11 @@ async function createServer (config) {
       GET: require('./routes/projects/list'),
       POST: require('./routes/projects/create')
     },
+
+    '/projects/:projectId': {
+      GET: require('./routes/projects/read')
+    },
+
     '/auth': {
       POST: async (scope, request, response) => {
         const url = new URL(request.url, `http://${request.headers.host}`);
@@ -126,7 +132,13 @@ async function createServer (config) {
 
     const route = routemeup(routes, request);
     if (route) {
-      return route.controller(scope, request, response, route.tokens);
+      const result = route.controller(scope, request, response, route.tokens);
+      if (result.catch) {
+        result.catch((error) => {
+          handleError(error, request, response);
+        })
+      }
+      return
     }
 
     response.writeHead(404);
