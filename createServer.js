@@ -39,8 +39,6 @@ async function createServer (config) {
       domain varchar,
       owner varchar,
       repo varchar,
-      publicKey varchar,
-      privateKey varchar,
       username varchar
     );
 
@@ -52,6 +50,15 @@ async function createServer (config) {
       dockerId varchar,
       buildLog text,
       status varchar
+    );
+
+    CREATE TABLE IF NOT EXISTS github_deployment_keys (
+      id varchar,
+      github_key_id varchar,
+      owner varchar,
+      repo varchar,
+      publicKey varchar,
+      privateKey varchar
     );
   `);
 

@@ -14,6 +14,10 @@ async function deployRepositoryToServer ({ db, config }, options) {
 
   let log = '';
 
+  const deployKey = await postgres.getOne(db, `
+    SELECT * FROM github_deployment_keys WHERE owner = $1 AND repo = $2
+  `, [options.owner, options.repo]);
+
   const ssh = new NodeSSH();
   await ssh.connect({
     host: dockerHost,
@@ -36,7 +40,7 @@ async function deployRepositoryToServer ({ db, config }, options) {
   async function execCommand (...args) {
     log = log + '\n> ' + args[0]
       .replace(ignoreSshHostFileCheck, '')
-      .replace(options.privatekey, '[hidden]')
+      .replace(deployKey.privatekey, '[hidden]')
       .trim() + '\n';
 
     const result = await ssh.execCommand(...args);
@@ -53,7 +57,7 @@ async function deployRepositoryToServer ({ db, config }, options) {
   try {
     console.log('Adding ssh key');
     await execCommand(`
-      echo "${options.privatekey}" > /tmp/${deploymentId}.key && chmod 600 /tmp/${deploymentId}.key
+      echo "${deployKey.privatekey}" > /tmp/${deploymentId}.key && chmod 600 /tmp/${deploymentId}.key
     `, { ...output });
 
     console.log('Cloning repo from github');

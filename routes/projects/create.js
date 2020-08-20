@@ -10,9 +10,42 @@ const NodeRSA = require('node-rsa');
 const deployRepositoryToServer = require('../../common/deployRepositoryToServer');
 const handleError = require('../../common/handleError');
 
-function ensureDeployKeyOnProject (config, owner, repo, publicKey, authorization) {
-  return axios({
-    url: `${config.githubApiUrl}/repos/${owner}/${repo}/keys`,
+async function ensureDeployKeyOnProject ({ db, config }, owner, repo, publicKey, authorization) {
+  const deployKey = await postgres.getOne(db, `
+    SELECT * FROM github_deployment_keys WHERE owner = $1 AND repo = $2
+  `, [owner, repo]);
+
+  if (!deployKey) {
+    const key = new NodeRSA({ b: 2048 }, 'openssh');
+
+    const publicKey = key.exportKey('openssh-public');
+    const privateKey = key.exportKey('openssh');
+
+    const creationResponse = await axios({
+      url: `${config.githubApiUrl}/repos/${owner}/${repo}/keys`,
+      method: 'post',
+      headers: {
+        authorization: authorization
+      },
+      data: JSON.stringify({
+        key: publicKey.trim()
+      })
+    });
+
+    await postgres.insert(db, 'github_deployment_keys', {
+      id: uuidv4(),
+      github_key_id: creationResponse.data.id,
+      owner,
+      repo,
+      publicKey,
+      privateKey
+    });
+
+    return;
+  }
+
+  await axios({
+    url: `${config.githubApiUrl}/repos/${owner}/${repo}/keys/${deployKey.github_key_id}`,
     method: 'post',
     headers: {
       authorization: authorization
@@ -21,15 +54,9 @@ function ensureDeployKeyOnProject (config, owner, repo, publicKey, authorization
       key: publicKey.trim()
     })
   }).catch(error => {
-    if (!error.response || !error.response.data || !error.response.data.errors) {
-      throw error;
-    }
+    console.log(error);
 
-    if (error.response.data.errors.length === 1 && error.response.data.errors[0].message === 'key is already in use') {
-      return error.response;
-    }
-
-    throw error;
+    postgres.run(db, 'DELETE FROM github_deployment_keys WHERE id = $1', [deployKey.id]);
   });
 }
 
@@ -43,12 +70,7 @@ async function createProject ({ db, config }, request, response) {
       }
     });
 
-    const key = new NodeRSA({ b: 2048 }, 'openssh');
-
-    const publicKey = key.exportKey('openssh-public');
-    const privateKey = key.exportKey('openssh');
-
-    await ensureDeployKeyOnProject(config, body.owner, body.repo, publicKey, request.headers.authorization);
+    await ensureDeployKeyOnProject({ db, config }, body.owner, body.repo, request.headers.authorization);
 
     const projectId = uuidv4();
 
@@ -60,8 +82,6 @@ async function createProject ({ db, config }, request, response) {
       domain: body.domain,
       owner: body.owner,
       repo: body.repo,
-      publicKey,
-      privateKey,
       username: user.data.login
     });
 
@@ -70,8 +90,6 @@ async function createProject ({ db, config }, request, response) {
     `, [projectId]);
 
     await deployRepositoryToServer({ db, config }, project);
-
-    delete project.privatekey;
 
     writeResponse(200, project, response);
   } catch (error) {
