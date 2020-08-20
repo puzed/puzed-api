@@ -6,3 +6,4 @@ config/ca.crt
 config/client.crt
 config/client.key
 config/index.js
+config/acme-account.pem

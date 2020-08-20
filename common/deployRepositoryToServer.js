@@ -6,7 +6,7 @@ const NodeSSH = require('node-ssh').NodeSSH;
 
 const selectRandomItemFromArray = require('../common/selectRandomItemFromArray');
 
-async function deployRepositoryToServer ({ db, config }, options) {
+async function deployRepositoryToServer ({ db, config }, project, options = {}) {
   const deploymentId = uuidv4();
   const dockerHost = selectRandomItemFromArray(config.dockerHosts);
 
@@ -27,21 +27,27 @@ async function deployRepositoryToServer ({ db, config }, options) {
 
   const output = {
     onStdout (chunk) {
+      options.onOutput && options.onOutput(chunk.toString('utf8'));
       log = log + chunk.toString('utf8');
       process.stdout.write('stdout: ' + chunk.toString('utf8'));
     },
 
     onStderr (chunk) {
+      options.onOutput && options.onOutput(chunk.toString('utf8'));
       log = log + chunk.toString('utf8');
       process.stdout.write('stderr: ' + chunk.toString('utf8'));
     }
   };
 
   async function execCommand (...args) {
-    log = log + '\n> ' + args[0]
+    const loggable = '\n> ' + args[0]
       .replace(ignoreSshHostFileCheck, '')
-      .replace(deployKey.privatekey, '[hidden]')
+      .replace(project.privatekey, '[hidden]')
       .trim() + '\n';
+
+    options.onOutput && options.onOutput(loggable);
+
+    log = log + loggable;
 
     const result = await ssh.execCommand(...args);
     if (result.code) {
@@ -62,7 +68,7 @@ async function deployRepositoryToServer ({ db, config }, options) {
 
     console.log('Cloning repo from github');
     await execCommand(`
-      ${ignoreSshHostFileCheck} git clone git@github.com:${options.owner}/${options.repo}.git /data/${deploymentId}
+      ${ignoreSshHostFileCheck} git clone git@github.com:${project.owner}/${project.repo}.git /data/${deploymentId}
     `, { ...output });
 
     console.log('Checkout correct branch');
@@ -76,13 +82,13 @@ async function deployRepositoryToServer ({ db, config }, options) {
     );
 
     console.log('Build docker image');
-    const imageTagName = `${options.name}:${deploymentId}`;
+    const imageTagName = `${project.name}:${deploymentId}`;
     await execCommand(
       `docker build -t ${imageTagName} .`, { cwd: `/data/${deploymentId}`, ...output }
     );
 
     console.log('Running container');
-    const dockerRunResult = await execCommand(`docker run -d -p ${options.webport} ${imageTagName}`);
+    const dockerRunResult = await execCommand(`docker run -d -p ${project.webport} ${imageTagName}`);
     const dockerId = dockerRunResult.stdout.trim();
 
     console.log('Discovering allocated port');
@@ -95,7 +101,7 @@ async function deployRepositoryToServer ({ db, config }, options) {
 
     await postgres.insert(db, 'deployments', {
       id: deploymentId,
-      projectId: options.id,
+      projectId: project.id,
       dockerHost,
       dockerId,
       dockerPort,
@@ -110,7 +116,7 @@ async function deployRepositoryToServer ({ db, config }, options) {
 
     await postgres.insert(db, 'deployments', {
       id: deploymentId,
-      projectId: options.id,
+      projectId: project.id,
       buildLog: log.trim(),
       status: 'failed'
     });

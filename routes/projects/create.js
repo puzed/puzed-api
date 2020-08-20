@@ -2,13 +2,11 @@ const { promisify } = require('util');
 
 const uuidv4 = require('uuid').v4;
 const finalStream = promisify(require('final-stream'));
-const writeResponse = require('write-response');
 const axios = require('axios');
 const postgres = require('postgres-fp/promises');
 const NodeRSA = require('node-rsa');
 
 const deployRepositoryToServer = require('../../common/deployRepositoryToServer');
-const handleError = require('../../common/handleError');
 
 async function ensureDeployKeyOnProject ({ db, config }, owner, repo, publicKey, authorization) {
   const deployKey = await postgres.getOne(db, `
@@ -61,40 +59,51 @@ async function ensureDeployKeyOnProject ({ db, config }, owner, repo, publicKey,
 }
 
 async function createProject ({ db, config }, request, response) {
-  try {
-    const body = await finalStream(request, JSON.parse);
-
-    const user = await axios(`${config.githubApiUrl}/user`, {
-      headers: {
-        authorization: request.headers.authorization
-      }
-    });
-
-    await ensureDeployKeyOnProject({ db, config }, body.owner, body.repo, request.headers.authorization);
-
-    const projectId = uuidv4();
-
-    await postgres.insert(db, 'projects', {
-      id: projectId,
-      name: body.name,
-      image: body.image,
-      webport: body.webport,
-      domain: body.domain,
-      owner: body.owner,
-      repo: body.repo,
-      username: user.data.login
-    });
-
-    const project = await postgres.getOne(db, `
-      SELECT * FROM projects WHERE id = $1
-    `, [projectId]);
-
-    await deployRepositoryToServer({ db, config }, project);
-
-    writeResponse(200, project, response);
-  } catch (error) {
-    handleError(error, request, response);
+  if (!request.headers.authorization) {
+    throw Object.assign(new Error('unauthorized'), { statusCode: 401 });
   }
+
+  const body = await finalStream(request, JSON.parse);
+
+  const user = await axios(`${config.githubApiUrl}/user`, {
+    headers: {
+      authorization: request.headers.authorization
+    }
+  });
+
+  const projectId = uuidv4();
+
+  await postgres.insert(db, 'projects', {
+    id: projectId,
+    name: body.name,
+    image: body.image,
+    webport: body.webport,
+    domain: body.domain,
+    owner: body.owner,
+    repo: body.repo,
+    username: user.data.login
+  });
+
+  const project = await postgres.getOne(db, `
+    SELECT * FROM projects WHERE id = $1
+  `, [projectId]);
+
+  response.statusCode = 200;
+  response.write(JSON.stringify({
+    ...project,
+    privatekey: undefined
+  }, null, 2));
+  response.write('\n\n---\n\n');
+
+  await ensureDeployKeyOnProject(config, body.owner, body.repo, request.headers.authorization);
+
+  await deployRepositoryToServer({ db, config }, project, {
+    onOutput: function (data) {
+      response.write(data);
+    }
+  });
+
+  response.end();
 }
 
 module.exports = createProject;
