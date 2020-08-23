@@ -10,7 +10,8 @@ function migrateDatabase (db) {
       domain varchar,
       owner varchar,
       repo varchar,
-      username varchar
+      username varchar,
+      datecreated varchar
     );
 
     CREATE TABLE IF NOT EXISTS deployments (
@@ -20,7 +21,8 @@ function migrateDatabase (db) {
       dockerhost varchar,
       dockerid varchar,
       buildlog text,
-      status varchar
+      status varchar,
+      datecreated varchar
     );
 
     CREATE TABLE IF NOT EXISTS github_deployment_keys (
@@ -29,7 +31,8 @@ function migrateDatabase (db) {
       owner varchar,
       repo varchar,
       publickey varchar,
-      privatekey varchar
+      privatekey varchar,
+      datecreated varchar
     );
   `);
 }

@@ -78,7 +78,14 @@ async function createServer (config) {
   }
 
   const httpsServer = https.createServer({
-    SNICallback: getCertificate(scope, { defaultCertificates })
+    SNICallback: getCertificate(scope, {
+      defaultCertificates,
+      isAllowedDomain: async domain => {
+        const allowedProject = await postgres.getOne(db, 'SELECT * FROM projects WHERE $1 LIKE domain', [domain]);
+        const allowedCertificate = await postgres.getOne(db, 'SELECT * FROM certificates WHERE $1 LIKE domain', [domain]);
+        return allowedProject || allowedCertificate
+      }
+    })
   }, handler);
   httpsServer.on('listening', () => {
     console.log('Listening (https) on port:', httpsServer.address().port);

@@ -1,6 +1,7 @@
 const path = require('path');
 
 const chalk = require('chalk');
+chalk.level = 3;
 const postgres = require('postgres-fp/promises');
 const uuidv4 = require('uuid').v4;
 const NodeSSH = require('node-ssh').NodeSSH;
@@ -12,7 +13,8 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
   await postgres.insert(db, 'deployments', {
     id: deploymentId,
     projectId: project.id,
-    status: 'pending'
+    status: 'pending',
+    datecreated: Date.now()
   });
 
   const dockerHost = selectRandomItemFromArray(config.dockerHosts);
@@ -38,13 +40,13 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
 
   const output = {
     onStdout (chunk) {
-      options.onOutput && options.onOutput(deploymentId, chunk.toString('utf8'));
-      process.stdout.write('stdout: ' + chunk.toString('utf8'));
+      options.onOutput && options.onOutput(deploymentId, chunk.toString('ascii'));
+      buildLog = buildLog + chunk.toString('ascii');
     },
 
     onStderr (chunk) {
-      options.onOutput && options.onOutput(deploymentId, chunk.toString('utf8'));
-      process.stdout.write('stderr: ' + chunk.toString('utf8'));
+      options.onOutput && options.onOutput(deploymentId, chunk.toString('ascii'));
+      buildLog = buildLog + chunk.toString('ascii');
     }
   };
 
@@ -52,8 +54,7 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
     const loggable = args.join(', ')
     options.onOutput && options.onOutput(deploymentId, '\n' + loggable);
 
-    buildLog = buildLog + loggable;
-
+    buildLog = buildLog + '\n' + loggable;
   }
 
   async function execCommand (...args) {
@@ -121,6 +122,8 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
     await execCommand(`rm -rf /data/${deploymentId}`, { cwd: '/data', ...output });
     await execCommand(`rm -rf /tmp/${deploymentId}.key`, { cwd: '/data', ...output });
 
+    log(chalk.cyanBright('🟢 Your website is now live'))
+
     await postgres.run(db, `
       UPDATE deployments
       SET buildlog = $2,
@@ -130,8 +133,6 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
           dockerport = $5
       WHERE id = $1
     `, [deploymentId, buildLog.trim(), dockerHost, dockerId, dockerPort])
-
-    log(chalk.cyanBright('🟢 Your website is now live'))
   } catch (error) {
     console.log(error);
     log(chalk.redBright(error.message));

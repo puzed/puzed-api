@@ -80,7 +80,8 @@ async function createProject ({ db, config }, request, response) {
     domain: body.domain,
     owner: body.owner,
     repo: body.repo,
-    username: user.data.login
+    username: user.data.login,
+    datecreated: Date.now()
   });
 
   const project = await postgres.getOne(db, `
@@ -95,11 +96,19 @@ async function createProject ({ db, config }, request, response) {
 
   await ensureDeployKeyOnProject({db, config}, body.owner, body.repo, request.headers.authorization);
 
-  await deployRepositoryToServer({ db, config }, project, {
-    onOutput: function (deploymentId, data) {
-      response.write(JSON.stringify([deploymentId, data]) + '\n');
-    }
-  });
+  await Promise.all([
+    deployRepositoryToServer({ db, config }, project, {
+      onOutput: function (deploymentId, data) {
+        response.write(JSON.stringify([deploymentId, data]) + '\n');
+      }
+    }),
+
+    // deployRepositoryToServer({ db, config }, project, {
+    //   onOutput: function (deploymentId, data) {
+    //     response.write(JSON.stringify([deploymentId, data]) + '\n');
+    //   }
+    // })
+  ]);
 
   response.end();
 }

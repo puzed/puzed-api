@@ -158,7 +158,13 @@ async function getCertificateForDomain ({config, db}, domain) {
 
 function getCertificate ({config, db}, options) {
   const getCachedCertificates = mem(async function (servername) {
-    const certificates = await getCertificateForDomain({config, db}, servername);
+    let certificates
+    if (await options.isAllowedDomain(servername)) {
+      certificates = await getCertificateForDomain({config, db}, servername);
+    } else {
+      console.log('domain', servername, 'is not allowed a certificate')
+    }
+
 
     return tls.createSecureContext(certificates || options.defaultCertificates);
   }, { maxAge: 60000 });
