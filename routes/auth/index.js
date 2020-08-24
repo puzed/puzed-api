@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-async function auth ({config}, request, response) {
+async function auth ({ config }, request, response) {
   const url = new URL(request.url, `http://${request.headers.host}`);
   const token = url.searchParams.get('token');
 
@@ -31,4 +31,4 @@ async function auth ({config}, request, response) {
   }
 }
 
-module.exports = auth
+module.exports = auth;

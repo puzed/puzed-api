@@ -57,7 +57,7 @@ async function getAcmeAccount (acme, email) {
   return { account, accountKey };
 }
 
-async function getCertificateForDomain ({config, db}, domain) {
+async function getCertificateForDomain ({ config, db }, domain) {
   // Already in database (success)
   const existingCertificate = await postgres.getOne(db, 'SELECT * FROM certificates WHERE $1 LIKE domain AND status = \'success\'', [domain]);
   if (existingCertificate) {
@@ -69,11 +69,13 @@ async function getCertificateForDomain ({config, db}, domain) {
 
   // Already in database (pending)
   if (await postgres.getOne(db, 'SELECT * FROM certificates WHERE $1 LIKE domain', [domain])) {
+    console.log('acmeUtils: already in database, but not finished');
     return;
   }
 
   // Already processing
   if (inProgress[domain]) {
+    console.log('acmeUtils: already progressing');
     return;
   }
   inProgress[domain] = true;
@@ -156,15 +158,14 @@ async function getCertificateForDomain ({config, db}, domain) {
   }
 }
 
-function getCertificate ({config, db}, options) {
+function getCertificate ({ config, db }, options) {
   const getCachedCertificates = mem(async function (servername) {
-    let certificates
+    let certificates;
     if (await options.isAllowedDomain(servername)) {
-      certificates = await getCertificateForDomain({config, db}, servername);
+      certificates = await getCertificateForDomain({ config, db }, servername);
     } else {
-      console.log('domain', servername, 'is not allowed a certificate')
+      console.log('domain', servername, 'is not allowed a certificate');
     }
-
 
     return tls.createSecureContext(certificates || options.defaultCertificates);
   }, { maxAge: 60000 });
@@ -180,7 +181,7 @@ function getCertificate ({config, db}, options) {
   };
 }
 
-async function handleHttpChallenge ({db, config}, request, response) {
+async function handleHttpChallenge ({ db, config }, request, response) {
   const certificates = await postgres.getAll(db, 'SELECT * FROM certificates WHERE domain = $1', [request.headers.host]);
   for (const certificate of certificates) {
     const challenge = JSON.parse(certificate.challenge);
@@ -193,7 +194,7 @@ async function handleHttpChallenge ({db, config}, request, response) {
       return true;
     }
   }
-  return false
+  return false;
 }
 
 module.exports = {

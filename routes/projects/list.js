@@ -1,21 +1,14 @@
 const writeResponse = require('write-response');
-const axios = require('axios');
 const postgres = require('postgres-fp/promises');
 
-async function listProjects ({ db, config }, request, response) {
-  if (!request.headers.authorization) {
-    throw Object.assign(new Error('unauthorized'), {statusCode: 401})
-  }
+const authenticate = require('../../common/authenticate');
 
-  const user = await axios(config.githubApiUrl + '/user', {
-    headers: {
-      authorization: request.headers.authorization
-    }
-  });
+async function listProjects ({ db, config }, request, response) {
+  const user = await authenticate({ db, config }, request.headers.authorization);
 
   const projects = await postgres.getAll(db, `
-    SELECT * FROM projects WHERE username = $1
-  `, [user.data.login]);
+    SELECT * FROM projects WHERE user_id = $1
+  `, [user.id]);
 
   writeResponse(200, projects, response);
 }

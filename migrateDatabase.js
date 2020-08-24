@@ -10,7 +10,7 @@ function migrateDatabase (db) {
       domain varchar,
       owner varchar,
       repo varchar,
-      username varchar,
+      user_id varchar,
       datecreated varchar
     );
 
@@ -33,6 +33,13 @@ function migrateDatabase (db) {
       publickey varchar,
       privatekey varchar,
       datecreated varchar
+    );
+
+    CREATE TABLE IF NOT EXISTS users (
+      id varchar,
+      github_username varchar,
+      allowed_project_create bool,
+      date_created varchar
     );
   `);
 }

@@ -10,7 +10,7 @@ async function proxyToDeployment ({ db }, request, response) {
      WHERE domain = $1
   ORDER BY random()
      LIMIT 1
-  `, [request.headers.host]);
+  `, [request.headers.host.split(':')[0]]);
 
   if (!record) {
     response.writeHead(404);
@@ -23,9 +23,10 @@ async function proxyToDeployment ({ db }, request, response) {
   });
 
   proxyRequest.on('error', error => {
+    console.log(error);
     response.writeHead(500);
     response.end('Unexpected error');
-  })
+  });
 
   proxyRequest.end();
 }

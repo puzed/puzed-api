@@ -6,6 +6,7 @@ const axios = require('axios');
 const postgres = require('postgres-fp/promises');
 const NodeRSA = require('node-rsa');
 
+const authenticate = require('../../common/authenticate');
 const deployRepositoryToServer = require('../../common/deployRepositoryToServer');
 
 async function ensureDeployKeyOnProject ({ db, config }, owner, repo, authorization) {
@@ -50,7 +51,7 @@ async function ensureDeployKeyOnProject ({ db, config }, owner, repo, authorizat
   }).catch(error => {
     if (error.response.status === 404) {
       return postgres.run(db, 'DELETE FROM github_deployment_keys WHERE id = $1', [deployKey.id])
-        .then(() => ensureDeployKeyOnProject ({ db, config }, owner, repo, authorization));
+        .then(() => ensureDeployKeyOnProject({ db, config }, owner, repo, authorization));
     }
 
     console.log(error);
@@ -58,17 +59,15 @@ async function ensureDeployKeyOnProject ({ db, config }, owner, repo, authorizat
 }
 
 async function createProject ({ db, config }, request, response) {
-  if (!request.headers.authorization) {
-    throw Object.assign(new Error('unauthorized'), { statusCode: 401 });
+  const user = await authenticate({ db, config }, request.headers.authorization);
+
+  if (!user.allowed_project_create) {
+    response.writeHead(403);
+    response.end('no permission to create projects');
+    return;
   }
 
   const body = await finalStream(request, JSON.parse);
-
-  const user = await axios(`${config.githubApiUrl}/user`, {
-    headers: {
-      authorization: request.headers.authorization
-    }
-  });
 
   const projectId = uuidv4();
 
@@ -80,7 +79,7 @@ async function createProject ({ db, config }, request, response) {
     domain: body.domain,
     owner: body.owner,
     repo: body.repo,
-    username: user.data.login,
+    user_id: user.id,
     datecreated: Date.now()
   });
 
@@ -94,14 +93,14 @@ async function createProject ({ db, config }, request, response) {
     privatekey: undefined
   }));
 
-  await ensureDeployKeyOnProject({db, config}, body.owner, body.repo, request.headers.authorization);
+  await ensureDeployKeyOnProject({ db, config }, body.owner, body.repo, request.headers.authorization);
 
   await Promise.all([
     deployRepositoryToServer({ db, config }, project, {
       onOutput: function (deploymentId, data) {
         response.write(JSON.stringify([deploymentId, data]) + '\n');
       }
-    }),
+    })
 
     // deployRepositoryToServer({ db, config }, project, {
     //   onOutput: function (deploymentId, data) {

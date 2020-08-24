@@ -3,7 +3,6 @@ const https = require('https');
 const fs = require('fs');
 
 const postgres = require('postgres-fp/promises');
-const axios = require('axios');
 const routemeup = require('routemeup');
 
 const migrateDatabase = require('./migrateDatabase');
@@ -20,7 +19,7 @@ const defaultCertificates = {
 async function createServer (config) {
   const db = await postgres.connect(config.cockroach);
 
-  await migrateDatabase(db)
+  await migrateDatabase(db);
 
   const routes = {
     '/projects': {
@@ -68,9 +67,9 @@ async function createServer (config) {
       if (result.catch) {
         result.catch((error) => {
           handleError(error, request, response);
-        })
+        });
       }
-      return
+      return;
     }
 
     response.writeHead(404);
@@ -83,14 +82,14 @@ async function createServer (config) {
       isAllowedDomain: async domain => {
         const allowedProject = await postgres.getOne(db, 'SELECT * FROM projects WHERE $1 LIKE domain', [domain]);
         const allowedCertificate = await postgres.getOne(db, 'SELECT * FROM certificates WHERE $1 LIKE domain', [domain]);
-        return allowedProject || allowedCertificate
+        return allowedProject || allowedCertificate;
       }
     })
   }, handler);
   httpsServer.on('listening', () => {
     console.log('Listening (https) on port:', httpsServer.address().port);
   });
-  httpsServer.listen(443);
+  httpsServer.listen(config.httpsPort);
 
   const httpServer = http.createServer(async function (request, response) {
     console.log('http: Incoming request:', request.method, request.headers.host, request.url);
@@ -111,7 +110,7 @@ async function createServer (config) {
     postgres.close(db);
   });
 
-  httpServer.listen(80);
+  httpServer.listen(config.httpPort);
 
   return {
     httpServer,

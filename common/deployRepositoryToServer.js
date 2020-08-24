@@ -28,15 +28,8 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
   `, [project.owner, project.repo]);
 
   if (!deployKey) {
-    throw new Error('no deploy key')
+    throw new Error('no deploy key');
   }
-
-  const ssh = new NodeSSH();
-  await ssh.connect({
-    host: dockerHost,
-    username: 'root',
-    privateKey: config.rsaPrivateKey
-  });
 
   const output = {
     onStdout (chunk) {
@@ -51,7 +44,7 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
   };
 
   function log (...args) {
-    const loggable = args.join(', ')
+    const loggable = args.join(', ');
     options.onOutput && options.onOutput(deploymentId, '\n' + loggable);
 
     buildLog = buildLog + '\n' + loggable;
@@ -77,7 +70,15 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
     return result;
   }
 
+  let ssh;
   try {
+    ssh = new NodeSSH();
+    await ssh.connect({
+      host: dockerHost,
+      username: config.sshUsername,
+      privateKey: config.sshPrivateKey
+    });
+
     log(chalk.greenBright('Adding ssh key'));
     await execCommand(`
       echo "${deployKey.privatekey}" > /tmp/${deploymentId}.key && chmod 600 /tmp/${deploymentId}.key
@@ -85,29 +86,29 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
 
     log(chalk.greenBright('Cloning repo from github'));
     await execCommand(`
-      ${ignoreSshHostFileCheck} git clone git@github.com:${project.owner}/${project.repo}.git /data/${deploymentId}
+      ${ignoreSshHostFileCheck} git clone git@github.com:${project.owner}/${project.repo}.git /tmp/${deploymentId}
     `, { ...output });
 
     log(chalk.greenBright('Checkout correct branch'));
-    await execCommand(`${ignoreSshHostFileCheck} git checkout master`, { cwd: `/data/${deploymentId}`, ...output });
-    await execCommand(`${ignoreSshHostFileCheck} git pull origin master`, { cwd: `/data/${deploymentId}`, ...output });
+    await execCommand(`${ignoreSshHostFileCheck} git checkout master`, { cwd: `/tmp/${deploymentId}`, ...output });
+    await execCommand(`${ignoreSshHostFileCheck} git pull origin master`, { cwd: `/tmp/${deploymentId}`, ...output });
 
     log(chalk.greenBright('Creating Dockerfile from template'));
     await ssh.putFile(
       path.resolve(__dirname, '../dockerfileTemplates/Dockerfile.nodejs12'),
-      `/data/${deploymentId}/Dockerfile`
+      `/tmp/${deploymentId}/Dockerfile`
     );
 
     log(chalk.greenBright('Creating .dockerignore'));
     await ssh.putFile(
       path.resolve(__dirname, '../dockerfileTemplates/.dockerignore'),
-      `/data/${deploymentId}/.dockerignore`
+      `/tmp/${deploymentId}/.dockerignore`
     );
 
     log(chalk.greenBright('Build docker image'));
     const imageTagName = `${project.name}:${deploymentId}`;
     await execCommand(
-      `docker build -t ${imageTagName} .`, { cwd: `/data/${deploymentId}`, ...output }
+      `docker build -t ${imageTagName} .`, { cwd: `/tmp/${deploymentId}`, ...output }
     );
 
     log(chalk.greenBright('Running container'));
@@ -119,10 +120,10 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
     const dockerPort = dockerPortResult.stdout.split(':')[1];
 
     log(chalk.greenBright('Cleaning up build directory'));
-    await execCommand(`rm -rf /data/${deploymentId}`, { cwd: '/data', ...output });
-    await execCommand(`rm -rf /tmp/${deploymentId}.key`, { cwd: '/data', ...output });
+    await execCommand(`rm -rf /tmp/${deploymentId}`, { cwd: '/tmp', ...output });
+    await execCommand(`rm -rf /tmp/${deploymentId}.key`, { cwd: '/tmp', ...output });
 
-    log(chalk.cyanBright('🟢 Your website is now live'))
+    log(chalk.cyanBright('🟢 Your website is now live'));
 
     await postgres.run(db, `
       UPDATE deployments
@@ -132,20 +133,25 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
           dockerid = $4,
           dockerport = $5
       WHERE id = $1
-    `, [deploymentId, buildLog.trim(), dockerHost, dockerId, dockerPort])
+    `, [deploymentId, buildLog.trim(), dockerHost, dockerId, dockerPort]);
   } catch (error) {
     console.log(error);
     log(chalk.redBright(error.message));
     log(chalk.greenBright('Cleaning up build directory'));
-    await execCommand(`rm -rf /data/${deploymentId}`, { cwd: '/data', ...output });
-    await execCommand(`rm -rf /tmp/${deploymentId}.key`, { cwd: '/data', ...output });
+
+    try {
+      await execCommand(`rm -rf /tmp/${deploymentId}`, { cwd: '/tmp', ...output });
+      await execCommand(`rm -rf /tmp/${deploymentId}.key`, { cwd: '/tmp', ...output });
+    } catch (error) {
+      console.log(error);
+    }
 
     await postgres.run(db, `
       UPDATE deployments
       SET buildlog = $2,
           status = 'failed'
       WHERE id = $1
-    `, [deploymentId, buildLog.trim()])
+    `, [deploymentId, buildLog.trim()]);
   }
 
   await ssh.dispose();
