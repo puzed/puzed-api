@@ -7,6 +7,7 @@ const routemeup = require('routemeup');
 
 const migrateDatabase = require('./migrateDatabase');
 const proxyToDeployment = require('./proxyToDeployment');
+const proxyToClient = require('./proxyToClient');
 
 const handleError = require('./common/handleError');
 const { getCertificate, handleHttpChallenge } = require('./common/acmeUtilities');
@@ -48,32 +49,38 @@ async function createServer (config) {
   async function handler (request, response) {
     console.log('https: Incoming request:', request.method, request.headers.host, request.url);
 
-    if (!config.domains.includes(request.headers.host)) {
-      proxyToDeployment(scope, request, response);
-      return;
-    }
+    if (config.domains.api.includes(request.headers.host)) {
+      response.setHeader('Access-Control-Allow-Origin', '*');
+      response.setHeader('Access-Control-Allow-Headers', 'authorization');
 
-    response.setHeader('Access-Control-Allow-Origin', '*');
-    response.setHeader('Access-Control-Allow-Headers', 'authorization');
-
-    if (request.method === 'OPTIONS') {
-      response.end();
-      return;
-    }
-
-    const route = routemeup(routes, request);
-    if (route) {
-      const result = route.controller(scope, request, response, route.tokens);
-      if (result.catch) {
-        result.catch((error) => {
-          handleError(error, request, response);
-        });
+      if (request.method === 'OPTIONS') {
+        response.end();
+        return;
       }
+
+      const route = routemeup(routes, request);
+      if (route) {
+        const result = route.controller(scope, request, response, route.tokens);
+        if (result.catch) {
+          result.catch((error) => {
+            handleError(error, request, response);
+          });
+        }
+        return;
+      }
+
+      response.writeHead(404);
+      response.end(`Path ${request.url} not found`);
+
       return;
     }
 
-    response.writeHead(404);
-    response.end(`Path ${request.url} not found`);
+    if (config.domains.client.includes(request.headers.host)) {
+      proxyToClient(scope, request, response);
+      return;
+    }
+
+    proxyToDeployment(scope, request, response);
   }
 
   const httpsServer = https.createServer({

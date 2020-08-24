@@ -112,7 +112,7 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
     );
 
     log(chalk.greenBright('Running container'));
-    const dockerRunResult = await execCommand(`docker run -d -p ${project.webport} ${imageTagName}`, { ...output });
+    const dockerRunResult = await execCommand(`docker run --runtime=runsc -d -p ${project.webport} ${imageTagName}`, { ...output });
     const dockerId = dockerRunResult.stdout.trim();
 
     log(chalk.greenBright('Discovering allocated port'));
