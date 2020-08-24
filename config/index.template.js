@@ -1,19 +1,25 @@
 const fs = require('fs');
 
 module.exports = {
-  domains: ['api.puzed.com'],
+  httpPort: 80,
+  httpsPort: 443,
+  domains: {
+    api: ['api.puzed.com'],
+    client: ['puzed.com', 'www.puzed.com']
+  },
   dockerHosts: ['192.168.1.100'],
-  rsaPublicKey: fs.readFileSync('./config/id_rsa.pub', 'utf8'),
-  rsaPrivateKey: fs.readFileSync('./config/id_rsa', 'utf8'),
+  sshUsername: 'root',
+  sshPublicKey: fs.readFileSync('./config/id_rsa.pub', 'utf8'),
+  sshPrivateKey: fs.readFileSync('./config/id_rsa', 'utf8'),
   githubApiUrl: 'https://api.github.com',
-  githubClientId: 'xxx',
-  githubClientSecret: 'yyy',
-  email: 'me@markwylde.com',
+  githubClientId: 'YOUR_GITHUB_CLIENT_ID',
+  githubClientSecret: 'YOUR_GITHUB_CLIENT_SECRET',
+  email: 'YOUR_EMAIL_ADDRESS_FOR_ACME',
   directoryUrl: 'https://acme-staging-v02.api.letsencrypt.org/directory',
   // directoryUrl: 'https://acme-v02.api.letsencrypt.org/directory',
   cockroach: {
     host: '192.168.1.100',
-    database: 'postgres',
+    database: 'puzed',
     user: 'root',
     port: 26257,
     ssl: {
