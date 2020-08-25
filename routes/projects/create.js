@@ -69,6 +69,24 @@ async function createProject ({ db, config }, request, response) {
 
   const body = await finalStream(request, JSON.parse);
 
+  if (config.domains.api.includes(body.domain)) {
+    throw Object.assign(new Error('Validation error'), {
+      statusCode: 422,
+      body: {
+        errors: [`domain of "${body.domain}" is already taken`]
+      }
+    })
+  }
+
+  if (config.domains.client.includes(body.domain)) {
+    throw Object.assign(new Error('Validation error'), {
+      statusCode: 422,
+      body: {
+        errors: [`domain of "${body.domain}" is already taken`]
+      }
+    })
+  }
+
   const projectId = uuidv4();
 
   await postgres.insert(db, 'projects', {
@@ -79,6 +97,8 @@ async function createProject ({ db, config }, request, response) {
     domain: body.domain,
     owner: body.owner,
     repo: body.repo,
+    run_command: body.runCommand,
+    build_command: body.buildCommand,
     user_id: user.id,
     datecreated: Date.now()
   });

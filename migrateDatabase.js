@@ -8,6 +8,8 @@ function migrateDatabase (db) {
       image varchar,
       webport varchar,
       domain varchar,
+      run_command varchar,
+      build_command varchar,
       owner varchar,
       repo varchar,
       user_id varchar,

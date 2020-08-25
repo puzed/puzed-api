@@ -1,5 +1,6 @@
 const http = require('http');
 const https = require('https');
+const isIp = require('is-ip');
 const fs = require('fs');
 
 const postgres = require('postgres-fp/promises');
@@ -99,6 +100,17 @@ async function createServer (config) {
   httpsServer.listen(config.httpsPort);
 
   const httpServer = http.createServer(async function (request, response) {
+    if (isIp(request.headers.host)) {
+      response.writeHead(401, { 'content-type': 'text/html' });
+      response.end(`
+        <body style="background: #eeeeee;">
+          <h1 style="text-align: center; font-family: monospace;">Have a fantastic day!</h1>
+          <div style="width: 100vw; height: 100vh; background-size: contain; background-repeat: no-repeat; background-image: url('https://cdn.pixabay.com/photo/2016/03/12/19/34/city-1252643_1280.png');">
+        </body>
+      `.trim());
+      return
+    }
+
     console.log('http: Incoming request:', request.method, request.headers.host, request.url);
 
     if (await handleHttpChallenge(scope, request, response)) {

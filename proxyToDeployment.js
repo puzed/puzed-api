@@ -14,7 +14,7 @@ async function proxyToDeployment ({ db }, request, response) {
 
   if (!record) {
     response.writeHead(404);
-    response.end(`Domain ${request.headers.host} is not hosted here`);
+    response.end(`service ${request.headers.host} not found`);
     return;
   }
 

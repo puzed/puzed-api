@@ -3,8 +3,8 @@ FROM node:12
 COPY package*.json ./
 
 RUN npm set progress=false
-RUN npm ci
+RUN {{buildCommand}}
 
 COPY . .
 
-CMD npm run start
+CMD {{runCommand}}

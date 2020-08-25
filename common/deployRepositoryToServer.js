@@ -1,5 +1,5 @@
 const path = require('path');
-
+const fs = require('fs').promises;
 const chalk = require('chalk');
 chalk.level = 3;
 const postgres = require('postgres-fp/promises');
@@ -94,8 +94,14 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
     await execCommand(`${ignoreSshHostFileCheck} git pull origin master`, { cwd: `/tmp/${deploymentId}`, ...output });
 
     log(chalk.greenBright('Creating Dockerfile from template'));
+    const dockerfileTemplate = await fs.readFile(path.resolve(__dirname, '../dockerfileTemplates/Dockerfile.nodejs12'), 'utf8')
+    const dockerfileContent = dockerfileTemplate
+      .replace('{{buildCommand}}', project.build_command)
+      .replace('{{runCommand}}', project.run_command)
+    await fs.writeFile('/tmp/Dockerfile.' + deploymentId, dockerfileContent)
+
     await ssh.putFile(
-      path.resolve(__dirname, '../dockerfileTemplates/Dockerfile.nodejs12'),
+      '/tmp/Dockerfile.' + deploymentId,
       `/tmp/${deploymentId}/Dockerfile`
     );
 

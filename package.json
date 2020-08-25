@@ -15,6 +15,7 @@
     "chalk": "^4.1.0",
     "docker-ssh-http-agent": "^1.0.2",
     "final-stream": "^1.1.0",
+    "is-ip": "^3.1.0",
     "mem": "^6.1.0",
     "node-rsa": "^1.1.1",
     "node-ssh": "^11.0.0",
