@@ -99,11 +99,7 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
       .replace('{{buildCommand}}', project.build_command)
       .replace('{{runCommand}}', project.run_command)
     await fs.writeFile('/tmp/Dockerfile.' + deploymentId, dockerfileContent)
-
-    await ssh.putFile(
-      '/tmp/Dockerfile.' + deploymentId,
-      `/tmp/${deploymentId}/Dockerfile`
-    );
+    await ssh.putFile('/tmp/Dockerfile.' + deploymentId, `/tmp/${deploymentId}/Dockerfile`);
 
     log(chalk.greenBright('Creating .dockerignore'));
     await ssh.putFile(
