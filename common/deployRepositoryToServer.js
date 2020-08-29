@@ -94,11 +94,11 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
     await execCommand(`${ignoreSshHostFileCheck} git pull origin master`, { cwd: `/tmp/${deploymentId}`, ...output });
 
     log(chalk.greenBright('Creating Dockerfile from template'));
-    const dockerfileTemplate = await fs.readFile(path.resolve(__dirname, '../dockerfileTemplates/Dockerfile.nodejs12'), 'utf8')
+    const dockerfileTemplate = await fs.readFile(path.resolve(__dirname, '../dockerfileTemplates/Dockerfile.nodejs12'), 'utf8');
     const dockerfileContent = dockerfileTemplate
       .replace('{{buildCommand}}', project.build_command)
-      .replace('{{runCommand}}', project.run_command)
-    await fs.writeFile('/tmp/Dockerfile.' + deploymentId, dockerfileContent)
+      .replace('{{runCommand}}', project.run_command);
+    await fs.writeFile('/tmp/Dockerfile.' + deploymentId, dockerfileContent);
     await ssh.putFile('/tmp/Dockerfile.' + deploymentId, `/tmp/${deploymentId}/Dockerfile`);
 
     log(chalk.greenBright('Creating .dockerignore'));

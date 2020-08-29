@@ -18,14 +18,23 @@ async function proxyToDeployment ({ db }, request, response) {
     return;
   }
 
-  const proxyRequest = http.request(`http://${record.dockerhost}:${record.dockerport}${request.url}`, function (proxyResponse) {
+  const proxyRequest = http.request(`http://${record.dockerhost}:${record.dockerport}${request.url}`, {
+    method: request.method,
+    headers: request.headers
+  }, function (proxyResponse) {
+    response.writeHead(proxyResponse.statusCode, proxyResponse.headers);
     proxyResponse.pipe(response);
   });
 
   proxyRequest.on('error', error => {
+    if (error.code === 'ECONNREFUSED') {
+      response.writeHead(502);
+      response.end();
+      return;
+    }
     console.log(error);
     response.writeHead(500);
-    response.end('Unexpected error');
+    response.end();
   });
 
   proxyRequest.end();

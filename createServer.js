@@ -33,6 +33,10 @@ async function createServer (config) {
       GET: require('./routes/projects/read')
     },
 
+    '/projects/:projectId/deployments/:deploymentId/log': {
+      GET: require('./routes/projects/deployments/log')
+    },
+
     '/projects/:projectId/deployments': {
       GET: require('./routes/projects/deployments/list')
     },
@@ -108,7 +112,7 @@ async function createServer (config) {
           <div style="width: 100vw; height: 100vh; background-size: contain; background-repeat: no-repeat; background-image: url('https://cdn.pixabay.com/photo/2016/03/12/19/34/city-1252643_1280.png');">
         </body>
       `.trim());
-      return
+      return;
     }
 
     console.log('http: Incoming request:', request.method, request.headers.host, request.url);

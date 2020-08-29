@@ -75,7 +75,7 @@ async function createProject ({ db, config }, request, response) {
       body: {
         errors: [`domain of "${body.domain}" is already taken`]
       }
-    })
+    });
   }
 
   if (config.domains.client.includes(body.domain)) {
@@ -84,7 +84,7 @@ async function createProject ({ db, config }, request, response) {
       body: {
         errors: [`domain of "${body.domain}" is already taken`]
       }
-    })
+    });
   }
 
   const projectId = uuidv4();
