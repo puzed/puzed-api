@@ -7,7 +7,11 @@ async function listDeployments ({ db, config }, request, response, tokens) {
   const user = await authenticate({ db, config }, request.headers.authorization);
 
   const deployments = await postgres.getAll(db, `
-    SELECT deployments.*
+    SELECT
+      deployments.id as id,
+      deployments.projectid,
+      deployments.status,
+      deployments.datecreated
       FROM deployments
  LEFT JOIN projects ON deployments.projectid = projects.id
      WHERE user_id = $1 AND projectid = $2

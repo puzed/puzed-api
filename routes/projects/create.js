@@ -59,6 +59,8 @@ async function ensureDeployKeyOnProject ({ db, config }, owner, repo, authorizat
 }
 
 async function createProject ({ db, config }, request, response) {
+  request.setTimeout(60 * 60 * 1000);
+
   const user = await authenticate({ db, config }, request.headers.authorization);
 
   if (!user.allowed_project_create) {
@@ -93,8 +95,9 @@ async function createProject ({ db, config }, request, response) {
     id: projectId,
     name: body.name,
     image: body.image,
-    webport: body.webport,
+    webport: body.webPort,
     domain: body.domain,
+    environment_variables: body.environmentVariables,
     owner: body.owner,
     repo: body.repo,
     run_command: body.runCommand,
@@ -115,19 +118,11 @@ async function createProject ({ db, config }, request, response) {
 
   await ensureDeployKeyOnProject({ db, config }, body.owner, body.repo, request.headers.authorization);
 
-  await Promise.all([
-    deployRepositoryToServer({ db, config }, project, {
-      onOutput: function (deploymentId, data) {
-        response.write(JSON.stringify([deploymentId, data]) + '\n');
-      }
-    })
-
-    // deployRepositoryToServer({ db, config }, project, {
-    //   onOutput: function (deploymentId, data) {
-    //     response.write(JSON.stringify([deploymentId, data]) + '\n');
-    //   }
-    // })
-  ]);
+  await deployRepositoryToServer({ db, config }, project, {
+    onOutput: function (deploymentId, data) {
+      response.write(JSON.stringify([deploymentId, data]) + '\n');
+    }
+  });
 
   response.end();
 }

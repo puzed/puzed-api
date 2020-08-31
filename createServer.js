@@ -37,7 +37,16 @@ async function createServer (config) {
       GET: require('./routes/projects/deployments/log')
     },
 
+    '/projects/:projectId/deployments/:deploymentId/buildlog': {
+      GET: require('./routes/projects/deployments/buildlog')
+    },
+
+    '/projects/:projectId/deployments/:deploymentId': {
+      DELETE: require('./routes/projects/deployments/delete')
+    },
+
     '/projects/:projectId/deployments': {
+      POST: require('./routes/projects/deployments/create'),
       GET: require('./routes/projects/deployments/list')
     },
 
@@ -56,6 +65,7 @@ async function createServer (config) {
 
     if (config.domains.api.includes(request.headers.host)) {
       response.setHeader('Access-Control-Allow-Origin', '*');
+      response.setHeader('Access-Control-Allow-Methods', '*');
       response.setHeader('Access-Control-Allow-Headers', 'authorization');
 
       if (request.method === 'OPTIONS') {

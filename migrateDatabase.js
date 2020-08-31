@@ -6,8 +6,9 @@ function migrateDatabase (db) {
       id varchar,
       name varchar,
       image varchar,
-      webport varchar,
+      webport int,
       domain varchar,
+      environment_variables varchar,
       run_command varchar,
       build_command varchar,
       owner varchar,
@@ -19,10 +20,11 @@ function migrateDatabase (db) {
     CREATE TABLE IF NOT EXISTS deployments (
       id varchar,
       projectid varchar,
-      dockerport varchar,
+      dockerport int,
       dockerhost varchar,
       dockerid varchar,
       buildlog text,
+      livelog text,
       status varchar,
       datecreated varchar
     );

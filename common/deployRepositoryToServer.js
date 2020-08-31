@@ -2,13 +2,38 @@ const path = require('path');
 const fs = require('fs').promises;
 const chalk = require('chalk');
 chalk.level = 3;
+const axios = require('axios');
 const postgres = require('postgres-fp/promises');
 const uuidv4 = require('uuid').v4;
 const NodeSSH = require('node-ssh').NodeSSH;
+const githubUsernameRegex = require('github-username-regex');
+const dockerSshHttpAgent = require('docker-ssh-http-agent');
 
 const selectRandomItemFromArray = require('../common/selectRandomItemFromArray');
 
 async function deployRepositoryToServer ({ db, config }, project, options = {}) {
+  if (!githubUsernameRegex.test(project.owner)) {
+    throw Object.assign(new Error('invalid github owner'), {
+      statusCode: 422,
+      body: {
+        errors: {
+          owner: ['not a valid owner according to validation policy']
+        }
+      }
+    });
+  }
+
+  if (!githubUsernameRegex.test(project.repo)) {
+    throw Object.assign(new Error('invalid github repo name'), {
+      statusCode: 422,
+      body: {
+        errors: {
+          repo: ['not a valid repo name according to validation policy']
+        }
+      }
+    });
+  }
+
   const deploymentId = uuidv4();
   await postgres.insert(db, 'deployments', {
     id: deploymentId,
@@ -18,6 +43,12 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
   });
 
   const dockerHost = selectRandomItemFromArray(config.dockerHosts);
+  const dockerAgent = dockerSshHttpAgent({
+    host: dockerHost,
+    port: 22,
+    username: config.sshUsername,
+    privateKey: config.sshPrivateKey
+  });
 
   const ignoreSshHostFileCheck = `GIT_SSH_COMMAND="ssh -i /tmp/${deploymentId}.key -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"`;
 
@@ -113,9 +144,37 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
       `docker build -t ${imageTagName} .`, { cwd: `/tmp/${deploymentId}`, ...output }
     );
 
-    log(chalk.greenBright('Running container'));
-    const dockerRunResult = await execCommand(`docker run --runtime=runsc -d -p ${project.webport} ${imageTagName}`, { ...output });
-    const dockerId = dockerRunResult.stdout.trim();
+    log(chalk.greenBright('Creating container'));
+    const containerCreationResult = await axios({
+      method: 'post',
+      socketPath: '/var/run/docker.sock',
+      url: '/v1.26/containers/create',
+      headers: {
+        'content-type': 'application/json'
+      },
+      data: JSON.stringify({
+        Env: project.environment_variables ? project.environment_variables.split('\n') : undefined,
+        Image: imageTagName,
+        ExposedPorts: {
+          [`${project.webport}/tcp`]: {}
+        },
+        HostConfig: {
+          PublishAllPorts: true,
+          Runtime: 'runsc'
+        }
+      }),
+      httpsAgent: dockerAgent
+    });
+    const dockerId = containerCreationResult.data.Id;
+
+    log(chalk.greenBright('Starting container'));
+    await axios({
+      method: 'post',
+      socketPath: '/var/run/docker.sock',
+      url: `/v1.26/containers/${dockerId}/start`,
+      httpsAgent: dockerAgent
+    });
+    log('started');
 
     log(chalk.greenBright('Discovering allocated port'));
     const dockerPortResult = await execCommand(`docker port ${dockerId}`, { ...output });

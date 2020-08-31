@@ -8,6 +8,7 @@ async function proxyToDeployment ({ db }, request, response) {
       FROM deployments
  LEFT JOIN projects ON projects.id = deployments.projectId
      WHERE domain = $1
+       AND status = 'success'
   ORDER BY random()
      LIMIT 1
   `, [request.headers.host.split(':')[0]]);
@@ -28,6 +29,11 @@ async function proxyToDeployment ({ db }, request, response) {
 
   proxyRequest.on('error', error => {
     if (error.code === 'ECONNREFUSED') {
+      response.writeHead(502);
+      response.end();
+      return;
+    }
+    if (error.code === 'ECONNRESET') {
       response.writeHead(502);
       response.end();
       return;
