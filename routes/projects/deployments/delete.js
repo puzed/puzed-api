@@ -12,8 +12,8 @@ async function deleteDeployment ({ db, config }, request, response, tokens) {
   const deployment = await postgres.getOne(db, `
     SELECT deployments.*
       FROM deployments
- LEFT JOIN projects ON deployments.projectid = projects.id
-     WHERE user_id = $1 AND projectid = $2 AND deployments.id = $3
+ LEFT JOIN projects ON deployments.projectId = projects.id
+     WHERE userId = $1 AND projectId = $2 AND deployments.id = $3
  `, [user.id, tokens.projectId, tokens.deploymentId]);
 
   if (!deployment) {
@@ -29,7 +29,7 @@ async function deleteDeployment ({ db, config }, request, response, tokens) {
 
   const upstreamRequest = await axios({
     socketPath: '/var/run/docker.sock',
-    url: `/v1.26/containers/${deployment.dockerid}/logs?stderr=1&stdout=1&timestamps=1`,
+    url: `/v1.26/containers/${deployment.dockerId}/logs?stderr=1&stdout=1&timestamps=1`,
     responseEncoding: 'ascii',
     httpsAgent: agent
   });
@@ -37,7 +37,7 @@ async function deleteDeployment ({ db, config }, request, response, tokens) {
   await axios({
     method: 'DELETE',
     socketPath: '/var/run/docker.sock',
-    url: `/v1.26/containers/${deployment.dockerid}?force=true`,
+    url: `/v1.26/containers/${deployment.dockerId}?force=true`,
     responseEncoding: 'ascii',
     httpsAgent: agent
   });
@@ -48,10 +48,10 @@ async function deleteDeployment ({ db, config }, request, response, tokens) {
     .join('\n');
 
   await postgres.run(db, `
-    UPDATE deployments
-       SET livelog = $1,
-           status = 'destroyed'
-     WHERE projectid = $2
+    UPDATE "deployments"
+       SET "liveLog" = $1,
+           "status" = 'destroyed'
+     WHERE "projectId" = $2
        AND id = $3
   `, [logsCleaned + '\n\nDeployment container was destroyed\n', tokens.projectId, tokens.deploymentId]);
 

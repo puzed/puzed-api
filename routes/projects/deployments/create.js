@@ -8,8 +8,8 @@ async function createDeployment ({ db, config }, request, response, tokens) {
 
   const project = await postgres.getOne(db, `
     SELECT *
-      FROM projects
-     WHERE user_id = $1 AND id = $2
+      FROM "projects"
+     WHERE "userId" = $1 AND "id" = $2
  `, [user.id, tokens.projectId]);
 
   if (!project) {

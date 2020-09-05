@@ -39,7 +39,7 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
     id: deploymentId,
     projectId: project.id,
     status: 'pending',
-    datecreated: Date.now()
+    dateCreated: Date.now()
   });
 
   const dockerHost = selectRandomItemFromArray(config.dockerHosts);
@@ -55,7 +55,7 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
   let buildLog = '';
 
   const deployKey = await postgres.getOne(db, `
-    SELECT * FROM github_deployment_keys WHERE owner = $1 AND repo = $2
+    SELECT * FROM "githubDeploymentKeys" WHERE "owner" = $1 AND "repo" = $2
   `, [project.owner, project.repo]);
 
   if (!deployKey) {
@@ -84,7 +84,7 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
   async function execCommand (...args) {
     const loggable = '\n> ' + args[0]
       .replace(ignoreSshHostFileCheck, '')
-      .replace(deployKey.privatekey, '[hidden]')
+      .replace(deployKey.privateKey, '[hidden]')
       .trim() + '\n';
 
     options.onOutput && options.onOutput(deploymentId, loggable);
@@ -112,7 +112,7 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
 
     log(chalk.greenBright('Adding ssh key'));
     await execCommand(`
-      echo "${deployKey.privatekey}" > /tmp/${deploymentId}.key && chmod 600 /tmp/${deploymentId}.key
+      echo "${deployKey.privateKey}" > /tmp/${deploymentId}.key && chmod 600 /tmp/${deploymentId}.key
     `, { ...output });
 
     log(chalk.greenBright('Cloning repo from github'));
@@ -127,8 +127,8 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
     log(chalk.greenBright('Creating Dockerfile from template'));
     const dockerfileTemplate = await fs.readFile(path.resolve(__dirname, '../dockerfileTemplates/Dockerfile.nodejs12'), 'utf8');
     const dockerfileContent = dockerfileTemplate
-      .replace('{{buildCommand}}', project.build_command)
-      .replace('{{runCommand}}', project.run_command);
+      .replace('{{buildCommand}}', project.buildCommand)
+      .replace('{{runCommand}}', project.runCommand);
     await fs.writeFile('/tmp/Dockerfile.' + deploymentId, dockerfileContent);
     await ssh.putFile('/tmp/Dockerfile.' + deploymentId, `/tmp/${deploymentId}/Dockerfile`);
 
@@ -153,10 +153,10 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
         'content-type': 'application/json'
       },
       data: JSON.stringify({
-        Env: project.environment_variables ? project.environment_variables.split('\n') : undefined,
+        Env: project.environmentVariables ? project.environmentVariables.split('\n') : undefined,
         Image: imageTagName,
         ExposedPorts: {
-          [`${project.webport}/tcp`]: {}
+          [`${project.webPort}/tcp`]: {}
         },
         HostConfig: {
           PublishAllPorts: true,
@@ -187,13 +187,13 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
     log(chalk.cyanBright('🟢 Your website is now live'));
 
     await postgres.run(db, `
-      UPDATE deployments
-      SET buildlog = $2,
-          status = 'success',
-          dockerhost = $3,
-          dockerid = $4,
-          dockerport = $5
-      WHERE id = $1
+      UPDATE "deployments"
+      SET "buildLog" = $2,
+          "status" = 'success',
+          "dockerHost" = $3,
+          "dockerId" = $4,
+          "dockerPort" = $5
+      WHERE "id" = $1
     `, [deploymentId, buildLog.trim(), dockerHost, dockerId, dockerPort]);
   } catch (error) {
     console.log(error);
@@ -208,10 +208,10 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
     }
 
     await postgres.run(db, `
-      UPDATE deployments
-      SET buildlog = $2,
-          status = 'failed'
-      WHERE id = $1
+      UPDATE "deployments"
+      SET "buildLog" = $2,
+          "status" = 'failed'
+      WHERE "id" = $1
     `, [deploymentId, buildLog.trim()]);
   }
 

@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index",
+    "start": "nodemon -r async-bugs index",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "@root/acme": "^3.1.0",
+    "async-stacktrace": "0.0.2",
     "axios": "^0.19.2",
     "chalk": "^4.1.0",
     "docker-ssh-http-agent": "^1.0.2",
@@ -21,17 +22,19 @@
     "mem": "^6.1.0",
     "node-rsa": "^1.1.1",
     "node-ssh": "^11.0.0",
-    "postgres-fp": "^1.3.2",
+    "postgres-fp": "^1.4.1",
+    "promises-debugger": "^1.0.3",
     "routemeup": "^1.5.0",
     "rqlite-fp": "^2.10.0",
     "supports-color": "^7.1.0",
     "tap": "^14.10.8",
     "tape": "^5.0.1",
     "uuid": "^8.3.0",
-    "write-response": "^1.2.2"
+    "write-response": "^1.2.3"
   },
   "devDependencies": {
     "async-bugs": "^1.1.2",
+    "nodemon": "^2.0.4",
     "semistandard": "^14.2.3"
   }
 }

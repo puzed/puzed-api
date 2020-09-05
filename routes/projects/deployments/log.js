@@ -11,14 +11,14 @@ async function logDeployment ({ db, config }, request, response, tokens) {
   const user = await authenticate({ db, config }, request.headers.authorization);
 
   const deployment = await postgres.getOne(db, `
-    SELECT deployments.*
-      FROM deployments
- LEFT JOIN projects ON deployments.projectid = projects.id
-     WHERE user_id = $1 AND projectid = $2 AND deployments.id = $3
+    SELECT "deployments".*
+      FROM "deployments"
+ LEFT JOIN "projects" ON "deployments"."projectId" = "projects"."id"
+     WHERE "userId" = $1 AND "projectId" = $2 AND "deployments"."id" = $3
   `, [user.id, tokens.projectId, tokens.deploymentId]);
 
   if (deployment.status === 'destroyed') {
-    writeResponse(200, deployment.livelog, response);
+    writeResponse(200, deployment.liveLog, response);
     return;
   }
 
@@ -33,7 +33,7 @@ async function logDeployment ({ db, config }, request, response, tokens) {
 
   const upstreamRequest = http.request({
     socketPath: '/var/run/docker.sock',
-    path: `/v1.26/containers/${deployment.dockerid}/logs?stderr=1&stdout=1&timestamps=1&follow=1&tail=10`,
+    path: `/v1.26/containers/${deployment.dockerId}/logs?stderr=1&stdout=1&timestamps=1&follow=1&tail=10`,
     agent
   }, function (upstreamResponse) {
     response.writeHead(upstreamResponse.statusCode);

@@ -9,9 +9,11 @@ const NodeRSA = require('node-rsa');
 const authenticate = require('../../common/authenticate');
 const deployRepositoryToServer = require('../../common/deployRepositoryToServer');
 
+const presentProject = require('../../presenters/project');
+
 async function ensureDeployKeyOnProject ({ db, config }, owner, repo, authorization) {
   const deployKey = await postgres.getOne(db, `
-    SELECT * FROM github_deployment_keys WHERE owner = $1 AND repo = $2
+    SELECT * FROM "githubDeploymentKeys" WHERE "owner" = $1 AND "repo" = $2
   `, [owner, repo]);
 
   if (!deployKey) {
@@ -31,9 +33,9 @@ async function ensureDeployKeyOnProject ({ db, config }, owner, repo, authorizat
       })
     });
 
-    await postgres.insert(db, 'github_deployment_keys', {
+    await postgres.insert(db, 'githubDeploymentKeys', {
       id: uuidv4(),
-      github_key_id: creationResponse.data.id,
+      githubKeyId: creationResponse.data.id,
       owner,
       repo,
       publicKey,
@@ -44,13 +46,13 @@ async function ensureDeployKeyOnProject ({ db, config }, owner, repo, authorizat
   }
 
   await axios({
-    url: `${config.githubApiUrl}/repos/${owner}/${repo}/keys/${deployKey.github_key_id}`,
+    url: `${config.githubApiUrl}/repos/${owner}/${repo}/keys/${deployKey.githubKeyId}`,
     headers: {
       authorization
     }
   }).catch(error => {
     if (error.response.status === 404) {
-      return postgres.run(db, 'DELETE FROM github_deployment_keys WHERE id = $1', [deployKey.id])
+      return postgres.run(db, 'DELETE FROM "githubDeploymentKeys" WHERE "id" = $1', [deployKey.id])
         .then(() => ensureDeployKeyOnProject({ db, config }, owner, repo, authorization));
     }
 
@@ -63,7 +65,7 @@ async function createProject ({ db, config }, request, response) {
 
   const user = await authenticate({ db, config }, request.headers.authorization);
 
-  if (!user.allowed_project_create) {
+  if (!user.allowedProjectCreate) {
     response.writeHead(403);
     response.end('no permission to create projects');
     return;
@@ -95,15 +97,16 @@ async function createProject ({ db, config }, request, response) {
     id: projectId,
     name: body.name,
     image: body.image,
-    webport: body.webPort,
+    webPort: body.webPort,
     domain: body.domain,
-    environment_variables: body.environmentVariables,
+    secrets: JSON.stringify(body.secrets),
+    environmentVariables: body.environmentVariables,
     owner: body.owner,
     repo: body.repo,
-    run_command: body.runCommand,
-    build_command: body.buildCommand,
-    user_id: user.id,
-    datecreated: Date.now()
+    runCommand: body.runCommand,
+    buildCommand: body.buildCommand,
+    userId: user.id,
+    dateCreated: Date.now()
   });
 
   const project = await postgres.getOne(db, `
@@ -111,10 +114,7 @@ async function createProject ({ db, config }, request, response) {
   `, [projectId]);
 
   response.statusCode = 200;
-  response.write(JSON.stringify({
-    ...project,
-    privatekey: undefined
-  }));
+  response.write(JSON.stringify(presentProject(project), response));
 
   await ensureDeployKeyOnProject({ db, config }, body.owner, body.repo, request.headers.authorization);
 

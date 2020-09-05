@@ -7,7 +7,7 @@ async function listProjects ({ db, config }, request, response) {
   const user = await authenticate({ db, config }, request.headers.authorization);
 
   const projects = await postgres.getAll(db, `
-    SELECT * FROM projects WHERE user_id = $1
+    SELECT * FROM "projects" WHERE "userId" = $1
   `, [user.id]);
 
   writeResponse(200, projects, response);
