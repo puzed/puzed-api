@@ -10,10 +10,10 @@ async function deleteDeployment ({ db, config }, request, response, tokens) {
   const user = await authenticate({ db, config }, request.headers.authorization);
 
   const deployment = await postgres.getOne(db, `
-    SELECT deployments.*
-      FROM deployments
- LEFT JOIN projects ON deployments.projectId = projects.id
-     WHERE userId = $1 AND projectId = $2 AND deployments.id = $3
+    SELECT "deployments".*
+      FROM "deployments"
+ LEFT JOIN "projects" ON "deployments"."projectId" = "projects"."id"
+     WHERE "userId" = $1 AND "projectId" = $2 AND "deployments"."id" = $3
  `, [user.id, tokens.projectId, tokens.deploymentId]);
 
   if (!deployment) {
@@ -52,7 +52,7 @@ async function deleteDeployment ({ db, config }, request, response, tokens) {
        SET "liveLog" = $1,
            "status" = 'destroyed'
      WHERE "projectId" = $2
-       AND id = $3
+       AND "id" = $3
   `, [logsCleaned + '\n\nDeployment container was destroyed\n', tokens.projectId, tokens.deploymentId]);
 
   writeResponse(200, '', response);

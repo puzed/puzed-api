@@ -15,6 +15,7 @@
     "async-stacktrace": "0.0.2",
     "axios": "^0.19.2",
     "chalk": "^4.1.0",
+    "data-uri-to-buffer": "^3.0.1",
     "docker-ssh-http-agent": "^1.0.2",
     "final-stream": "^1.1.0",
     "github-username-regex": "^1.0.0",
