@@ -11,6 +11,7 @@ async function listDeployments ({ db, config }, request, response, tokens) {
       "deployments"."id" as id,
       "deployments"."projectId",
       "deployments"."status",
+      "deployments"."commitHash",
       "deployments"."dateCreated"
       FROM "deployments"
  LEFT JOIN "projects" ON "deployments"."projectId" = "projects"."id"

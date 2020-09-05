@@ -8,6 +8,7 @@ const NodeRSA = require('node-rsa');
 
 const authenticate = require('../../common/authenticate');
 const deployRepositoryToServer = require('../../common/deployRepositoryToServer');
+const getLatestCommitHash = require('../../common/getLatestCommitHash');
 
 const presentProject = require('../../presenters/project');
 
@@ -117,6 +118,15 @@ async function createProject ({ db, config }, request, response) {
   response.write(JSON.stringify(presentProject(project), response));
 
   await ensureDeployKeyOnProject({ db, config }, body.owner, body.repo, request.headers.authorization);
+
+  const latestCommitHash = await getLatestCommitHash({ db, config }, project);
+
+  await postgres.run(db, `
+    UPDATE "projects"
+    SET "commitHashProduction" = $2
+    WHERE "id" = $1
+  `, [project.id, latestCommitHash]);
+  project.commitHashProduction = latestCommitHash;
 
   await deployRepositoryToServer({ db, config }, project, {
     onOutput: function (deploymentId, data) {

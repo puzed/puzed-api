@@ -34,10 +34,13 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
     });
   }
 
+  const secrets = JSON.parse(project.secrets);
+
   const deploymentId = uuidv4();
   await postgres.insert(db, 'deployments', {
     id: deploymentId,
     projectId: project.id,
+    commitHash: project.commitHashProduction,
     status: 'pending',
     dateCreated: Date.now()
   });
@@ -121,14 +124,14 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
     `, { ...output });
 
     log(chalk.greenBright('Checkout correct branch'));
-    await execCommand(`${ignoreSshHostFileCheck} git checkout master`, { cwd: `/tmp/${deploymentId}`, ...output });
+    await execCommand(`${ignoreSshHostFileCheck} git checkout ${project.commitHashProduction}`, { cwd: `/tmp/${deploymentId}`, ...output });
     await execCommand(`${ignoreSshHostFileCheck} git pull origin master`, { cwd: `/tmp/${deploymentId}`, ...output });
 
     log(chalk.greenBright('Creating Dockerfile from template'));
     const dockerfileTemplate = await fs.readFile(path.resolve(__dirname, '../dockerfileTemplates/Dockerfile.nodejs12'), 'utf8');
     const dockerfileContent = dockerfileTemplate
       .replace('{{buildCommand}}', project.buildCommand)
-      .replace('{{runCommand}}', 'sleep 10000000 || ' + project.runCommand);
+      .replace('{{runCommand}}', secrets.length > 0 ? 'sleep 10000000 || ' + project.runCommand : project.runCommand);
     await fs.writeFile('/tmp/Dockerfile.' + deploymentId, dockerfileContent);
     await ssh.putFile('/tmp/Dockerfile.' + deploymentId, `/tmp/${deploymentId}/Dockerfile`);
 
@@ -176,41 +179,42 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
     });
     log('started');
 
-    log(chalk.greenBright('Creating secrets'));
-    const secrets = JSON.parse(project.secrets);
-    const secretsWriteScript = secrets.map(secret => {
-      const data = secret.data.split(',').slice(-1);
-      return `(echo "${data}" | base64 -d > ${secret.name})`;
-    }).join(' && ');
+    if (secrets.length > 0) {
+      log(chalk.greenBright('Creating secrets'));
+      const secretsWriteScript = secrets.map(secret => {
+        const data = secret.data.split(',').slice(-1);
+        return `(echo "${data}" | base64 -d > ${secret.name})`;
+      }).join(' && ');
 
-    const secretsCreateResponse = await axios({
-      method: 'post',
-      socketPath: '/var/run/docker.sock',
-      url: `/v1.26/containers/${dockerId}/exec`,
-      headers: {
-        'content-type': 'application/json'
-      },
-      data: JSON.stringify({
-        AttachStdin: false,
-        AttachStdout: true,
-        AttachStderr: true,
-        Cmd: ['sh', '-c', `mkdir -p /run/secrets && ${secretsWriteScript} && pkill sleep`]
-      }),
-      httpsAgent: dockerAgent
-    });
-    const secretsStartResponse = await axios({
-      method: 'post',
-      socketPath: '/var/run/docker.sock',
-      url: `/v1.26/exec/${secretsCreateResponse.data.Id}/start`,
-      headers: {
-        'content-type': 'application/json'
-      },
-      data: JSON.stringify({
+      const secretsCreateResponse = await axios({
+        method: 'post',
+        socketPath: '/var/run/docker.sock',
+        url: `/v1.26/containers/${dockerId}/exec`,
+        headers: {
+          'content-type': 'application/json'
+        },
+        data: JSON.stringify({
+          AttachStdin: false,
+          AttachStdout: true,
+          AttachStderr: true,
+          Cmd: ['sh', '-c', `mkdir -p /run/secrets && ${secretsWriteScript} && pkill sleep`]
+        }),
+        httpsAgent: dockerAgent
+      });
+      const secretsStartResponse = await axios({
+        method: 'post',
+        socketPath: '/var/run/docker.sock',
+        url: `/v1.26/exec/${secretsCreateResponse.data.Id}/start`,
+        headers: {
+          'content-type': 'application/json'
+        },
+        data: JSON.stringify({
 
-      }),
-      httpsAgent: dockerAgent
-    });
-    console.log(secretsStartResponse.data);
+        }),
+        httpsAgent: dockerAgent
+      });
+      console.log(secretsStartResponse.data);
+    }
 
     log(chalk.greenBright('Discovering allocated port'));
     const dockerPortResult = await execCommand(`docker port ${dockerId}`, { ...output });
