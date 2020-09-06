@@ -7,10 +7,6 @@ module.exports = {
     api: ['api.puzed.com'],
     client: ['puzed.com', 'www.puzed.com']
   },
-  dockerHosts: ['192.168.1.100'],
-  sshUsername: 'root',
-  sshPublicKey: fs.readFileSync('./config/id_rsa.pub', 'utf8'),
-  sshPrivateKey: fs.readFileSync('./config/id_rsa', 'utf8'),
   githubApiUrl: 'https://api.github.com',
   githubClientId: 'YOUR_GITHUB_CLIENT_ID',
   githubClientSecret: 'YOUR_GITHUB_CLIENT_SECRET',

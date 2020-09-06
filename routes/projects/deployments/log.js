@@ -22,11 +22,17 @@ async function logDeployment ({ db, config }, request, response, tokens) {
     return;
   }
 
+  const server = await postgres.getOne(db, `
+    SELECT *
+      FROM "servers"
+     WHERE "hostname" = $1
+  `, [deployment.dockerHost]);
+
   const agent = dockerAgent({
-    host: deployment.host,
-    port: 22,
-    username: config.sshUsername,
-    privateKey: config.sshPrivateKey,
+    host: server.hostname,
+    port: server.sshPort,
+    username: server.sshUsername,
+    privateKey: server.privateKey,
     keepaliveInterval: 5000,
     keepaliveCountMax: 60 * 30
   });

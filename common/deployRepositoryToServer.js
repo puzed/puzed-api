@@ -9,7 +9,7 @@ const NodeSSH = require('node-ssh').NodeSSH;
 const githubUsernameRegex = require('github-username-regex');
 const dockerSshHttpAgent = require('docker-ssh-http-agent');
 
-const selectRandomItemFromArray = require('../common/selectRandomItemFromArray');
+const pickRandomServer = require('../common/pickRandomServer');
 
 async function deployRepositoryToServer ({ db, config }, project, options = {}) {
   if (!githubUsernameRegex.test(project.owner)) {
@@ -45,12 +45,14 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
     dateCreated: Date.now()
   });
 
-  const dockerHost = selectRandomItemFromArray(config.dockerHosts);
+  const server = await pickRandomServer({ db });
+  const dockerHost = server.hostname;
+
   const dockerAgent = dockerSshHttpAgent({
     host: dockerHost,
     port: 22,
-    username: config.sshUsername,
-    privateKey: config.sshPrivateKey
+    username: server.sshUsername,
+    privateKey: server.privateKey
   });
 
   const ignoreSshHostFileCheck = `GIT_SSH_COMMAND="ssh -i /tmp/${deploymentId}.key -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"`;
@@ -109,8 +111,8 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
     ssh = new NodeSSH();
     await ssh.connect({
       host: dockerHost,
-      username: config.sshUsername,
-      privateKey: config.sshPrivateKey
+      username: server.sshUsername,
+      privateKey: server.privateKey
     });
 
     log(chalk.greenBright('Adding ssh key'));

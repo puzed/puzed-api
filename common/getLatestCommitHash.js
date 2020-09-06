@@ -2,7 +2,7 @@ const postgres = require('postgres-fp/promises');
 const NodeSSH = require('node-ssh').NodeSSH;
 const githubUsernameRegex = require('github-username-regex');
 
-const selectRandomItemFromArray = require('../common/selectRandomItemFromArray');
+const pickRandomServer = require('../common/pickRandomServer');
 
 async function getLatestCommitHash ({ db, config }, project, options = {}) {
   if (!githubUsernameRegex.test(project.owner)) {
@@ -27,7 +27,7 @@ async function getLatestCommitHash ({ db, config }, project, options = {}) {
     });
   }
 
-  const dockerHost = selectRandomItemFromArray(config.dockerHosts);
+  const server = await pickRandomServer({ db });
 
   const ignoreSshHostFileCheck = `GIT_SSH_COMMAND="ssh -i /tmp/${project.id}.key -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"`;
 
@@ -43,9 +43,9 @@ async function getLatestCommitHash ({ db, config }, project, options = {}) {
   try {
     ssh = new NodeSSH();
     await ssh.connect({
-      host: dockerHost,
-      username: config.sshUsername,
-      privateKey: config.sshPrivateKey
+      host: server.hostname,
+      username: server.sshUsername,
+      privateKey: server.privateKey
     });
 
     await ssh.execCommand(`

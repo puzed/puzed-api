@@ -50,6 +50,16 @@ function migrateDatabase (db) {
       "allowedProjectCreate" bool,
       "dateCreated" varchar
     );
+
+    CREATE TABLE IF NOT EXISTS "servers" (
+      "id" varchar,
+      "hostname" varchar,
+      "sshUsername" varchar,
+      "sshPort" varchar,
+      "publicKey" varchar,
+      "privateKey" varchar,
+      "dateCreated" varchar
+    );
   `);
 }
 
