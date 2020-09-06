@@ -58,7 +58,7 @@ async function getLatestCommitHash ({ db, config }, project, options = {}) {
 
     await ssh.execCommand(`rm -rf /tmp/${project.id}.key`, { cwd: '/tmp' });
 
-    ssh.dispose().catch(console.log);
+    ssh.dispose();
 
     return result.stdout;
   } catch (error) {
@@ -70,7 +70,7 @@ async function getLatestCommitHash ({ db, config }, project, options = {}) {
       console.log(error);
     }
 
-    ssh.dispose().catch(console.log);
+    ssh.dispose();
 
     throw new Error('could not get latest commit hash', { statusCode: 500 });
   }

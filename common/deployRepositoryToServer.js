@@ -41,7 +41,7 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
     id: deploymentId,
     projectId: project.id,
     commitHash: project.commitHashProduction,
-    status: 'pending',
+    status: 'building',
     dateCreated: Date.now()
   });
 
@@ -147,6 +147,13 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
       `docker build -t ${imageTagName} .`, { cwd: `/tmp/${deploymentId}`, ...output }
     );
 
+    await postgres.run(db, `
+      UPDATE "deployments"
+      SET "status" = 'starting',
+          "dockerHost" = $2
+      WHERE "id" = $1
+    `, [deploymentId, dockerHost]);
+
     log(chalk.greenBright('Creating container'));
     const containerCreationResult = await axios({
       method: 'post',
@@ -229,12 +236,10 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
     await postgres.run(db, `
       UPDATE "deployments"
       SET "buildLog" = $2,
-          "status" = 'success',
-          "dockerHost" = $3,
-          "dockerId" = $4,
-          "dockerPort" = $5
+          "dockerId" = $3,
+          "dockerPort" = $4
       WHERE "id" = $1
-    `, [deploymentId, buildLog.trim(), dockerHost, dockerId, dockerPort]);
+    `, [deploymentId, buildLog.trim(), dockerId, dockerPort]);
   } catch (error) {
     console.log(error);
     log(chalk.redBright(error.message));

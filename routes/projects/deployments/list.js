@@ -16,6 +16,7 @@ async function listDeployments ({ db, config }, request, response, tokens) {
       FROM "deployments"
  LEFT JOIN "projects" ON "deployments"."projectId" = "projects"."id"
      WHERE "userId" = $1 AND "projectId" = $2
+  ORDER BY "dateCreated" DESC
   `, [user.id, tokens.projectId]);
 
   writeResponse(200, deployments, response);

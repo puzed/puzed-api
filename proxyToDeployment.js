@@ -8,7 +8,7 @@ async function proxyToDeployment ({ db }, request, response) {
       FROM deployments
  LEFT JOIN "projects" ON "projects"."id" = "deployments"."projectId"
      WHERE "domain" = $1
-       AND "status" = 'success'
+       AND "status" = 'healthy'
   ORDER BY random()
      LIMIT 1
   `, [request.headers.host.split(':')[0]]);

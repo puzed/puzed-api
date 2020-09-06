@@ -12,6 +12,7 @@ const proxyToClient = require('./proxyToClient');
 
 const handleError = require('./common/handleError');
 const { getCertificate, handleHttpChallenge } = require('./common/acmeUtilities');
+const performHealthchecks = require('./common/performHealthchecks');
 
 const defaultCertificates = {
   key: fs.readFileSync('./config/default.key', 'ascii'),
@@ -20,6 +21,8 @@ const defaultCertificates = {
 
 async function createServer (config) {
   const db = await postgres.connect(config.cockroach);
+
+  setInterval(() => performHealthchecks({ config, db }), 3000);
 
   await migrateDatabase(db);
 

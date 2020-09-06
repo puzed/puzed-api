@@ -30,6 +30,7 @@ function migrateDatabase (db) {
       "buildLog" text,
       "liveLog" text,
       "status" varchar,
+      "statusDate" varchar,
       "dateCreated" varchar
     );
 
