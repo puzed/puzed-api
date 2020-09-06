@@ -117,7 +117,33 @@ async function createServer (config) {
   httpsServer.listen(config.httpsPort);
 
   const httpServer = http.createServer(async function (request, response) {
-    if (isIp(request.headers.host)) {
+    if (isIp(request.headers.host.split(':')[0])) {
+      if (request.headers['x-internal-secret'] === config.internalSecret) {
+        const routes = {
+          '/internal/deployments/:deploymentId': {
+            POST: require('./routes/internal/deployments/deploy'),
+            DELETE: require('./routes/internal/deployments/delete')
+          },
+          '/internal/deployments/:deploymentId/buildlog': {
+            GET: require('./routes/internal/deployments/buildlog')
+          },
+          '/internal/deployments/:deploymentId/livelog': {
+            GET: require('./routes/internal/deployments/livelog')
+          }
+        };
+
+        const route = routemeup(routes, request);
+        if (route) {
+          const result = route.controller(scope, request, response, route.tokens);
+          if (result && result.catch) {
+            result.catch((error) => {
+              handleError(error, request, response);
+            });
+          }
+          return;
+        }
+      }
+
       response.writeHead(401, { 'content-type': 'text/html' });
       response.end(`
         <body style="background: #eeeeee;">

@@ -1,7 +1,11 @@
-const postgres = require('postgres-fp/promises');
+const axios = require('axios');
 
-const deployRepositoryToServer = require('../../../common/deployRepositoryToServer');
+const uuid = require('uuid').v4;
+const postgres = require('postgres-fp/promises');
+const writeResponse = require('write-response');
+
 const authenticate = require('../../../common/authenticate');
+const pickRandomServer = require('../../../common/pickRandomServer');
 
 async function createDeployment ({ db, config }, request, response, tokens) {
   const user = await authenticate({ db, config }, request.headers.authorization);
@@ -10,19 +14,32 @@ async function createDeployment ({ db, config }, request, response, tokens) {
     SELECT *
       FROM "projects"
      WHERE "userId" = $1 AND "id" = $2
- `, [user.id, tokens.projectId]);
+  `, [user.id, tokens.projectId]);
 
   if (!project) {
     throw Object.assign(new Error('project not found'), { statusCode: 404 });
   }
 
-  await deployRepositoryToServer({ db, config }, project, {
-    onOutput: function (deploymentId, data) {
-      response.write(JSON.stringify([deploymentId, data]) + '\n');
+  const server = await pickRandomServer({ db });
+
+  const deploymentId = uuid();
+  await postgres.insert(db, 'deployments', {
+    id: deploymentId,
+    projectId: project.id,
+    dockerHost: server.hostname,
+    commitHash: project.commitHashProduction,
+    status: 'queued',
+    dateCreated: Date.now()
+  });
+
+  await axios(`http://${server.hostname}:${server.apiPort}/internal/deployments/${deploymentId}`, {
+    method: 'POST',
+    headers: {
+      'x-internal-secret': config.internalSecret
     }
   });
 
-  response.end();
+  writeResponse(200, project, response);
 }
 
 module.exports = createDeployment;

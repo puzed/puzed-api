@@ -1,7 +1,6 @@
 const axios = require('axios');
 
 const writeResponse = require('write-response');
-const dockerAgent = require('docker-ssh-http-agent');
 const postgres = require('postgres-fp/promises');
 
 const authenticate = require('../../../common/authenticate');
@@ -20,40 +19,13 @@ async function deleteDeployment ({ db, config }, request, response, tokens) {
     throw Object.assign(new Error('deployment not found'), { statusCode: 404 });
   }
 
-  const agent = dockerAgent({
-    host: deployment.host,
-    port: 22,
-    username: config.sshUsername,
-    privateKey: config.sshPrivateKey
-  });
-
-  const upstreamRequest = await axios({
-    socketPath: '/var/run/docker.sock',
-    url: `/v1.26/containers/${deployment.dockerId}/logs?stderr=1&stdout=1&timestamps=1`,
-    responseEncoding: 'ascii',
-    httpsAgent: agent
-  });
-
-  await axios({
+  const server = await postgres.getOne(db, 'SELECT * FROM "servers" WHERE "hostname" = $1', [deployment.dockerHost]);
+  await axios(`http://${server.hostname}:${server.apiPort}/internal/deployments/${deployment.id}`, {
     method: 'DELETE',
-    socketPath: '/var/run/docker.sock',
-    url: `/v1.26/containers/${deployment.dockerId}?force=true`,
-    responseEncoding: 'ascii',
-    httpsAgent: agent
+    headers: {
+      'x-internal-secret': config.internalSecret
+    }
   });
-
-  const logsCleaned = upstreamRequest.data
-    .split('\n')
-    .map(line => line.slice(8))
-    .join('\n');
-
-  await postgres.run(db, `
-    UPDATE "deployments"
-       SET "liveLog" = $1,
-           "status" = 'destroyed'
-     WHERE "projectId" = $2
-       AND "id" = $3
-  `, [logsCleaned + '\n\nDeployment container was destroyed\n', tokens.projectId, tokens.deploymentId]);
 
   writeResponse(200, '', response);
 }

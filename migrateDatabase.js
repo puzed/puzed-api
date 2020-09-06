@@ -54,6 +54,7 @@ function migrateDatabase (db) {
     CREATE TABLE IF NOT EXISTS "servers" (
       "id" varchar,
       "hostname" varchar,
+      "apiPort" varchar,
       "sshUsername" varchar,
       "sshPort" varchar,
       "publicKey" varchar,

@@ -1,8 +1,6 @@
+const execa = require('execa');
 const postgres = require('postgres-fp/promises');
-const NodeSSH = require('node-ssh').NodeSSH;
 const githubUsernameRegex = require('github-username-regex');
-
-const pickRandomServer = require('../common/pickRandomServer');
 
 async function getLatestCommitHash ({ db, config }, project, options = {}) {
   if (!githubUsernameRegex.test(project.owner)) {
@@ -27,8 +25,6 @@ async function getLatestCommitHash ({ db, config }, project, options = {}) {
     });
   }
 
-  const server = await pickRandomServer({ db });
-
   const ignoreSshHostFileCheck = `GIT_SSH_COMMAND="ssh -i /tmp/${project.id}.key -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"`;
 
   const deployKey = await postgres.getOne(db, `
@@ -39,38 +35,38 @@ async function getLatestCommitHash ({ db, config }, project, options = {}) {
     throw new Error('no deploy key');
   }
 
-  let ssh;
-  try {
-    ssh = new NodeSSH();
-    await ssh.connect({
-      host: server.hostname,
-      username: server.sshUsername,
-      privateKey: server.privateKey
-    });
+  async function execCommand (command, options) {
+    const result = await execa('sh', ['-c', command], options);
+    if (result.exitCode) {
+      throw Object.assign(new Error('deployment failed'), {
+        cmd: command,
+        ...result
+      });
+    }
 
-    await ssh.execCommand(`
+    return result;
+  }
+
+  try {
+    await execCommand(`
       echo "${deployKey.privateKey}" > /tmp/${project.id}.key && chmod 600 /tmp/${project.id}.key
     `);
 
-    const result = await ssh.execCommand(`
+    const result = await execCommand(`
       ${ignoreSshHostFileCheck} git ls-remote git@github.com:${project.owner}/${project.repo}.git  HEAD | awk '{ print $1}'
     `);
 
-    await ssh.execCommand(`rm -rf /tmp/${project.id}.key`, { cwd: '/tmp' });
-
-    ssh.dispose();
+    await execCommand(`rm -rf /tmp/${project.id}.key`, { cwd: '/tmp' });
 
     return result.stdout;
   } catch (error) {
     console.log(error);
 
     try {
-      await ssh.execCommand(`rm -rf /tmp/${project.id}.key`, { cwd: '/tmp' });
+      await execCommand(`rm -rf /tmp/${project.id}.key`, { cwd: '/tmp' });
     } catch (error) {
       console.log(error);
     }
-
-    ssh.dispose();
 
     throw new Error('could not get latest commit hash', { statusCode: 500 });
   }

@@ -7,7 +7,6 @@ const postgres = require('postgres-fp/promises');
 const NodeRSA = require('node-rsa');
 
 const authenticate = require('../../common/authenticate');
-const deployRepositoryToServer = require('../../common/deployRepositoryToServer');
 const getLatestCommitHash = require('../../common/getLatestCommitHash');
 
 const presentProject = require('../../presenters/project');
@@ -127,12 +126,6 @@ async function createProject ({ db, config }, request, response) {
     WHERE "id" = $1
   `, [project.id, latestCommitHash]);
   project.commitHashProduction = latestCommitHash;
-
-  await deployRepositoryToServer({ db, config }, project, {
-    onOutput: function (deploymentId, data) {
-      response.write(JSON.stringify([deploymentId, data]) + '\n');
-    }
-  });
 
   response.end();
 }

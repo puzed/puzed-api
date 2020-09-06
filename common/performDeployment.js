@@ -4,14 +4,16 @@ const chalk = require('chalk');
 chalk.level = 3;
 const axios = require('axios');
 const postgres = require('postgres-fp/promises');
-const uuidv4 = require('uuid').v4;
-const NodeSSH = require('node-ssh').NodeSSH;
+const execa = require('execa');
+
 const githubUsernameRegex = require('github-username-regex');
-const dockerSshHttpAgent = require('docker-ssh-http-agent');
 
-const pickRandomServer = require('../common/pickRandomServer');
+const { deploymentLogListeners, deploymentLogs } = require('./deploymentLogger');
 
-async function deployRepositoryToServer ({ db, config }, project, options = {}) {
+async function deployRepositoryToServer ({ db, config }, deploymentId) {
+  const deployment = await postgres.getOne(db, 'SELECT * FROM "deployments" WHERE "id" = $1', [deploymentId]);
+  const project = await postgres.getOne(db, 'SELECT * FROM "projects" WHERE "id" = $1', [deployment.projectId]);
+
   if (!githubUsernameRegex.test(project.owner)) {
     throw Object.assign(new Error('invalid github owner'), {
       statusCode: 422,
@@ -36,28 +38,13 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
 
   const secrets = JSON.parse(project.secrets);
 
-  const deploymentId = uuidv4();
-  await postgres.insert(db, 'deployments', {
-    id: deploymentId,
-    projectId: project.id,
-    commitHash: project.commitHashProduction,
-    status: 'building',
-    dateCreated: Date.now()
-  });
-
-  const server = await pickRandomServer({ db });
-  const dockerHost = server.hostname;
-
-  const dockerAgent = dockerSshHttpAgent({
-    host: dockerHost,
-    port: 22,
-    username: server.sshUsername,
-    privateKey: server.privateKey
-  });
+  await postgres.run(db, `
+    UPDATE "deployments"
+      SET "status" = 'building'
+    WHERE "id" = $1
+  `, [deploymentId]);
 
   const ignoreSshHostFileCheck = `GIT_SSH_COMMAND="ssh -i /tmp/${deploymentId}.key -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"`;
-
-  let buildLog = '';
 
   const deployKey = await postgres.getOne(db, `
     SELECT * FROM "githubDeploymentKeys" WHERE "owner" = $1 AND "repo" = $2
@@ -67,38 +54,29 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
     throw new Error('no deploy key');
   }
 
-  const output = {
-    onStdout (chunk) {
-      options.onOutput && options.onOutput(deploymentId, chunk.toString('ascii'));
-      buildLog = buildLog + chunk.toString('ascii');
-    },
-
-    onStderr (chunk) {
-      options.onOutput && options.onOutput(deploymentId, chunk.toString('ascii'));
-      buildLog = buildLog + chunk.toString('ascii');
-    }
-  };
-
   function log (...args) {
     const loggable = args.join(', ');
-    options.onOutput && options.onOutput(deploymentId, '\n' + loggable);
-
-    buildLog = buildLog + '\n' + loggable;
+    (deploymentLogListeners[deploymentId] || []).forEach(output => output(loggable));
+    deploymentLogs[deploymentId] = deploymentLogs[deploymentId] || '';
+    deploymentLogs[deploymentId] = deploymentLogs[deploymentId] + loggable;
   }
 
-  async function execCommand (...args) {
-    const loggable = '\n> ' + args[0]
+  async function execCommand (command, options) {
+    const loggable = '\n> ' + command
       .replace(ignoreSshHostFileCheck, '')
       .replace(deployKey.privateKey, '[hidden]')
       .trim() + '\n';
 
-    options.onOutput && options.onOutput(deploymentId, loggable);
-    buildLog = buildLog + loggable;
+    log(loggable);
 
-    const result = await ssh.execCommand(...args);
-    if (result.code) {
+    const subprocess = execa('sh', ['-c', command], options);
+    subprocess.stdout.on('data', data => log(data.toString()));
+    subprocess.stderr.on('data', data => log(data.toString()));
+    const result = await subprocess;
+
+    if (result.exitCode) {
       throw Object.assign(new Error('deployment failed'), {
-        cmd: args[0],
+        cmd: command,
         ...result
       });
     }
@@ -106,57 +84,45 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
     return result;
   }
 
-  let ssh;
   try {
-    ssh = new NodeSSH();
-    await ssh.connect({
-      host: dockerHost,
-      username: server.sshUsername,
-      privateKey: server.privateKey
-    });
-
-    log(chalk.greenBright('Adding ssh key'));
+    log('\n' + chalk.greenBright('Adding ssh key'));
     await execCommand(`
       echo "${deployKey.privateKey}" > /tmp/${deploymentId}.key && chmod 600 /tmp/${deploymentId}.key
-    `, { ...output });
+    `);
 
-    log(chalk.greenBright('Cloning repo from github'));
+    log('\n' + chalk.greenBright('Cloning repo from github'));
     await execCommand(`
       ${ignoreSshHostFileCheck} git clone git@github.com:${project.owner}/${project.repo}.git /tmp/${deploymentId}
-    `, { ...output });
+    `);
 
-    log(chalk.greenBright('Checkout correct branch'));
-    await execCommand(`${ignoreSshHostFileCheck} git checkout ${project.commitHashProduction}`, { cwd: `/tmp/${deploymentId}`, ...output });
-    await execCommand(`${ignoreSshHostFileCheck} git pull origin master`, { cwd: `/tmp/${deploymentId}`, ...output });
+    log('\n' + chalk.greenBright('Checkout correct branch'));
+    await execCommand(`${ignoreSshHostFileCheck} git checkout ${project.commitHashProduction}`, { cwd: `/tmp/${deploymentId}` });
+    await execCommand(`${ignoreSshHostFileCheck} git pull origin master`, { cwd: `/tmp/${deploymentId}` });
 
-    log(chalk.greenBright('Creating Dockerfile from template'));
+    log('\n' + chalk.greenBright('Creating Dockerfile from template'));
     const dockerfileTemplate = await fs.readFile(path.resolve(__dirname, '../dockerfileTemplates/Dockerfile.nodejs12'), 'utf8');
     const dockerfileContent = dockerfileTemplate
       .replace('{{buildCommand}}', project.buildCommand)
       .replace('{{runCommand}}', secrets.length > 0 ? 'sleep 10000000 || ' + project.runCommand : project.runCommand);
-    await fs.writeFile('/tmp/Dockerfile.' + deploymentId, dockerfileContent);
-    await ssh.putFile('/tmp/Dockerfile.' + deploymentId, `/tmp/${deploymentId}/Dockerfile`);
+    await fs.writeFile(`/tmp/${deploymentId}/Dockerfile`, dockerfileContent);
 
-    log(chalk.greenBright('Creating .dockerignore'));
-    await ssh.putFile(
-      path.resolve(__dirname, '../dockerfileTemplates/.dockerignore'),
-      `/tmp/${deploymentId}/.dockerignore`
-    );
+    log('\n' + chalk.greenBright('Creating .dockerignore'));
+    const dockerignoreTemplate = await fs.readFile(path.resolve(__dirname, '../dockerfileTemplates/.dockerignore'), 'utf8');
+    await fs.writeFile(`/tmp/${deploymentId}/.dockerignore`, dockerignoreTemplate);
 
-    log(chalk.greenBright('Build docker image'));
+    log('\n' + chalk.greenBright('Build docker image'));
     const imageTagName = `${project.name}:${deploymentId}`;
     await execCommand(
-      `docker build -t ${imageTagName} .`, { cwd: `/tmp/${deploymentId}`, ...output }
+      `docker build -t ${imageTagName} .`, { cwd: `/tmp/${deploymentId}` }
     );
 
     await postgres.run(db, `
       UPDATE "deployments"
-      SET "status" = 'starting',
-          "dockerHost" = $2
+      SET "status" = 'starting'
       WHERE "id" = $1
-    `, [deploymentId, dockerHost]);
+    `, [deploymentId]);
 
-    log(chalk.greenBright('Creating container'));
+    log('\n' + chalk.greenBright('Creating container'));
     const containerCreationResult = await axios({
       method: 'post',
       socketPath: '/var/run/docker.sock',
@@ -174,22 +140,20 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
           PublishAllPorts: true,
           Runtime: 'runsc'
         }
-      }),
-      httpsAgent: dockerAgent
+      })
     });
     const dockerId = containerCreationResult.data.Id;
 
-    log(chalk.greenBright('Starting container'));
+    log('\n' + chalk.greenBright('Starting container'));
     await axios({
       method: 'post',
       socketPath: '/var/run/docker.sock',
-      url: `/v1.26/containers/${dockerId}/start`,
-      httpsAgent: dockerAgent
+      url: `/v1.26/containers/${dockerId}/start`
     });
-    log('started');
+    log('\nstarted');
 
     if (secrets.length > 0) {
-      log(chalk.greenBright('Creating secrets'));
+      log('\n' + chalk.greenBright('Creating secrets'));
       const secretsWriteScript = secrets.map(secret => {
         const data = secret.data.split(',').slice(-1);
         return `(echo "${data}" | base64 -d > ${secret.name})`;
@@ -207,8 +171,7 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
           AttachStdout: true,
           AttachStderr: true,
           Cmd: ['sh', '-c', `mkdir -p /run/secrets && ${secretsWriteScript} && pkill sleep`]
-        }),
-        httpsAgent: dockerAgent
+        })
       });
       const secretsStartResponse = await axios({
         method: 'post',
@@ -219,37 +182,36 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
         },
         data: JSON.stringify({
 
-        }),
-        httpsAgent: dockerAgent
+        })
       });
       console.log(secretsStartResponse.data);
     }
 
-    log(chalk.greenBright('Discovering allocated port'));
-    const dockerPortResult = await execCommand(`docker port ${dockerId}`, { ...output });
+    log('\n' + chalk.greenBright('Discovering allocated port'));
+    const dockerPortResult = await execCommand(`docker port ${dockerId}`);
     const dockerPort = dockerPortResult.stdout.split(':')[1];
 
-    log(chalk.greenBright('Cleaning up build directory'));
-    await execCommand(`rm -rf /tmp/${deploymentId}`, { cwd: '/tmp', ...output });
-    await execCommand(`rm -rf /tmp/${deploymentId}.key`, { cwd: '/tmp', ...output });
+    log('\n' + chalk.greenBright('Cleaning up build directory'));
+    await execCommand(`rm -rf /tmp/${deploymentId}`, { cwd: '/tmp' });
+    await execCommand(`rm -rf /tmp/${deploymentId}.key`, { cwd: '/tmp' });
 
-    log(chalk.cyanBright('🟢 Your website is now live'));
-
+    log('\n' + chalk.cyanBright('🟢 Your website is now live'));
+    (deploymentLogListeners[deploymentId] || []).forEach(output => output(null));
     await postgres.run(db, `
       UPDATE "deployments"
       SET "buildLog" = $2,
           "dockerId" = $3,
           "dockerPort" = $4
       WHERE "id" = $1
-    `, [deploymentId, buildLog.trim(), dockerId, dockerPort]);
+    `, [deploymentId, deploymentLogs[deploymentId].trim(), dockerId, dockerPort]);
   } catch (error) {
     console.log(error);
-    log(chalk.redBright(error.message));
-    log(chalk.greenBright('Cleaning up build directory'));
-
+    log('\n' + chalk.redBright(error.message));
+    log('\n' + chalk.greenBright('Cleaning up build directory'));
+    (deploymentLogListeners[deploymentId] || []).forEach(output => output(null));
     try {
-      await execCommand(`rm -rf /tmp/${deploymentId}`, { cwd: '/tmp', ...output });
-      await execCommand(`rm -rf /tmp/${deploymentId}.key`, { cwd: '/tmp', ...output });
+      await execCommand(`rm -rf /tmp/${deploymentId}`, { cwd: '/tmp' });
+      await execCommand(`rm -rf /tmp/${deploymentId}.key`, { cwd: '/tmp' });
     } catch (error) {
       console.log(error);
     }
@@ -259,10 +221,8 @@ async function deployRepositoryToServer ({ db, config }, project, options = {}) 
       SET "buildLog" = $2,
           "status" = 'failed'
       WHERE "id" = $1
-    `, [deploymentId, buildLog.trim()]);
+    `, [deploymentId, deploymentLogs[deploymentId].trim()]);
   }
-
-  await ssh.dispose();
 }
 
 module.exports = deployRepositoryToServer;
