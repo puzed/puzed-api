@@ -15,7 +15,7 @@ async function proxyToDeployment ({ db }, request, response) {
   ORDER BY random()
      LIMIT 1
   `, [request.headers.host.split(':')[0]]);
-console.log(record)
+  console.log(record);
   if (!record) {
     response.writeHead(404);
     response.end(`service ${request.headers.host} not found`);

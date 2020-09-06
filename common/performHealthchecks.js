@@ -13,7 +13,7 @@ async function performHealthchecks ({ db, config }) {
     try {
       await axios(`http://${deployment.dockerHost}:${deployment.dockerPort}/health`, {
         validateStatus: () => true
-      })
+      });
       if (deployment.status !== 'healthy') {
         return postgres.run(db, `
           UPDATE "deployments"
