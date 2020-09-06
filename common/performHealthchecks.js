@@ -10,18 +10,10 @@ async function performHealthchecks ({ db, config }) {
   `, [config.responsibilities]);
 
   const promises = deployments.map(async deployment => {
-    await axios(`http://${deployment.dockerHost}:${deployment.dockerPort}/health`, {
-      validateStatus: () => true
-    }).catch(_ => {
-      if (deployment.status === 'healthy') {
-        return postgres.run(db, `
-          UPDATE "deployments"
-            SET "status" = 'unhealthy',
-                "statusDate" = $2
-          WHERE "id" = $1
-        `, [deployment.id, Date.now()]);
-      }
-    }).then(() => {
+    try {
+      await axios(`http://${deployment.dockerHost}:${deployment.dockerPort}/health`, {
+        validateStatus: () => true
+      })
       if (deployment.status !== 'healthy') {
         return postgres.run(db, `
           UPDATE "deployments"
@@ -30,7 +22,16 @@ async function performHealthchecks ({ db, config }) {
           WHERE "id" = $1
         `, [deployment.id, Date.now()]);
       }
-    });
+    } catch (_) {
+      if (deployment.status === 'healthy') {
+        return postgres.run(db, `
+          UPDATE "deployments"
+            SET "status" = 'unhealthy',
+                "statusDate" = $2
+          WHERE "id" = $1
+        `, [deployment.id, Date.now()]);
+      }
+    }
   });
 
   await Promise.all(promises);

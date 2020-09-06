@@ -4,15 +4,18 @@ const postgres = require('postgres-fp/promises');
 
 async function proxyToDeployment ({ db }, request, response) {
   const record = await postgres.getOne(db, `
+  SELECT * FROM (
     SELECT "dockerHost", "dockerId", "dockerPort"
-      FROM deployments
+      FROM "deployments"
  LEFT JOIN "projects" ON "projects"."id" = "deployments"."projectId"
      WHERE "domain" = $1
        AND "status" = 'healthy'
+       AND "projects"."commitHashProduction" = "deployments"."commitHash"
+)
   ORDER BY random()
      LIMIT 1
   `, [request.headers.host.split(':')[0]]);
-
+console.log(record)
   if (!record) {
     response.writeHead(404);
     response.end(`service ${request.headers.host} not found`);
