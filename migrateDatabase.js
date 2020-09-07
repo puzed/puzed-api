@@ -57,8 +57,6 @@ function migrateDatabase (db) {
       "apiPort" varchar,
       "sshUsername" varchar,
       "sshPort" varchar,
-      "publicKey" varchar,
-      "privateKey" varchar,
       "dateCreated" varchar
     );
   `);
