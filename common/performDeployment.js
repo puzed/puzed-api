@@ -10,7 +10,7 @@ const githubUsernameRegex = require('github-username-regex');
 
 const { deploymentLogListeners, deploymentLogs } = require('./deploymentLogger');
 
-async function deployRepositoryToServer ({ db, config }, deploymentId) {
+async function deployRepositoryToServer ({ db, notify, config }, deploymentId) {
   const deployment = await postgres.getOne(db, 'SELECT * FROM "deployments" WHERE "id" = $1', [deploymentId]);
   const project = await postgres.getOne(db, 'SELECT * FROM "projects" WHERE "id" = $1', [deployment.projectId]);
 
@@ -43,6 +43,7 @@ async function deployRepositoryToServer ({ db, config }, deploymentId) {
       SET "status" = 'building'
     WHERE "id" = $1
   `, [deploymentId]);
+  notify.broadcast(deploymentId);
 
   const ignoreSshHostFileCheck = `GIT_SSH_COMMAND="ssh -i /tmp/${deploymentId}.key -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"`;
 
@@ -121,6 +122,7 @@ async function deployRepositoryToServer ({ db, config }, deploymentId) {
       SET "status" = 'starting'
       WHERE "id" = $1
     `, [deploymentId]);
+    notify.broadcast(deploymentId);
 
     log('\n' + chalk.greenBright('Creating container'));
     const containerCreationResult = await axios({
@@ -204,6 +206,7 @@ async function deployRepositoryToServer ({ db, config }, deploymentId) {
           "dockerPort" = $4
       WHERE "id" = $1
     `, [deploymentId, deploymentLogs[deploymentId].trim(), dockerId, dockerPort]);
+    notify.broadcast(deploymentId);
   } catch (error) {
     console.log(error);
     log('\n' + chalk.redBright(error.message));
@@ -222,6 +225,7 @@ async function deployRepositoryToServer ({ db, config }, deploymentId) {
           "status" = 'failed'
       WHERE "id" = $1
     `, [deploymentId, deploymentLogs[deploymentId].trim()]);
+    notify.broadcast(deploymentId);
   }
 }
 

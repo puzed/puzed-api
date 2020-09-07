@@ -1,10 +1,11 @@
 const http = require('http');
 const https = require('https');
-const isIp = require('is-ip');
 const fs = require('fs');
 
+const isIp = require('is-ip');
 const postgres = require('postgres-fp/promises');
 const routemeup = require('routemeup');
+const createNotifyServer = require('notify-over-http');
 
 const migrateDatabase = require('./migrateDatabase');
 const proxyToDeployment = require('./proxyToDeployment');
@@ -21,8 +22,25 @@ const defaultCertificates = {
 
 async function createServer (config) {
   const db = await postgres.connect(config.cockroach);
+  const servers = await postgres.getAll(db, 'SELECT * FROM "servers"');
 
-  setInterval(() => performHealthchecks({ config, db }), 3000);
+  const notify = createNotifyServer({
+    servers: servers
+      .map(server => ({
+        url: `https://${server.hostname}:${server.apiPort}/notify`,
+        headers: {
+          host: config.domains.api[0]
+        }
+      }))
+  });
+
+  const scope = {
+    config,
+    notify,
+    db
+  };
+
+  setInterval(() => performHealthchecks(scope), 3000);
 
   await migrateDatabase(db);
 
@@ -78,11 +96,6 @@ async function createServer (config) {
     }
   };
 
-  const scope = {
-    config,
-    db
-  };
-
   async function handler (request, response) {
     console.log('https: Incoming request:', request.method, request.headers.host, request.url);
 
@@ -94,6 +107,10 @@ async function createServer (config) {
       if (request.method === 'OPTIONS') {
         response.end();
         return;
+      }
+
+      if (request.url.startsWith('/notify')) {
+        return notify.handle(request, response);
       }
 
       const route = routemeup(routes, request);

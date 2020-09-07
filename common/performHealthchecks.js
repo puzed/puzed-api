@@ -1,7 +1,7 @@
 const axios = require('axios');
 const postgres = require('postgres-fp/promises');
 
-async function performHealthchecks ({ db, config }) {
+async function performHealthchecks ({ db, notify, config }) {
   const deployments = await postgres.getAll(db, `
     SELECT *
       FROM "deployments"
@@ -15,6 +15,7 @@ async function performHealthchecks ({ db, config }) {
         validateStatus: () => true
       });
       if (deployment.status !== 'healthy') {
+        notify.broadcast(deployment.id);
         return postgres.run(db, `
           UPDATE "deployments"
             SET "status" = 'healthy',
@@ -24,6 +25,7 @@ async function performHealthchecks ({ db, config }) {
       }
     } catch (_) {
       if (deployment.status === 'healthy') {
+        notify.broadcast(deployment.id);
         return postgres.run(db, `
           UPDATE "deployments"
             SET "status" = 'unhealthy',

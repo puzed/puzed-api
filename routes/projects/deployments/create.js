@@ -40,7 +40,9 @@ async function createDeployment ({ db, config }, request, response, tokens) {
     }
   });
 
-  writeResponse(200, project, response);
+  const deployment = await postgres.getOne(db, 'SELECT * FROM "deployments" WHERE "id" = $1', [deploymentId]);
+
+  writeResponse(200, deployment, response);
 }
 
 module.exports = createDeployment;

@@ -23,6 +23,7 @@
     "mem": "^6.1.0",
     "memoizee": "^0.4.14",
     "node-rsa": "^1.1.1",
+    "notify-over-http": "^2.0.2",
     "postgres-fp": "^1.4.1",
     "promises-debugger": "^1.0.3",
     "routemeup": "^1.5.0",
