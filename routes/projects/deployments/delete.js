@@ -20,9 +20,10 @@ async function deleteDeployment ({ db, config }, request, response, tokens) {
   }
 
   const server = await postgres.getOne(db, 'SELECT * FROM "servers" WHERE "hostname" = $1', [deployment.dockerHost]);
-  await axios(`http://${server.hostname}:${server.apiPort}/internal/deployments/${deployment.id}`, {
+  await axios(`https://${server.hostname}:${server.apiPort}/internal/deployments/${deployment.id}`, {
     method: 'DELETE',
     headers: {
+      host: config.domains.api[0],
       'x-internal-secret': config.internalSecret
     }
   });

@@ -32,9 +32,10 @@ async function createDeployment ({ db, config }, request, response, tokens) {
     dateCreated: Date.now()
   });
 
-  await axios(`http://${server.hostname}:${server.apiPort}/internal/deployments/${deploymentId}`, {
+  await axios(`https://${server.hostname}:${server.apiPort}/internal/deployments/${deploymentId}`, {
     method: 'POST',
     headers: {
+      host: config.domains.api[0],
       'x-internal-secret': config.internalSecret
     }
   });

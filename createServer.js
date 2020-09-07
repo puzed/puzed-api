@@ -26,6 +26,15 @@ async function createServer (config) {
 
   await migrateDatabase(db);
 
+  const verifyInternalSecret = (handler) => (scope, request, response, tokens) => {
+    if (request.headers['x-internal-secret'] !== scope.config.internalSecret) {
+      response.writeHead(401);
+      response.end('restricted to internal requests only');
+      return;
+    }
+    return handler(scope, request, response, tokens);
+  };
+
   const routes = {
     '/projects': {
       GET: require('./routes/projects/list'),
@@ -55,6 +64,17 @@ async function createServer (config) {
 
     '/auth': {
       POST: require('./routes/auth')
+    },
+
+    '/internal/deployments/:deploymentId': {
+      POST: verifyInternalSecret(require('./routes/internal/deployments/deploy')),
+      DELETE: verifyInternalSecret(require('./routes/internal/deployments/delete'))
+    },
+    '/internal/deployments/:deploymentId/buildlog': {
+      GET: verifyInternalSecret(require('./routes/internal/deployments/buildlog'))
+    },
+    '/internal/deployments/:deploymentId/livelog': {
+      GET: verifyInternalSecret(require('./routes/internal/deployments/livelog'))
     }
   };
 
@@ -118,32 +138,6 @@ async function createServer (config) {
 
   const httpServer = http.createServer(async function (request, response) {
     if (isIp(request.headers.host.split(':')[0])) {
-      if (request.headers['x-internal-secret'] === config.internalSecret) {
-        const routes = {
-          '/internal/deployments/:deploymentId': {
-            POST: require('./routes/internal/deployments/deploy'),
-            DELETE: require('./routes/internal/deployments/delete')
-          },
-          '/internal/deployments/:deploymentId/buildlog': {
-            GET: require('./routes/internal/deployments/buildlog')
-          },
-          '/internal/deployments/:deploymentId/livelog': {
-            GET: require('./routes/internal/deployments/livelog')
-          }
-        };
-
-        const route = routemeup(routes, request);
-        if (route) {
-          const result = route.controller(scope, request, response, route.tokens);
-          if (result && result.catch) {
-            result.catch((error) => {
-              handleError(error, request, response);
-            });
-          }
-          return;
-        }
-      }
-
       response.writeHead(401, { 'content-type': 'text/html' });
       response.end(`
         <body style="background: #eeeeee;">

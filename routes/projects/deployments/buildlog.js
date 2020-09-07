@@ -1,6 +1,6 @@
 const writeResponse = require('write-response');
 const postgres = require('postgres-fp/promises');
-const http = require('http');
+const https = require('https');
 
 const authenticate = require('../../../common/authenticate');
 
@@ -21,8 +21,9 @@ async function logDeployment ({ db, config }, request, response, tokens) {
 
   const server = await postgres.getOne(db, 'SELECT * FROM "servers" WHERE "hostname" = $1', [deployment.dockerHost]);
   if (['building', 'starting'].includes(deployment.status)) {
-    http.request(`http://${server.hostname}:${server.apiPort}/internal/deployments/${deployment.id}/buildlog`, {
+    https.request(`https://${server.hostname}:${server.apiPort}/internal/deployments/${deployment.id}/buildlog`, {
       headers: {
+        host: config.domains.api[0],
         'x-internal-secret': config.internalSecret
       }
     }, function (liveLogResponse) {
