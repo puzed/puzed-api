@@ -27,6 +27,8 @@ function migrateDatabase (db) {
       "dockerHost" varchar,
       "dockerId" varchar,
       "commitHash" varchar,
+      "branch" varchar,
+      "group" varchar,
       "buildLog" text,
       "liveLog" text,
       "status" varchar,

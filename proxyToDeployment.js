@@ -3,18 +3,24 @@ const http = require('http');
 const postgres = require('postgres-fp/promises');
 
 async function proxyToDeployment ({ db }, request, response) {
+  let hostname = request.headers.host.split(':')[0];
+
+  if (!hostname.includes('--')) {
+    hostname = 'master--' + hostname;
+  }
+
   const record = await postgres.getOne(db, `
   SELECT * FROM (
-    SELECT "dockerHost", "dockerId", "dockerPort"
+    SELECT "dockerHost", "dockerId", "dockerPort", "group", concat("group", '--', "domain") as "domain"
       FROM "deployments"
  LEFT JOIN "projects" ON "projects"."id" = "deployments"."projectId"
-     WHERE "domain" = $1
-       AND "status" = 'healthy'
-       AND "projects"."commitHashProduction" = "deployments"."commitHash"
+     WHERE (
+      concat("group", '--', "domain") = $1
+     ) AND "status" = 'healthy'
 )
   ORDER BY random()
      LIMIT 1
-  `, [request.headers.host.split(':')[0]]);
+  `, [hostname]);
 
   if (!record) {
     response.writeHead(404);

@@ -72,6 +72,7 @@ async function createServer (config) {
     },
 
     '/projects/:projectId/deployments/:deploymentId': {
+      GET: require('./routes/projects/deployments/read'),
       DELETE: require('./routes/projects/deployments/delete')
     },
 

@@ -2,7 +2,7 @@ const execa = require('execa');
 const postgres = require('postgres-fp/promises');
 const githubUsernameRegex = require('github-username-regex');
 
-async function getLatestCommitHash ({ db, config }, project, options = {}) {
+async function getLatestCommitHash ({ db, config }, project, branch = 'master') {
   if (!githubUsernameRegex.test(project.owner)) {
     throw Object.assign(new Error('invalid github owner'), {
       statusCode: 422,
@@ -53,7 +53,7 @@ async function getLatestCommitHash ({ db, config }, project, options = {}) {
     `);
 
     const result = await execCommand(`
-      ${ignoreSshHostFileCheck} git ls-remote git@github.com:${project.owner}/${project.repo}.git  HEAD | awk '{ print $1}'
+      ${ignoreSshHostFileCheck} git ls-remote git@github.com:${project.owner}/${project.repo}.git ${branch} | awk '{ print $1}'
     `);
 
     await execCommand(`rm -rf /tmp/${project.id}.key`, { cwd: '/tmp' });

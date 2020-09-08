@@ -97,8 +97,7 @@ async function deployRepositoryToServer ({ db, notify, config }, deploymentId) {
     `);
 
     log('\n' + chalk.greenBright('Checkout correct branch'));
-    await execCommand(`${ignoreSshHostFileCheck} git checkout ${project.commitHashProduction}`, { cwd: `/tmp/${deploymentId}` });
-    await execCommand(`${ignoreSshHostFileCheck} git pull origin master`, { cwd: `/tmp/${deploymentId}` });
+    await execCommand(`${ignoreSshHostFileCheck} git checkout ${deployment.commitHash}`, { cwd: `/tmp/${deploymentId}` });
 
     log('\n' + chalk.greenBright('Creating Dockerfile from template'));
     const dockerfileTemplate = await fs.readFile(path.resolve(__dirname, '../dockerfileTemplates/Dockerfile.nodejs12'), 'utf8');
