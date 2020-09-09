@@ -22,6 +22,9 @@ const defaultCertificates = {
 
 async function createServer (config) {
   const db = await postgres.connect(config.cockroach);
+
+  await migrateDatabase(db);
+
   const servers = await postgres.getAll(db, 'SELECT * FROM "servers"');
 
   const notify = createNotifyServer({
@@ -41,8 +44,6 @@ async function createServer (config) {
   };
 
   setInterval(() => performHealthchecks(scope), 3000);
-
-  await migrateDatabase(db);
 
   const verifyInternalSecret = (handler) => (scope, request, response, tokens) => {
     if (request.headers['x-internal-secret'] !== scope.config.internalSecret) {
