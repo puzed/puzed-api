@@ -196,8 +196,12 @@ async function deployRepositoryToServer ({ db, notify, config }, deploymentId) {
     }
 
     log('\n' + chalk.greenBright('Discovering allocated port'));
-    const dockerPortResult = await execCommand(`docker port ${dockerId}`);
-    const dockerPort = dockerPortResult.stdout.split(':')[1];
+    const dockerContainer = await axios({
+      socketPath: '/var/run/docker.sock',
+      url: `/v1.26/containers/${dockerId}/json`
+    });
+
+    const dockerPort = Object.values(dockerContainer.data.NetworkSettings.Ports)[0][0].HostPort;
 
     log('\n' + chalk.greenBright('Cleaning up build directory'));
     await execCommand(`rm -rf /tmp/${deploymentId}`, { cwd: '/tmp' });
