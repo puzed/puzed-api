@@ -64,7 +64,7 @@ function migrateDatabase (db) {
 
     CREATE TABLE IF NOT EXISTS "certificates" (
       "id" varchar,
-      "privateKey" varchar,
+      "privatekey" varchar,
       "domain" varchar,
       "status" varchar,
       "challenge" varchar,
