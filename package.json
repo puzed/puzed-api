@@ -37,7 +37,6 @@
   "devDependencies": {
     "async-bugs": "^1.1.2",
     "chalk": "^4.1.0",
-    "debug": "^4.1.1",
     "nodemon": "^2.0.4",
     "semistandard": "^14.2.3",
     "string-to-color": "^2.2.2"

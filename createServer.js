@@ -162,12 +162,16 @@ async function createServer (config) {
     })
   }, handler);
   httpsServer.on('listening', () => {
-    console.log('Listening (https) on port:', httpsServer.address().port);
+    hint('puzed.router', 'Listening (https) on port:', httpsServer.address().port);
   });
   httpsServer.listen(config.httpsPort);
 
   const httpServer = http.createServer(async function (request, response) {
+    hint('puzed.router:request', 'incoming request', request.method, request.headers.host, request.url);
+
     if (isIp(request.headers.host.split(':')[0])) {
+      hint('puzed.router:respond', `replying with ${hint.redBright('statusCode 401')} as host was an IP`);
+
       response.writeHead(401, { 'content-type': 'text/html' });
       response.end(`
         <body style="background: #eeeeee;">
@@ -178,18 +182,18 @@ async function createServer (config) {
       return;
     }
 
-    console.log('http: Incoming request:', request.method, request.headers.host, request.url);
-
     if (await handleHttpChallenge(scope, request, response)) {
       return;
     }
 
-    response.writeHead(302, { location: 'https://' + request.headers.host + request.url });
+    const redirectUrl = 'https://' + request.headers.host + request.url;
+    hint('puzed.router:respond', `redirecting to ${redirectUrl}`);
+    response.writeHead(302, { location: redirectUrl });
     response.end();
   });
 
   httpServer.on('listening', () => {
-    console.log('Listening (http) on port:', httpServer.address().port);
+    hint('puzed.router', 'Listening (http) on port:', httpServer.address().port);
   });
 
   httpServer.on('close', function () {

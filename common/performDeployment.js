@@ -1,7 +1,6 @@
 const path = require('path');
 const fs = require('fs').promises;
 const chalk = require('chalk');
-chalk.level = 3;
 const axios = require('axios');
 const postgres = require('postgres-fp/promises');
 const execa = require('execa');

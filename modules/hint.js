@@ -57,7 +57,7 @@ function isEnabled (name) {
 function log (namespace, ...messages) {
   const error = new Error();
   const firstBracket = error.stack.split('\n')[3].split('(');
-  const position = '.' + firstBracket[1].replace(process.cwd(), '');
+  const position = '.' + (firstBracket[1] || '').replace(process.cwd(), '');
   const [file, line] = position.split(':');
   // const functionName = firstBracket[0].replace('at ', '').trim();
   const formattedFunctionName = chalk.hex('#8c8c8c')(`${file}:${line}`);
