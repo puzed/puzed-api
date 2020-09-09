@@ -162,7 +162,7 @@ async function createServer (config) {
     })
   }, handler);
   httpsServer.on('listening', () => {
-    hint('puzed.router', 'Listening (https) on port:', httpsServer.address().port);
+    hint('puzed.router', 'listening (https) on port:', httpsServer.address().port);
   });
   httpsServer.listen(config.httpsPort);
 
@@ -193,7 +193,7 @@ async function createServer (config) {
   });
 
   httpServer.on('listening', () => {
-    hint('puzed.router', 'Listening (http) on port:', httpServer.address().port);
+    hint('puzed.router', 'listening (http) on port:', httpServer.address().port);
   });
 
   httpServer.on('close', function () {
