@@ -8,6 +8,8 @@ module.exports = {
     client: ['puzed.com', 'www.puzed.com']
   },
   dockerRuntime: 'runc',
+  internalSecret: 'CHANGE_ME',
+  responsibilities: ['127.0.0.1'],
   githubApiUrl: 'https://api.github.com',
   githubClientId: 'YOUR_GITHUB_CLIENT_ID',
   githubClientSecret: 'YOUR_GITHUB_CLIENT_SECRET',
