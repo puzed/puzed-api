@@ -1,6 +1,9 @@
 const postgres = require('postgres-fp/promises');
+const hint = require('./modules/hint');
 
 function migrateDatabase (db) {
+  hint('puzed.db', 'migrating database');
+
   return postgres.run(db, `
     CREATE TABLE IF NOT EXISTS "projects" (
       "id" varchar,

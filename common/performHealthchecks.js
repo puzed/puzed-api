@@ -1,7 +1,11 @@
 const axios = require('axios');
 const postgres = require('postgres-fp/promises');
 
+const hint = require('../modules/hint');
+
 async function performHealthchecks ({ db, notify, config }) {
+  hint('puzed.healthchecks', 'starting healthcheck batch');
+
   const deployments = await postgres.getAll(db, `
     SELECT *
       FROM "deployments"

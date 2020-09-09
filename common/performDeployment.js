@@ -5,6 +5,7 @@ chalk.level = 3;
 const axios = require('axios');
 const postgres = require('postgres-fp/promises');
 const execa = require('execa');
+const tar = require('tar-fs');
 
 const githubUsernameRegex = require('github-username-regex');
 
@@ -112,9 +113,16 @@ async function deployRepositoryToServer ({ db, notify, config }, deploymentId) {
 
     log('\n' + chalk.greenBright('Build docker image'));
     const imageTagName = `${project.name}:${deploymentId}`;
-    await execCommand(
-      `docker build -t ${imageTagName} .`, { cwd: `/tmp/${deploymentId}` }
-    );
+
+    await axios({
+      method: 'post',
+      socketPath: '/var/run/docker.sock',
+      url: `/v1.26/build?t=${imageTagName}`,
+      headers: {
+        'content-type': 'application/x-tar'
+      },
+      data: tar.pack(`/tmp/${deploymentId}`)
+    });
 
     await postgres.run(db, `
       UPDATE "deployments"
@@ -174,7 +182,7 @@ async function deployRepositoryToServer ({ db, notify, config }, deploymentId) {
           Cmd: ['sh', '-c', `mkdir -p /run/secrets && ${secretsWriteScript} && pkill sleep`]
         })
       });
-      const secretsStartResponse = await axios({
+      await axios({
         method: 'post',
         socketPath: '/var/run/docker.sock',
         url: `/v1.26/exec/${secretsCreateResponse.data.Id}/start`,
@@ -185,7 +193,6 @@ async function deployRepositoryToServer ({ db, notify, config }, deploymentId) {
 
         })
       });
-      console.log(secretsStartResponse.data);
     }
 
     log('\n' + chalk.greenBright('Discovering allocated port'));

@@ -7,6 +7,8 @@ const postgres = require('postgres-fp/promises');
 const routemeup = require('routemeup');
 const createNotifyServer = require('notify-over-http');
 
+const hint = require('./modules/hint');
+
 const migrateDatabase = require('./migrateDatabase');
 const proxyToDeployment = require('./common/proxyToDeployment');
 const proxyToClient = require('./common/proxyToClient');
@@ -21,12 +23,15 @@ const defaultCertificates = {
 };
 
 async function createServer (config) {
+  hint('puzed.db', 'connecting');
   const db = await postgres.connect(config.cockroach);
 
   await migrateDatabase(db);
 
+  hint('puzed.db', 'fetching all servers');
   const servers = await postgres.getAll(db, 'SELECT * FROM "servers"');
 
+  hint('puzed.notify', 'creating notify server');
   const notify = createNotifyServer({
     servers: servers
       .map(server => ({
@@ -46,7 +51,9 @@ async function createServer (config) {
   setInterval(() => performHealthchecks(scope), 3000);
 
   const verifyInternalSecret = (handler) => (scope, request, response, tokens) => {
+    hint('puzed.router', `checking internal secret for ${request.url}`);
     if (request.headers['x-internal-secret'] !== scope.config.internalSecret) {
+      hint('puzed.router.failure', `internal secret "${request.headers['x-internal-secret']}" is not the expected "${scope.config.internalSecret}"`);
       response.writeHead(401);
       response.end('restricted to internal requests only');
       return;
@@ -99,7 +106,7 @@ async function createServer (config) {
   };
 
   async function handler (request, response) {
-    console.log('https: Incoming request:', request.method, request.headers.host, request.url);
+    hint('puzed.router:request', 'incoming request', request.method, request.headers.host, request.url);
 
     if (config.domains.api.includes(request.headers.host)) {
       response.setHeader('Access-Control-Allow-Origin', '*');
@@ -112,6 +119,7 @@ async function createServer (config) {
       }
 
       if (request.url.startsWith('/notify')) {
+        hint('puzed.router:request', 'sending request to notify handler');
         return notify.handle(request, response);
       }
 
@@ -126,6 +134,7 @@ async function createServer (config) {
         return;
       }
 
+      hint('puzed.router:respond', `replying with ${hint.redBright('statusCode 404')} as not route for path "${hint.redBright(request.url)}" was found`);
       response.writeHead(404);
       response.end(`Path ${request.url} not found`);
 
@@ -133,10 +142,12 @@ async function createServer (config) {
     }
 
     if (config.domains.client.includes(request.headers.host)) {
+      hint('puzed.router.proxy', `proxying host "${request.headers.host}" to the puzed http client`);
       proxyToClient(scope, request, response);
       return;
     }
 
+    hint('puzed.router.proxy', `proxying host "${request.headers.host}" to a deployment`);
     proxyToDeployment(scope, request, response);
   }
 
