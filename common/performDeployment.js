@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs').promises;
 const chalk = require('chalk');
+const chalkCtx = new chalk.Instance({level: 3});
 const axios = require('axios');
 const postgres = require('postgres-fp/promises');
 const execa = require('execa');
@@ -86,31 +87,31 @@ async function deployRepositoryToServer ({ db, notify, config }, deploymentId) {
   }
 
   try {
-    log('\n' + chalk.greenBright('Adding ssh key'));
+    log('\n' + chalkCtx.greenBright('Adding ssh key'));
     await execCommand(`
       echo "${deployKey.privateKey}" > /tmp/${deploymentId}.key && chmod 600 /tmp/${deploymentId}.key
     `);
 
-    log('\n' + chalk.greenBright('Cloning repo from github'));
+    log('\n' + chalkCtx.greenBright('Cloning repo from github'));
     await execCommand(`
       ${ignoreSshHostFileCheck} git clone git@github.com:${project.owner}/${project.repo}.git /tmp/${deploymentId}
     `);
 
-    log('\n' + chalk.greenBright('Checkout correct branch'));
+    log('\n' + chalkCtx.greenBright('Checkout correct branch'));
     await execCommand(`${ignoreSshHostFileCheck} git checkout ${deployment.commitHash}`, { cwd: `/tmp/${deploymentId}` });
 
-    log('\n' + chalk.greenBright('Creating Dockerfile from template'));
+    log('\n' + chalkCtx.greenBright('Creating Dockerfile from template'));
     const dockerfileTemplate = await fs.readFile(path.resolve(__dirname, '../dockerfileTemplates/Dockerfile.nodejs12'), 'utf8');
     const dockerfileContent = dockerfileTemplate
       .replace('{{buildCommand}}', project.buildCommand)
       .replace('{{runCommand}}', secrets.length > 0 ? 'sleep 10000000 || ' + project.runCommand : project.runCommand);
     await fs.writeFile(`/tmp/${deploymentId}/Dockerfile`, dockerfileContent);
 
-    log('\n' + chalk.greenBright('Creating .dockerignore'));
+    log('\n' + chalkCtx.greenBright('Creating .dockerignore'));
     const dockerignoreTemplate = await fs.readFile(path.resolve(__dirname, '../dockerfileTemplates/.dockerignore'), 'utf8');
     await fs.writeFile(`/tmp/${deploymentId}/.dockerignore`, dockerignoreTemplate);
 
-    log('\n' + chalk.greenBright('Build docker image'));
+    log('\n' + chalkCtx.greenBright('Build docker image'));
     const imageTagName = `${project.name}:${deploymentId}`;
 
     await axios({
@@ -130,7 +131,7 @@ async function deployRepositoryToServer ({ db, notify, config }, deploymentId) {
     `, [deploymentId]);
     notify.broadcast(deploymentId);
 
-    log('\n' + chalk.greenBright('Creating container'));
+    log('\n' + chalkCtx.greenBright('Creating container'));
     const containerCreationResult = await axios({
       method: 'post',
       socketPath: '/var/run/docker.sock',
@@ -152,7 +153,7 @@ async function deployRepositoryToServer ({ db, notify, config }, deploymentId) {
     });
     const dockerId = containerCreationResult.data.Id;
 
-    log('\n' + chalk.greenBright('Starting container'));
+    log('\n' + chalkCtx.greenBright('Starting container'));
     await axios({
       method: 'post',
       socketPath: '/var/run/docker.sock',
@@ -161,7 +162,7 @@ async function deployRepositoryToServer ({ db, notify, config }, deploymentId) {
     log('\nstarted');
 
     if (secrets.length > 0) {
-      log('\n' + chalk.greenBright('Creating secrets'));
+      log('\n' + chalkCtx.greenBright('Creating secrets'));
       const secretsWriteScript = secrets.map(secret => {
         const data = secret.data.split(',').slice(-1);
         return `(echo "${data}" | base64 -d > ${secret.name})`;
@@ -194,7 +195,7 @@ async function deployRepositoryToServer ({ db, notify, config }, deploymentId) {
       });
     }
 
-    log('\n' + chalk.greenBright('Discovering allocated port'));
+    log('\n' + chalkCtx.greenBright('Discovering allocated port'));
     const dockerContainer = await axios({
       socketPath: '/var/run/docker.sock',
       url: `/v1.26/containers/${dockerId}/json`
@@ -202,11 +203,11 @@ async function deployRepositoryToServer ({ db, notify, config }, deploymentId) {
 
     const dockerPort = Object.values(dockerContainer.data.NetworkSettings.Ports)[0][0].HostPort;
 
-    log('\n' + chalk.greenBright('Cleaning up build directory'));
+    log('\n' + chalkCtx.greenBright('Cleaning up build directory'));
     await execCommand(`rm -rf /tmp/${deploymentId}`, { cwd: '/tmp' });
     await execCommand(`rm -rf /tmp/${deploymentId}.key`, { cwd: '/tmp' });
 
-    log('\n' + chalk.cyanBright('🟢 Your website is now live'));
+    log('\n' + chalkCtx.cyanBright('🟢 Your website is now live'));
     (deploymentLogListeners[deploymentId] || []).forEach(output => output(null));
     await postgres.run(db, `
       UPDATE "deployments"
@@ -218,8 +219,8 @@ async function deployRepositoryToServer ({ db, notify, config }, deploymentId) {
     notify.broadcast(deploymentId);
   } catch (error) {
     console.log(error);
-    log('\n' + chalk.redBright(error.message));
-    log('\n' + chalk.greenBright('Cleaning up build directory'));
+    log('\n' + chalkCtx.redBright(error.message));
+    log('\n' + chalkCtx.greenBright('Cleaning up build directory'));
     (deploymentLogListeners[deploymentId] || []).forEach(output => output(null));
     try {
       await execCommand(`rm -rf /tmp/${deploymentId}`, { cwd: '/tmp' });
