@@ -3,7 +3,7 @@ FROM node:12
 COPY package*.json ./
 
 RUN npm set progress=false
-RUN {{buildCommand}}
+RUN --restart unless-stopped {{buildCommand}}
 
 COPY . .
 
