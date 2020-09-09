@@ -61,6 +61,16 @@ function migrateDatabase (db) {
       "sshPort" varchar,
       "dateCreated" varchar
     );
+
+    CREATE TABLE IF NOT EXISTS "certificates" (
+      "id" varchar,
+      "privateKey" varchar,
+      "domain" varchar,
+      "status" varchar,
+      "challenge" varchar,
+      "token" varchar,
+      "fullchain" varchar
+    );
   `);
 }
 
