@@ -7,7 +7,7 @@ async function performHealthchecks ({ db, notify, config }) {
   hint('puzed.healthchecks', 'starting healthcheck batch');
 
   const deployments = await postgres.getAll(db, `
-    SELECT *
+    SELECT "id", "dockerHost", "status", "statusDate"
       FROM "deployments"
      WHERE "dockerHost" = ANY ($1)
        AND "status" IN ('starting', 'unhealthy', 'healthy')
