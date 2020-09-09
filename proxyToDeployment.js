@@ -16,6 +16,7 @@ async function proxyToDeployment ({ db }, request, response) {
  LEFT JOIN "projects" ON "projects"."id" = "deployments"."projectId"
      WHERE (
       concat("group", '--', "domain") = $1
+      OR "domain" = $1
      ) AND "status" = 'healthy'
 )
   ORDER BY random()
