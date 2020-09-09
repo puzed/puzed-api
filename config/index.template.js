@@ -7,6 +7,7 @@ module.exports = {
     api: ['api.puzed.com'],
     client: ['puzed.com', 'www.puzed.com']
   },
+  dockerRuntime: 'runc',
   githubApiUrl: 'https://api.github.com',
   githubClientId: 'YOUR_GITHUB_CLIENT_ID',
   githubClientSecret: 'YOUR_GITHUB_CLIENT_SECRET',

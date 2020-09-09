@@ -139,7 +139,7 @@ async function deployRepositoryToServer ({ db, notify, config }, deploymentId) {
         },
         HostConfig: {
           PublishAllPorts: true,
-          Runtime: 'runsc'
+          Runtime: config.dockerRuntime || 'runc'
         }
       })
     });
