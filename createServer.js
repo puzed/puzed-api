@@ -8,8 +8,8 @@ const routemeup = require('routemeup');
 const createNotifyServer = require('notify-over-http');
 
 const migrateDatabase = require('./migrateDatabase');
-const proxyToDeployment = require('./proxyToDeployment');
-const proxyToClient = require('./proxyToClient');
+const proxyToDeployment = require('./common/proxyToDeployment');
+const proxyToClient = require('./common/proxyToClient');
 
 const handleError = require('./common/handleError');
 const { getCertificate, handleHttpChallenge } = require('./common/acmeUtilities');
