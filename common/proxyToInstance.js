@@ -2,7 +2,7 @@ const http = require('http');
 
 const postgres = require('postgres-fp/promises');
 
-async function proxyToDeployment ({ db }, request, response) {
+async function proxyToInstance ({ db }, request, response) {
   let hostname = request.headers.host.split(':')[0];
 
   if (!hostname.includes('--')) {
@@ -12,8 +12,8 @@ async function proxyToDeployment ({ db }, request, response) {
   const record = await postgres.getOne(db, `
   SELECT * FROM (
     SELECT "dockerHost", "dockerId", "dockerPort", "group", concat("group", '--', "domain") as "domain"
-      FROM "deployments"
- LEFT JOIN "projects" ON "projects"."id" = "deployments"."projectId"
+      FROM "instances"
+ LEFT JOIN "projects" ON "projects"."id" = "instances"."projectId"
      WHERE (
       concat("group", '--', "domain") = $1
       OR "domain" = $1
@@ -25,7 +25,7 @@ async function proxyToDeployment ({ db }, request, response) {
 
   if (!record) {
     response.writeHead(404);
-    response.end(`no deployments for host ${request.headers.host} found`);
+    response.end(`no instances for host ${request.headers.host} found`);
     return;
   }
 
@@ -56,4 +56,4 @@ async function proxyToDeployment ({ db }, request, response) {
   proxyRequest.end();
 }
 
-module.exports = proxyToDeployment;
+module.exports = proxyToInstance;

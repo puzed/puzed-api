@@ -1,7 +1,7 @@
-const deploymentLogListeners = {};
-const deploymentLogs = {};
+const instanceLogListeners = {};
+const instanceLogs = {};
 
 module.exports = {
-  deploymentLogListeners,
-  deploymentLogs
+  instanceLogListeners,
+  instanceLogs
 };

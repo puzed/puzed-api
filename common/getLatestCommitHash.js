@@ -28,7 +28,7 @@ async function getLatestCommitHash ({ db, config }, project, branch = 'master') 
   const ignoreSshHostFileCheck = `GIT_SSH_COMMAND="ssh -i /tmp/${project.id}.key -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"`;
 
   const deployKey = await postgres.getOne(db, `
-    SELECT * FROM "githubDeploymentKeys" WHERE "owner" = $1 AND "repo" = $2
+    SELECT * FROM "githubInstanceKeys" WHERE "owner" = $1 AND "repo" = $2
   `, [project.owner, project.repo]);
 
   if (!deployKey) {
@@ -38,7 +38,7 @@ async function getLatestCommitHash ({ db, config }, project, branch = 'master') 
   async function execCommand (command, options) {
     const result = await execa('sh', ['-c', command], options);
     if (result.exitCode) {
-      throw Object.assign(new Error('deployment failed'), {
+      throw Object.assign(new Error('instance failed'), {
         cmd: command,
         ...result
       });

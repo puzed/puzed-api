@@ -6,36 +6,36 @@ const hint = require('../modules/hint');
 async function performHealthchecks ({ db, notify, config }) {
   hint('puzed.healthchecks', 'starting healthcheck batch');
 
-  const deployments = await postgres.getAll(db, `
+  const instances = await postgres.getAll(db, `
     SELECT "id", "dockerHost", "dockerPort", "status", "statusDate"
-      FROM "deployments"
+      FROM "instances"
      WHERE "dockerHost" = ANY ($1)
        AND "status" IN ('starting', 'unhealthy', 'healthy')
   `, [config.responsibilities]);
 
-  const promises = deployments.map(async deployment => {
+  const promises = instances.map(async instance => {
     try {
-      await axios(`http://${deployment.dockerHost}:${deployment.dockerPort}/health`, {
+      await axios(`http://${instance.dockerHost}:${instance.dockerPort}/health`, {
         validateStatus: () => true
       });
-      if (deployment.status !== 'healthy') {
-        notify.broadcast(deployment.id);
+      if (instance.status !== 'healthy') {
+        notify.broadcast(instance.id);
         return postgres.run(db, `
-          UPDATE "deployments"
+          UPDATE "instances"
             SET "status" = 'healthy',
                 "statusDate" = $2
           WHERE "id" = $1
-        `, [deployment.id, Date.now()]);
+        `, [instance.id, Date.now()]);
       }
     } catch (_) {
-      if (deployment.status === 'healthy') {
-        notify.broadcast(deployment.id);
+      if (instance.status === 'healthy') {
+        notify.broadcast(instance.id);
         return postgres.run(db, `
-          UPDATE "deployments"
+          UPDATE "instances"
             SET "status" = 'unhealthy',
                 "statusDate" = $2
           WHERE "id" = $1
-        `, [deployment.id, Date.now()]);
+        `, [instance.id, Date.now()]);
       }
     }
   });

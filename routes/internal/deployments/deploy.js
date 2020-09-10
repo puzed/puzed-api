@@ -1,9 +1,9 @@
-const performDeployment = require('../../../common/performDeployment');
+const performInstance = require('../../../common/performInstance');
 
-async function checkDeployments (scope, request, response, tokens) {
-  performDeployment(scope, tokens.deploymentId);
+async function checkInstances (scope, request, response, tokens) {
+  performInstance(scope, tokens.instanceId);
   response.writeHead('200');
   response.end();
 }
 
-module.exports = checkDeployments;
+module.exports = checkInstances;

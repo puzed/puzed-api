@@ -13,7 +13,7 @@ const presentProject = require('../../presenters/project');
 
 async function ensureDeployKeyOnProject ({ db, config }, owner, repo, authorization) {
   const deployKey = await postgres.getOne(db, `
-    SELECT * FROM "githubDeploymentKeys" WHERE "owner" = $1 AND "repo" = $2
+    SELECT * FROM "githubInstanceKeys" WHERE "owner" = $1 AND "repo" = $2
   `, [owner, repo]);
 
   if (!deployKey) {
@@ -33,7 +33,7 @@ async function ensureDeployKeyOnProject ({ db, config }, owner, repo, authorizat
       })
     });
 
-    await postgres.insert(db, 'githubDeploymentKeys', {
+    await postgres.insert(db, 'githubInstanceKeys', {
       id: uuidv4(),
       githubKeyId: creationResponse.data.id,
       owner,
@@ -52,7 +52,7 @@ async function ensureDeployKeyOnProject ({ db, config }, owner, repo, authorizat
     }
   }).catch(error => {
     if (error.response.status === 404) {
-      return postgres.run(db, 'DELETE FROM "githubDeploymentKeys" WHERE "id" = $1', [deployKey.id])
+      return postgres.run(db, 'DELETE FROM "githubInstanceKeys" WHERE "id" = $1', [deployKey.id])
         .then(() => ensureDeployKeyOnProject({ db, config }, owner, repo, authorization));
     }
 

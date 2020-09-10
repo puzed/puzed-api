@@ -9,8 +9,8 @@ const createNotifyServer = require('notify-over-http');
 
 const hint = require('./modules/hint');
 
-const migrateDatabase = require('./migrateDatabase');
-const proxyToDeployment = require('./common/proxyToDeployment');
+const setupDatabase = require('./setupDatabase');
+const proxyToInstance = require('./common/proxyToInstance');
 const proxyToClient = require('./common/proxyToClient');
 
 const handleError = require('./common/handleError');
@@ -26,7 +26,7 @@ async function createServer (config) {
   hint('puzed.db', 'connecting');
   const db = await postgres.connect(config.cockroach);
 
-  await migrateDatabase(db);
+  await setupDatabase(db);
 
   hint('puzed.db', 'fetching all servers');
   const servers = await postgres.getAll(db, 'SELECT * FROM "servers"');
@@ -71,37 +71,37 @@ async function createServer (config) {
       GET: require('./routes/projects/read')
     },
 
-    '/projects/:projectId/deployments/:deploymentId/log': {
-      GET: require('./routes/projects/deployments/log')
+    '/projects/:projectId/instances/:instanceId/log': {
+      GET: require('./routes/projects/instances/log')
     },
 
-    '/projects/:projectId/deployments/:deploymentId/buildlog': {
-      GET: require('./routes/projects/deployments/buildlog')
+    '/projects/:projectId/instances/:instanceId/buildlog': {
+      GET: require('./routes/projects/instances/buildlog')
     },
 
-    '/projects/:projectId/deployments/:deploymentId': {
-      GET: require('./routes/projects/deployments/read'),
-      DELETE: require('./routes/projects/deployments/delete')
+    '/projects/:projectId/instances/:instanceId': {
+      GET: require('./routes/projects/instances/read'),
+      DELETE: require('./routes/projects/instances/delete')
     },
 
-    '/projects/:projectId/deployments': {
-      POST: require('./routes/projects/deployments/create'),
-      GET: require('./routes/projects/deployments/list')
+    '/projects/:projectId/instances': {
+      POST: require('./routes/projects/instances/create'),
+      GET: require('./routes/projects/instances/list')
     },
 
     '/auth': {
       POST: require('./routes/auth')
     },
 
-    '/internal/deployments/:deploymentId': {
-      POST: verifyInternalSecret(require('./routes/internal/deployments/deploy')),
-      DELETE: verifyInternalSecret(require('./routes/internal/deployments/delete'))
+    '/internal/instances/:instanceId': {
+      POST: verifyInternalSecret(require('./routes/internal/instances/deploy')),
+      DELETE: verifyInternalSecret(require('./routes/internal/instances/delete'))
     },
-    '/internal/deployments/:deploymentId/buildlog': {
-      GET: verifyInternalSecret(require('./routes/internal/deployments/buildlog'))
+    '/internal/instances/:instanceId/buildlog': {
+      GET: verifyInternalSecret(require('./routes/internal/instances/buildlog'))
     },
-    '/internal/deployments/:deploymentId/livelog': {
-      GET: verifyInternalSecret(require('./routes/internal/deployments/livelog'))
+    '/internal/instances/:instanceId/livelog': {
+      GET: verifyInternalSecret(require('./routes/internal/instances/livelog'))
     }
   };
 
@@ -147,8 +147,8 @@ async function createServer (config) {
       return;
     }
 
-    hint('puzed.router.proxy', `proxying host "${request.headers.host}" to a deployment`);
-    proxyToDeployment(scope, request, response);
+    hint('puzed.router.proxy', `proxying host "${request.headers.host}" to a instance`);
+    proxyToInstance(scope, request, response);
   }
 
   const httpsServer = https.createServer({

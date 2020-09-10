@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs').promises;
 const chalk = require('chalk');
-const chalkCtx = new chalk.Instance({level: 3});
+const chalkCtx = new chalk.Instance({ level: 3 });
 const axios = require('axios');
 const postgres = require('postgres-fp/promises');
 const execa = require('execa');
@@ -9,11 +9,11 @@ const tar = require('tar-fs');
 
 const githubUsernameRegex = require('github-username-regex');
 
-const { deploymentLogListeners, deploymentLogs } = require('./deploymentLogger');
+const { instanceLogListeners, instanceLogs } = require('./instanceLogger');
 
-async function deployRepositoryToServer ({ db, notify, config }, deploymentId) {
-  const deployment = await postgres.getOne(db, 'SELECT * FROM "deployments" WHERE "id" = $1', [deploymentId]);
-  const project = await postgres.getOne(db, 'SELECT * FROM "projects" WHERE "id" = $1', [deployment.projectId]);
+async function deployRepositoryToServer ({ db, notify, config }, instanceId) {
+  const instance = await postgres.getOne(db, 'SELECT * FROM "instances" WHERE "id" = $1', [instanceId]);
+  const project = await postgres.getOne(db, 'SELECT * FROM "projects" WHERE "id" = $1', [instance.projectId]);
 
   if (!githubUsernameRegex.test(project.owner)) {
     throw Object.assign(new Error('invalid github owner'), {
@@ -40,16 +40,16 @@ async function deployRepositoryToServer ({ db, notify, config }, deploymentId) {
   const secrets = JSON.parse(project.secrets);
 
   await postgres.run(db, `
-    UPDATE "deployments"
+    UPDATE "instances"
       SET "status" = 'building'
     WHERE "id" = $1
-  `, [deploymentId]);
-  notify.broadcast(deploymentId);
+  `, [instanceId]);
+  notify.broadcast(instanceId);
 
-  const ignoreSshHostFileCheck = `GIT_SSH_COMMAND="ssh -i /tmp/${deploymentId}.key -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"`;
+  const ignoreSshHostFileCheck = `GIT_SSH_COMMAND="ssh -i /tmp/${instanceId}.key -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"`;
 
   const deployKey = await postgres.getOne(db, `
-    SELECT * FROM "githubDeploymentKeys" WHERE "owner" = $1 AND "repo" = $2
+    SELECT * FROM "githubInstanceKeys" WHERE "owner" = $1 AND "repo" = $2
   `, [project.owner, project.repo]);
 
   if (!deployKey) {
@@ -58,9 +58,9 @@ async function deployRepositoryToServer ({ db, notify, config }, deploymentId) {
 
   function log (...args) {
     const loggable = args.join(', ');
-    (deploymentLogListeners[deploymentId] || []).forEach(output => output(loggable));
-    deploymentLogs[deploymentId] = deploymentLogs[deploymentId] || '';
-    deploymentLogs[deploymentId] = deploymentLogs[deploymentId] + loggable;
+    (instanceLogListeners[instanceId] || []).forEach(output => output(loggable));
+    instanceLogs[instanceId] = instanceLogs[instanceId] || '';
+    instanceLogs[instanceId] = instanceLogs[instanceId] + loggable;
   }
 
   async function execCommand (command, options) {
@@ -77,7 +77,7 @@ async function deployRepositoryToServer ({ db, notify, config }, deploymentId) {
     const result = await subprocess;
 
     if (result.exitCode) {
-      throw Object.assign(new Error('deployment failed'), {
+      throw Object.assign(new Error('instance failed'), {
         cmd: command,
         ...result
       });
@@ -89,30 +89,30 @@ async function deployRepositoryToServer ({ db, notify, config }, deploymentId) {
   try {
     log('\n' + chalkCtx.greenBright('Adding ssh key'));
     await execCommand(`
-      echo "${deployKey.privateKey}" > /tmp/${deploymentId}.key && chmod 600 /tmp/${deploymentId}.key
+      echo "${deployKey.privateKey}" > /tmp/${instanceId}.key && chmod 600 /tmp/${instanceId}.key
     `);
 
     log('\n' + chalkCtx.greenBright('Cloning repo from github'));
     await execCommand(`
-      ${ignoreSshHostFileCheck} git clone git@github.com:${project.owner}/${project.repo}.git /tmp/${deploymentId}
+      ${ignoreSshHostFileCheck} git clone git@github.com:${project.owner}/${project.repo}.git /tmp/${instanceId}
     `);
 
     log('\n' + chalkCtx.greenBright('Checkout correct branch'));
-    await execCommand(`${ignoreSshHostFileCheck} git checkout ${deployment.commitHash}`, { cwd: `/tmp/${deploymentId}` });
+    await execCommand(`${ignoreSshHostFileCheck} git checkout ${instance.commitHash}`, { cwd: `/tmp/${instanceId}` });
 
     log('\n' + chalkCtx.greenBright('Creating Dockerfile from template'));
     const dockerfileTemplate = await fs.readFile(path.resolve(__dirname, '../dockerfileTemplates/Dockerfile.nodejs12'), 'utf8');
     const dockerfileContent = dockerfileTemplate
       .replace('{{buildCommand}}', project.buildCommand)
       .replace('{{runCommand}}', secrets.length > 0 ? 'sleep 10000000 || ' + project.runCommand : project.runCommand);
-    await fs.writeFile(`/tmp/${deploymentId}/Dockerfile`, dockerfileContent);
+    await fs.writeFile(`/tmp/${instanceId}/Dockerfile`, dockerfileContent);
 
     log('\n' + chalkCtx.greenBright('Creating .dockerignore'));
     const dockerignoreTemplate = await fs.readFile(path.resolve(__dirname, '../dockerfileTemplates/.dockerignore'), 'utf8');
-    await fs.writeFile(`/tmp/${deploymentId}/.dockerignore`, dockerignoreTemplate);
+    await fs.writeFile(`/tmp/${instanceId}/.dockerignore`, dockerignoreTemplate);
 
     log('\n' + chalkCtx.greenBright('Build docker image'));
-    const imageTagName = `${project.name}:${deploymentId}`;
+    const imageTagName = `${project.name}:${instanceId}`;
 
     await axios({
       method: 'post',
@@ -121,15 +121,15 @@ async function deployRepositoryToServer ({ db, notify, config }, deploymentId) {
       headers: {
         'content-type': 'application/x-tar'
       },
-      data: tar.pack(`/tmp/${deploymentId}`)
+      data: tar.pack(`/tmp/${instanceId}`)
     });
 
     await postgres.run(db, `
-      UPDATE "deployments"
+      UPDATE "instances"
       SET "status" = 'starting'
       WHERE "id" = $1
-    `, [deploymentId]);
-    notify.broadcast(deploymentId);
+    `, [instanceId]);
+    notify.broadcast(instanceId);
 
     log('\n' + chalkCtx.greenBright('Creating container'));
     const containerCreationResult = await axios({
@@ -204,38 +204,38 @@ async function deployRepositoryToServer ({ db, notify, config }, deploymentId) {
     const dockerPort = Object.values(dockerContainer.data.NetworkSettings.Ports)[0][0].HostPort;
 
     log('\n' + chalkCtx.greenBright('Cleaning up build directory'));
-    await execCommand(`rm -rf /tmp/${deploymentId}`, { cwd: '/tmp' });
-    await execCommand(`rm -rf /tmp/${deploymentId}.key`, { cwd: '/tmp' });
+    await execCommand(`rm -rf /tmp/${instanceId}`, { cwd: '/tmp' });
+    await execCommand(`rm -rf /tmp/${instanceId}.key`, { cwd: '/tmp' });
 
     log('\n' + chalkCtx.cyanBright('🟢 Your website is now live'));
-    (deploymentLogListeners[deploymentId] || []).forEach(output => output(null));
+    (instanceLogListeners[instanceId] || []).forEach(output => output(null));
     await postgres.run(db, `
-      UPDATE "deployments"
+      UPDATE "instances"
       SET "buildLog" = $2,
           "dockerId" = $3,
           "dockerPort" = $4
       WHERE "id" = $1
-    `, [deploymentId, deploymentLogs[deploymentId].trim(), dockerId, dockerPort]);
-    notify.broadcast(deploymentId);
+    `, [instanceId, instanceLogs[instanceId].trim(), dockerId, dockerPort]);
+    notify.broadcast(instanceId);
   } catch (error) {
     console.log(error);
     log('\n' + chalkCtx.redBright(error.message));
     log('\n' + chalkCtx.greenBright('Cleaning up build directory'));
-    (deploymentLogListeners[deploymentId] || []).forEach(output => output(null));
+    (instanceLogListeners[instanceId] || []).forEach(output => output(null));
     try {
-      await execCommand(`rm -rf /tmp/${deploymentId}`, { cwd: '/tmp' });
-      await execCommand(`rm -rf /tmp/${deploymentId}.key`, { cwd: '/tmp' });
+      await execCommand(`rm -rf /tmp/${instanceId}`, { cwd: '/tmp' });
+      await execCommand(`rm -rf /tmp/${instanceId}.key`, { cwd: '/tmp' });
     } catch (error) {
       console.log(error);
     }
 
     await postgres.run(db, `
-      UPDATE "deployments"
+      UPDATE "instances"
       SET "buildLog" = $2,
           "status" = 'failed'
       WHERE "id" = $1
-    `, [deploymentId, deploymentLogs[deploymentId].trim()]);
-    notify.broadcast(deploymentId);
+    `, [instanceId, instanceLogs[instanceId].trim()]);
+    notify.broadcast(instanceId);
   }
 }
 

@@ -7,7 +7,7 @@ async function wipe () {
   const db = await postgres.connect(config.cockroach);
   await postgres.run(db, `
     DROP TABLE IF EXISTS projects;
-    DROP TABLE IF EXISTS deployments;
+    DROP TABLE IF EXISTS instances;
   `);
   await postgres.close(db);
 
