@@ -26,6 +26,8 @@ function setupDatabase (db) {
       "title" varchar,
       "commitHash" varchar,
       "branch" varchar,
+      "guardianServerId" varchar,
+      "stable" bool,
       "dateCreated" varchar
     );
 

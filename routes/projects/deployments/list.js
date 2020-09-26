@@ -7,7 +7,12 @@ async function listDeployments ({ db, config }, request, response, tokens) {
 
   const deployments = await db.getAll(`
     SELECT "deployments".*, 
-          (SELECT count(*) FROM "instances" WHERE "instances"."deploymentId" = "deployments"."id") as "instanceCount"
+          (
+            SELECT count(*) 
+              FROM "instances"
+             WHERE "instances"."deploymentId" = "deployments"."id"
+               AND "instances"."status" NOT IN ('destroyed')
+          ) as "instanceCount"
       FROM "deployments"
 LEFT JOIN "projects" ON "projects"."id" = "deployments"."projectId"
     WHERE "projects"."userId" = $1 AND "projects"."id" = $2

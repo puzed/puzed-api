@@ -5,6 +5,7 @@ process.env.HINT = process.env.HINT || '*,-puzed.healthchecks*,-puzed.router.pro
 module.exports = {
   httpPort: 80,
   httpsPort: 443,
+  serverId: 'manual-local',
   forceHttps: true,
   domains: {
     api: ['api.puzed.com'],

@@ -7,7 +7,12 @@ async function readDeployment ({ db, config }, request, response, tokens) {
 
   const deployment = await db.getOne(`
   SELECT "deployments".*, 
-  (SELECT count(*) FROM "instances" WHERE "instances"."deploymentId" = "deployments"."id") as "instanceCount"
+      (
+        SELECT count(*) 
+          FROM "instances"
+        WHERE "instances"."deploymentId" = "deployments"."id"
+          AND "instances"."status" NOT IN ('destroyed')
+      ) as "instanceCount"
      FROM "deployments"
 LEFT JOIN "projects" ON "deployments"."projectId" = "projects"."id"
     WHERE "userId" = $1
