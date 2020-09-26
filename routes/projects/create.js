@@ -3,16 +3,14 @@ const { promisify } = require('util');
 const uuidv4 = require('uuid').v4;
 const finalStream = promisify(require('final-stream'));
 const axios = require('axios');
-const postgres = require('postgres-fp/promises');
 const NodeRSA = require('node-rsa');
 
 const authenticate = require('../../common/authenticate');
-const getLatestCommitHash = require('../../common/getLatestCommitHash');
-
+const buildInsertStatement = require('../../common/buildInsertStatement');
 const presentProject = require('../../presenters/project');
 
 async function ensureDeployKeyOnProject ({ db, config }, owner, repo, authorization) {
-  const deployKey = await postgres.getOne(db, `
+  const deployKey = await db.getOne(`
     SELECT * FROM "githubDeploymentKeys" WHERE "owner" = $1 AND "repo" = $2
   `, [owner, repo]);
 
@@ -33,7 +31,7 @@ async function ensureDeployKeyOnProject ({ db, config }, owner, repo, authorizat
       })
     });
 
-    await postgres.insert(db, 'githubDeploymentKeys', {
+    const statement = buildInsertStatement('githubDeploymentKeys', {
       id: uuidv4(),
       githubKeyId: creationResponse.data.id,
       owner,
@@ -41,6 +39,7 @@ async function ensureDeployKeyOnProject ({ db, config }, owner, repo, authorizat
       publicKey,
       privateKey
     });
+    await db.run(statement.sql, statement.parameters);
 
     return;
   }
@@ -52,7 +51,7 @@ async function ensureDeployKeyOnProject ({ db, config }, owner, repo, authorizat
     }
   }).catch(error => {
     if (error.response.status === 404) {
-      return postgres.run(db, 'DELETE FROM "githubDeploymentKeys" WHERE "id" = $1', [deployKey.id])
+      return db.run('DELETE FROM "githubDeploymentKeys" WHERE "id" = $1', [deployKey.id])
         .then(() => ensureDeployKeyOnProject({ db, config }, owner, repo, authorization));
     }
 
@@ -93,7 +92,7 @@ async function createProject ({ db, config }, request, response) {
 
   const projectId = uuidv4();
 
-  await postgres.insert(db, 'projects', {
+  const statement = buildInsertStatement('projects', {
     id: projectId,
     name: body.name,
     image: body.image,
@@ -108,8 +107,21 @@ async function createProject ({ db, config }, request, response) {
     userId: user.id,
     dateCreated: Date.now()
   });
+  await db.run(statement.sql, statement.parameters);
 
-  const project = await postgres.getOne(db, `
+  await axios(`https://localhost:${config.httpsPort}/projects/${projectId}/deployments`, {
+    method: 'POST',
+    headers: {
+      host: config.domains.api[0],
+      authorization: request.headers.authorization
+    },
+    data: JSON.stringify({
+      title: 'production',
+      branch: 'master'
+    })
+  });
+
+  const project = await db.getOne(`
     SELECT * FROM projects WHERE id = $1
   `, [projectId]);
 
@@ -117,15 +129,6 @@ async function createProject ({ db, config }, request, response) {
   response.write(JSON.stringify(presentProject(project), response));
 
   await ensureDeployKeyOnProject({ db, config }, body.owner, body.repo, request.headers.authorization);
-
-  const latestCommitHash = await getLatestCommitHash({ db, config }, project);
-
-  await postgres.run(db, `
-    UPDATE "projects"
-    SET "commitHashProduction" = $2
-    WHERE "id" = $1
-  `, [project.id, latestCommitHash]);
-  project.commitHashProduction = latestCommitHash;
 
   response.end();
 }

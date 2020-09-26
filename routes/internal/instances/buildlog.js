@@ -1,18 +1,18 @@
 const {
-  deploymentLogs,
-  deploymentLogListeners
-} = require('../../../common/deploymentLogger');
+  instanceLogs,
+  instanceLogListeners
+} = require('../../../common/instanceLogger');
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 async function buildlog ({ db, config }, request, response, tokens) {
   function outputLogs () {
-    if (!deploymentLogs[tokens.deploymentId]) {
+    if (!instanceLogs[tokens.instanceId]) {
       return false;
     }
 
     response.writeHead(200);
-    response.write(deploymentLogs[tokens.deploymentId]);
+    response.write(instanceLogs[tokens.instanceId]);
     function write (data) {
       if (data === null) {
         response.end();
@@ -20,8 +20,8 @@ async function buildlog ({ db, config }, request, response, tokens) {
         response.write(data);
       }
     }
-    deploymentLogListeners[tokens.deploymentId] = deploymentLogListeners[tokens.deploymentId] || [];
-    deploymentLogListeners[tokens.deploymentId].push(write);
+    instanceLogListeners[tokens.instanceId] = instanceLogListeners[tokens.instanceId] || [];
+    instanceLogListeners[tokens.instanceId].push(write);
 
     return true;
   }

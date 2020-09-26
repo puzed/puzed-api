@@ -1,8 +1,11 @@
 const fs = require('fs');
 
+process.env.HINT = process.env.HINT || '*,-puzed.healthchecks*,-puzed.router.proxy*,-puzed.router.request*';
+
 module.exports = {
   httpPort: 80,
   httpsPort: 443,
+  forceHttps: true,
   domains: {
     api: ['api.puzed.com'],
     client: ['puzed.com', 'www.puzed.com']

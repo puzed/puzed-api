@@ -5,11 +5,11 @@ const Keypairs = require('@root/keypairs');
 const ACME = require('@root/acme');
 const CSR = require('@root/csr');
 const PEM = require('@root/pem');
-
+const isIp = require('is-ip');
 const mem = require('mem');
 
-const postgres = require('postgres-fp/promises');
-
+const buildInsertStatement = require('./buildInsertStatement');
+const hint = require('../modules/hint');
 const pkg = require('../package.json');
 const packageAgent = 'test-' + pkg.name + '/' + pkg.version;
 
@@ -59,7 +59,8 @@ async function getAcmeAccount (acme, email) {
 
 async function getCertificateForDomain ({ config, db }, domain) {
   // Already in database (success)
-  const existingCertificate = await postgres.getOne(db, 'SELECT * FROM certificates WHERE $1 LIKE domain AND status = \'success\'', [domain]);
+  const existingCertificate = await db.getOne('SELECT * FROM certificates WHERE $1 LIKE domain AND status = \'success\' LIMIT 1', [domain]);
+
   if (existingCertificate) {
     return {
       key: existingCertificate.privatekey,
@@ -68,7 +69,7 @@ async function getCertificateForDomain ({ config, db }, domain) {
   }
 
   // Already in database (pending)
-  if (await postgres.getOne(db, 'SELECT * FROM certificates WHERE $1 LIKE domain', [domain])) {
+  if (await db.getOne('SELECT * FROM certificates WHERE $1 LIKE domain', [domain])) {
     console.log('acmeUtils: already in database, but not finished');
     return;
   }
@@ -114,21 +115,22 @@ async function getCertificateForDomain ({ config, db }, domain) {
         return null;
       },
       set: async function (data) {
-        await postgres.insert(db, 'certificates', {
+        const statement = buildInsertStatement('certificates', {
           domain,
           challenge: JSON.stringify(data.challenge),
           token: data.challenge.token,
           status: 'pending'
         });
+        await db.run(statement.sql, statement.parameters);
 
         return null;
       },
       get: async function (data) {
-        const result = await postgres.run(db, 'SELECT challenge FROM certificates WHERE token = $1', [data.challenge.token]);
+        const result = await db.getOne('SELECT challenge FROM certificates WHERE token = $1', [data.challenge.token]);
         return JSON.parse(result.challenge);
       },
       remove: async function (data) {
-        await postgres.run(db, 'DELETE FROM certificates WHERE token = $1', [data.challenge.token]);
+        await db.run('DELETE FROM certificates WHERE token = $1', [data.challenge.token]);
       }
     }
   };
@@ -143,12 +145,13 @@ async function getCertificateForDomain ({ config, db }, domain) {
   });
   const fullchain = pems.cert + '\n' + pems.chain + '\n';
 
-  await postgres.insert(db, 'certificates', {
+  const statement = buildInsertStatement('certificates', {
     domain,
     status: 'success',
     fullchain,
     privatekey: serverPem
   });
+  await db.run(statement.sql, statement.parameters);
 
   if (errors.length) {
     console.warn();
@@ -182,7 +185,7 @@ function getCertificate ({ config, db }, options) {
 }
 
 async function handleHttpChallenge ({ db, config }, request, response) {
-  const certificates = await postgres.getAll(db, 'SELECT * FROM certificates WHERE domain = $1', [request.headers.host]);
+  const certificates = await db.getAll('SELECT * FROM certificates WHERE domain = $1', [request.headers.host]);
   for (const certificate of certificates) {
     const challenge = JSON.parse(certificate.challenge);
     if (!challenge) {
@@ -197,7 +200,35 @@ async function handleHttpChallenge ({ db, config }, request, response) {
   return false;
 }
 
+function createHttpHandler (config, scope, handler) {
+  return async function (request, response) {
+    hint('puzed.router:request', 'incoming request', request.method, request.headers.host, request.url);
+
+    if (isIp(request.headers.host.split(':')[0])) {
+      hint('puzed.router:respond', `replying with ${hint.redBright('statusCode 404')} as host was an IP`);
+      response.writeHead(404, { 'content-type': 'text/html' });
+      response.end('No domain provided');
+      return;
+    }
+
+    if (await handleHttpChallenge(scope, request, response)) {
+      return;
+    }
+
+    if (config.forceHttps) {
+      const redirectUrl = 'https://' + request.headers.host + request.url;
+      hint('puzed.router:respond', `redirecting to ${redirectUrl}`);
+      response.writeHead(302, { location: redirectUrl });
+      response.end();
+      return;
+    }
+
+    handler(request, response);
+  };
+}
+
 module.exports = {
+  createHttpHandler,
   getCertificate,
   handleHttpChallenge
 };

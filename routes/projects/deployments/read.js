@@ -1,26 +1,19 @@
 const writeResponse = require('write-response');
-const postgres = require('postgres-fp/promises');
 
 const authenticate = require('../../../common/authenticate');
 
 async function readDeployment ({ db, config }, request, response, tokens) {
   const user = await authenticate({ db, config }, request.headers.authorization);
 
-  const deployment = await postgres.getOne(db, `
-    SELECT
-      "deployments"."id" as id,
-      "deployments"."projectId",
-      "deployments"."status",
-      "deployments"."commitHash",
-      "deployments"."branch",
-      "deployments"."group",
-      "deployments"."dateCreated"
-      FROM "deployments"
-    LEFT JOIN "projects" ON "deployments"."projectId" = "projects"."id"
+  const deployment = await db.getOne(`
+  SELECT "deployments".*, 
+  (SELECT count(*) FROM "instances" WHERE "instances"."deploymentId" = "deployments"."id") as "instanceCount"
+     FROM "deployments"
+LEFT JOIN "projects" ON "deployments"."projectId" = "projects"."id"
     WHERE "userId" = $1
-    AND "projectId" = $2
-    AND "deployments"."id" = $3
-    ORDER BY "dateCreated" DESC
+      AND "projectId" = $2
+      AND "deployments"."id" = $3
+ ORDER BY "dateCreated" DESC
   `, [user.id, tokens.projectId, tokens.deploymentId]);
 
   if (!deployment) {

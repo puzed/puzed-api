@@ -1,14 +1,12 @@
 const { promisify } = require('util');
 
-const axios = require('axios');
 const uuid = require('uuid').v4;
-const postgres = require('postgres-fp/promises');
 const writeResponse = require('write-response');
 const finalStream = promisify(require('final-stream'));
 
 const getLatestCommitHash = require('../../../common/getLatestCommitHash');
+const buildInsertStatement = require('../../../common/buildInsertStatement');
 const authenticate = require('../../../common/authenticate');
-const pickRandomServer = require('../../../common/pickRandomServer');
 
 async function createDeployment ({ db, config }, request, response, tokens) {
   const user = await authenticate({ db, config }, request.headers.authorization);
@@ -16,7 +14,7 @@ async function createDeployment ({ db, config }, request, response, tokens) {
   const body = await finalStream(request, JSON.parse);
   body.branch = body.branch || 'master';
 
-  const project = await postgres.getOne(db, `
+  const project = await db.getOne(`
     SELECT *
       FROM "projects"
      WHERE "userId" = $1 AND "id" = $2
@@ -26,46 +24,25 @@ async function createDeployment ({ db, config }, request, response, tokens) {
     throw Object.assign(new Error('project not found'), { statusCode: 404 });
   }
 
-  const deploymentsInGroup = await postgres.getAll(db, `
-    SELECT "group", "commitHash"
-      FROM "deployments"
-    WHERE "projectId" = $1
-      AND "group" = $2
- GROUP BY "group", "commitHash"
-  `, [project.id, body.group]);
-  console.log(deploymentsInGroup);
-  if (deploymentsInGroup.length > 1) {
-    throw Object.assign(new Error('multiple commit hashes. clean up group before creating new deployments'), { statusCode: 400 });
-  }
-
-  let commitHash = deploymentsInGroup[0] && deploymentsInGroup[0].commitHash;
-  if (!commitHash) {
-    commitHash = await getLatestCommitHash({ db, config }, project, body.branch);
-  }
-
-  const server = await pickRandomServer({ db });
+  const commitHash = await getLatestCommitHash({ db, config }, project, body.branch);
 
   const deploymentId = uuid();
-  await postgres.insert(db, 'deployments', {
+
+  const statement = buildInsertStatement('deployments', {
     id: deploymentId,
     projectId: project.id,
-    dockerHost: server.hostname,
+    title: body.title,
     commitHash,
-    branch: body.branch,
-    group: body.group,
-    status: 'queued',
     dateCreated: Date.now()
   });
+  await db.run(statement.sql, statement.parameters);
 
-  axios(`https://${server.hostname}:${server.apiPort}/internal/deployments/${deploymentId}`, {
-    method: 'POST',
-    headers: {
-      host: config.domains.api[0],
-      'x-internal-secret': config.internalSecret
-    }
-  });
-
-  const deployment = await postgres.getOne(db, 'SELECT * FROM "deployments" WHERE "id" = $1', [deploymentId]);
+  const deployment = await db.getOne(`
+    SELECT *,
+    (SELECT count(*) FROM "instances" WHERE "instances"."deploymentId" = "deployments"."id") as "instanceCount"
+      FROM "deployments"
+     WHERE "id" = $1
+  `, [deploymentId]);
 
   writeResponse(200, deployment, response);
 }

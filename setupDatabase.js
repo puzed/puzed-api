@@ -1,10 +1,9 @@
-const postgres = require('postgres-fp/promises');
 const hint = require('./modules/hint');
 
-function migrateDatabase (db) {
+function setupDatabase (db) {
   hint('puzed.db', 'migrating database');
 
-  return postgres.run(db, `
+  return db.run(`
     CREATE TABLE IF NOT EXISTS "projects" (
       "id" varchar,
       "name" varchar,
@@ -12,8 +11,6 @@ function migrateDatabase (db) {
       "webPort" int,
       "domain" varchar,
       "secrets" text,
-      "commitHashProduction" varchar,
-      "commitHashStaging" varchar,
       "environmentVariables" varchar,
       "runCommand" varchar,
       "buildCommand" varchar,
@@ -26,12 +23,21 @@ function migrateDatabase (db) {
     CREATE TABLE IF NOT EXISTS "deployments" (
       "id" varchar,
       "projectId" varchar,
+      "title" varchar,
+      "commitHash" varchar,
+      "branch" varchar,
+      "dateCreated" varchar
+    );
+
+    CREATE TABLE IF NOT EXISTS "instances" (
+      "id" varchar,
+      "projectId" varchar,
+      "deploymentId" varchar,
       "dockerPort" int,
       "dockerHost" varchar,
       "dockerId" varchar,
       "commitHash" varchar,
       "branch" varchar,
-      "group" varchar,
       "buildLog" text,
       "liveLog" text,
       "status" varchar,
@@ -67,14 +73,14 @@ function migrateDatabase (db) {
 
     CREATE TABLE IF NOT EXISTS "certificates" (
       "id" varchar,
-      "privatekey" varchar,
       "domain" varchar,
+      "privatekey" varchar,
+      "fullchain" varchar,
       "status" varchar,
       "challenge" varchar,
-      "token" varchar,
-      "fullchain" varchar
+      "token" varchar
     );
   `);
 }
 
-module.exports = migrateDatabase;
+module.exports = setupDatabase;
