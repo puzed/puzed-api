@@ -1,7 +1,7 @@
-const performInstance = require('../../../common/performInstance');
+const deployInstance = require('../../../common/deployInstance');
 
 async function checkInstances (scope, request, response, tokens) {
-  performInstance(scope, tokens.instanceId);
+  deployInstance(scope, tokens.instanceId);
   response.writeHead('200');
   response.end();
 }

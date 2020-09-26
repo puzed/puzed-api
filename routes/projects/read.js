@@ -1,12 +1,11 @@
 const writeResponse = require('write-response');
-const postgres = require('postgres-fp/promises');
 
 const authenticate = require('../../common/authenticate');
 
 async function readProject ({ db, config }, request, response, tokens) {
   const user = await authenticate({ db, config }, request.headers.authorization);
 
-  const project = await postgres.getOne(db, `
+  const project = await db.getOne(`
     SELECT * FROM "projects" WHERE "userId" = $1 AND "id" = $2
   `, [user.id, tokens.projectId]);
 

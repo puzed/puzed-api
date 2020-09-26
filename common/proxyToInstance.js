@@ -1,24 +1,23 @@
 const http = require('http');
 
-const postgres = require('postgres-fp/promises');
-
 async function proxyToInstance ({ db }, request, response) {
   let hostname = request.headers.host.split(':')[0];
 
   if (!hostname.includes('--')) {
-    hostname = 'master--' + hostname;
+    hostname = 'production--' + hostname;
   }
 
-  const record = await postgres.getOne(db, `
+  const record = await db.getOne(`
   SELECT * FROM (
-    SELECT "dockerHost", "dockerId", "dockerPort", "group", concat("group", '--', "domain") as "domain"
+    SELECT "dockerHost", "dockerId", "dockerPort"
       FROM "instances"
  LEFT JOIN "projects" ON "projects"."id" = "instances"."projectId"
+ LEFT JOIN "deployments" ON "deployments"."id" = "instances"."deploymentId"
      WHERE (
-      concat("group", '--', "domain") = $1
+      concat("deployments"."title", '--', "domain") = $1
       OR "domain" = $1
      ) AND "status" = 'healthy'
-)
+) a
   ORDER BY random()
      LIMIT 1
   `, [hostname]);

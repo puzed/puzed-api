@@ -1,7 +1,5 @@
-const postgres = require('postgres-fp/promises');
-
 async function pickRandomServer ({ db }) {
-  return postgres.getOne(db, `
+  return db.getOne(`
     SELECT *
       FROM "servers"
   ORDER BY random()

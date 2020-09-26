@@ -1,10 +1,9 @@
-const postgres = require('postgres-fp/promises');
 const hint = require('./modules/hint');
 
 function setupDatabase (db) {
   hint('puzed.db', 'migrating database');
 
-  return postgres.run(db, `
+  return db.run(`
     CREATE TABLE IF NOT EXISTS "projects" (
       "id" varchar,
       "name" varchar,
@@ -25,6 +24,8 @@ function setupDatabase (db) {
       "id" varchar,
       "projectId" varchar,
       "title" varchar,
+      "commitHash" varchar,
+      "branch" varchar,
       "dateCreated" varchar
     );
 
@@ -37,7 +38,6 @@ function setupDatabase (db) {
       "dockerId" varchar,
       "commitHash" varchar,
       "branch" varchar,
-      "group" varchar,
       "buildLog" text,
       "liveLog" text,
       "status" varchar,
@@ -73,12 +73,12 @@ function setupDatabase (db) {
 
     CREATE TABLE IF NOT EXISTS "certificates" (
       "id" varchar,
-      "privatekey" varchar,
       "domain" varchar,
+      "privatekey" varchar,
+      "fullchain" varchar,
       "status" varchar,
       "challenge" varchar,
-      "token" varchar,
-      "fullchain" varchar
+      "token" varchar
     );
   `);
 }

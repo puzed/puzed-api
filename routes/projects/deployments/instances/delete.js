@@ -1,14 +1,13 @@
 const axios = require('axios');
 
 const writeResponse = require('write-response');
-const postgres = require('postgres-fp/promises');
 
-const authenticate = require('../../../common/authenticate');
+const authenticate = require('../../../../common/authenticate');
 
 async function deleteInstance ({ db, config }, request, response, tokens) {
   const user = await authenticate({ db, config }, request.headers.authorization);
 
-  const instance = await postgres.getOne(db, `
+  const instance = await db.getOne(`
     SELECT "instances".*
       FROM "instances"
  LEFT JOIN "projects" ON "instances"."projectId" = "projects"."id"
@@ -19,7 +18,7 @@ async function deleteInstance ({ db, config }, request, response, tokens) {
     throw Object.assign(new Error('instance not found'), { statusCode: 404 });
   }
 
-  const server = await postgres.getOne(db, 'SELECT * FROM "servers" WHERE "hostname" = $1', [instance.dockerHost]);
+  const server = await db.getOne('SELECT * FROM "servers" WHERE "hostname" = $1', [instance.dockerHost]);
   await axios(`https://${server.hostname}:${server.apiPort}/internal/instances/${instance.id}`, {
     method: 'DELETE',
     headers: {

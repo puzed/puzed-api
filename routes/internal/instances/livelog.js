@@ -1,8 +1,7 @@
 const http = require('http');
-const postgres = require('postgres-fp/promises');
 
 async function livelog ({ db, config }, request, response, tokens) {
-  const instance = await postgres.getOne(db, `
+  const instance = await db.getOne(`
     SELECT "instances".*
       FROM "instances"
      WHERE "instances"."id" = $1

@@ -3,17 +3,17 @@ const fs = require('fs').promises;
 const chalk = require('chalk');
 const chalkCtx = new chalk.Instance({ level: 3 });
 const axios = require('axios');
-const postgres = require('postgres-fp/promises');
 const execa = require('execa');
 const tar = require('tar-fs');
+const getPort = require('get-port');
 
 const githubUsernameRegex = require('github-username-regex');
 
 const { instanceLogListeners, instanceLogs } = require('./instanceLogger');
 
 async function deployRepositoryToServer ({ db, notify, config }, instanceId) {
-  const instance = await postgres.getOne(db, 'SELECT * FROM "instances" WHERE "id" = $1', [instanceId]);
-  const project = await postgres.getOne(db, 'SELECT * FROM "projects" WHERE "id" = $1', [instance.projectId]);
+  const instance = await db.getOne('SELECT * FROM "instances" WHERE "id" = $1', [instanceId]);
+  const project = await db.getOne('SELECT * FROM "projects" WHERE "id" = $1', [instance.projectId]);
 
   if (!githubUsernameRegex.test(project.owner)) {
     throw Object.assign(new Error('invalid github owner'), {
@@ -39,7 +39,7 @@ async function deployRepositoryToServer ({ db, notify, config }, instanceId) {
 
   const secrets = JSON.parse(project.secrets);
 
-  await postgres.run(db, `
+  await db.run(`
     UPDATE "instances"
       SET "status" = 'building'
     WHERE "id" = $1
@@ -48,8 +48,8 @@ async function deployRepositoryToServer ({ db, notify, config }, instanceId) {
 
   const ignoreSshHostFileCheck = `GIT_SSH_COMMAND="ssh -i /tmp/${instanceId}.key -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"`;
 
-  const deployKey = await postgres.getOne(db, `
-    SELECT * FROM "githubInstanceKeys" WHERE "owner" = $1 AND "repo" = $2
+  const deployKey = await db.getOne(`
+    SELECT * FROM "githubDeploymentKeys" WHERE "owner" = $1 AND "repo" = $2
   `, [project.owner, project.repo]);
 
   if (!deployKey) {
@@ -114,7 +114,7 @@ async function deployRepositoryToServer ({ db, notify, config }, instanceId) {
     log('\n' + chalkCtx.greenBright('Build docker image'));
     const imageTagName = `${project.name}:${instanceId}`;
 
-    await axios({
+    const buildImageResponse = await axios({
       method: 'post',
       socketPath: '/var/run/docker.sock',
       url: `/v1.26/build?t=${imageTagName}`,
@@ -124,7 +124,9 @@ async function deployRepositoryToServer ({ db, notify, config }, instanceId) {
       data: tar.pack(`/tmp/${instanceId}`)
     });
 
-    await postgres.run(db, `
+    log('\n' + buildImageResponse.data);
+
+    await db.run(`
       UPDATE "instances"
       SET "status" = 'starting'
       WHERE "id" = $1
@@ -132,10 +134,11 @@ async function deployRepositoryToServer ({ db, notify, config }, instanceId) {
     notify.broadcast(instanceId);
 
     log('\n' + chalkCtx.greenBright('Creating container'));
+
     const containerCreationResult = await axios({
       method: 'post',
       socketPath: '/var/run/docker.sock',
-      url: '/v1.26/containers/create',
+      url: '/v1.24/containers/create',
       headers: {
         'content-type': 'application/json'
       },
@@ -146,11 +149,17 @@ async function deployRepositoryToServer ({ db, notify, config }, instanceId) {
           [`${project.webPort}/tcp`]: {}
         },
         HostConfig: {
+          PortBindings: {
+            [`${project.webPort}/tcp`]: [{
+              HostPort: (await getPort()).toString()
+            }]
+          },
           PublishAllPorts: true,
           Runtime: config.dockerRuntime || 'runc'
         }
       })
     });
+
     const dockerId = containerCreationResult.data.Id;
 
     log('\n' + chalkCtx.greenBright('Starting container'));
@@ -209,7 +218,7 @@ async function deployRepositoryToServer ({ db, notify, config }, instanceId) {
 
     log('\n' + chalkCtx.cyanBright('🟢 Your website is now live'));
     (instanceLogListeners[instanceId] || []).forEach(output => output(null));
-    await postgres.run(db, `
+    await db.run(`
       UPDATE "instances"
       SET "buildLog" = $2,
           "dockerId" = $3,
@@ -229,7 +238,7 @@ async function deployRepositoryToServer ({ db, notify, config }, instanceId) {
       console.log(error);
     }
 
-    await postgres.run(db, `
+    await db.run(`
       UPDATE "instances"
       SET "buildLog" = $2,
           "status" = 'failed'
