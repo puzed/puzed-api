@@ -43,7 +43,7 @@ async function createDeployment ({ db, config }, request, response, tokens) {
   });
   await db.run(statement.sql, statement.parameters);
 
-  const deployment = await getDeploymentById({ db }, user.id, tokens.projectId, tokens.deploymentId);
+  const deployment = await getDeploymentById({ db }, user.id, tokens.projectId, deploymentId);
 
   writeResponse(200, deployment, response);
 }
