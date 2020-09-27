@@ -1,13 +1,12 @@
 const writeResponse = require('write-response');
 
+const getProjectById = require('../../services/projects/getProjectById');
 const authenticate = require('../../common/authenticate');
 
-async function readProject ({ db, config }, request, response, tokens) {
-  const user = await authenticate({ db, config }, request.headers.authorization);
+async function readProject (scope, request, response, tokens) {
+  const user = await authenticate(scope, request.headers.authorization);
 
-  const project = await db.getOne(`
-    SELECT * FROM "projects" WHERE "userId" = $1 AND "id" = $2
-  `, [user.id, tokens.projectId]);
+  const project = await getProjectById(scope, user.id, tokens.projectId);
 
   if (!project) {
     throw Object.assign(new Error('project not found'), { statusCode: 404 });

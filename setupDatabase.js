@@ -28,6 +28,7 @@ function setupDatabase (db) {
       "branch" varchar,
       "guardianServerId" varchar,
       "stable" bool,
+      "autoSwitch" json,
       "dateCreated" varchar
     );
 

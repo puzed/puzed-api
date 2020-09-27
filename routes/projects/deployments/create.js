@@ -9,6 +9,8 @@ const getLatestCommitHash = require('../../../common/getLatestCommitHash');
 const buildInsertStatement = require('../../../common/buildInsertStatement');
 const authenticate = require('../../../common/authenticate');
 
+const getDeploymentById = require('../../../services/deployments/getDeploymentById');
+
 async function createDeployment ({ db, config }, request, response, tokens) {
   const user = await authenticate({ db, config }, request.headers.authorization);
 
@@ -41,17 +43,7 @@ async function createDeployment ({ db, config }, request, response, tokens) {
   });
   await db.run(statement.sql, statement.parameters);
 
-  const deployment = await db.getOne(`
-    SELECT *,
-      (
-        SELECT count(*) 
-          FROM "instances"
-        WHERE "instances"."deploymentId" = "deployments"."id"
-          AND "instances"."status" NOT IN ('destroyed')
-      ) as "instanceCount"
-      FROM "deployments"
-     WHERE "id" = $1
-  `, [deploymentId]);
+  const deployment = await getDeploymentById({ db }, user.id, tokens.projectId, tokens.deploymentId);
 
   writeResponse(200, deployment, response);
 }

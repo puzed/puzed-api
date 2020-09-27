@@ -15,6 +15,7 @@ const proxyToClient = require('./common/proxyToClient');
 const handleError = require('./common/handleError');
 const acmeUtilities = require('./common/acmeUtilities');
 const performHealthchecks = require('./common/performHealthchecks');
+const performAutoSwitches = require('./common/performAutoSwitches');
 
 async function createServer (config) {
   hint('puzed.db', 'connecting');
@@ -43,6 +44,7 @@ async function createServer (config) {
   };
 
   setInterval(() => performHealthchecks(scope), 3000);
+  setInterval(() => performAutoSwitches(scope), 3000);
 
   const routes = require('./routes');
 

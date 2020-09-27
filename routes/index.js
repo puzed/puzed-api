@@ -16,7 +16,8 @@ module.exports = {
   },
 
   '/projects/:projectId/deployments/:deploymentId': {
-    GET: require('./projects/deployments/read')
+    GET: require('./projects/deployments/read'),
+    PATCH: require('./projects/deployments/patch')
   },
 
   '/projects/:projectId/deployments/:deploymentId/instances': {

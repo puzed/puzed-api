@@ -6,7 +6,7 @@ const ACME = require('@root/acme');
 const CSR = require('@root/csr');
 const PEM = require('@root/pem');
 const isIp = require('is-ip');
-const mem = require('mem');
+const memoizee = require('memoizee');
 
 const buildInsertStatement = require('./buildInsertStatement');
 const hint = require('../modules/hint');
@@ -162,7 +162,7 @@ async function getCertificateForDomain ({ config, db }, domain) {
 }
 
 function getCertificate ({ config, db }, options) {
-  const getCachedCertificates = mem(async function (servername) {
+  const getCachedCertificates = memoizee(async function (servername) {
     let certificates;
     if (await options.isAllowedDomain(servername)) {
       certificates = await getCertificateForDomain({ config, db }, servername);
