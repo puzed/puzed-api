@@ -24,7 +24,7 @@ test('sessions > read > invalid data', async t => {
 });
 
 test('sessions > read', async t => {
-  t.plan(4);
+  t.plan(5);
 
   const server = await createServerForTest();
 
@@ -56,11 +56,13 @@ test('sessions > read', async t => {
 
   t.ok(readSession.data.id);
   t.ok(readSession.data.dateCreated);
+  t.ok(readSession.data.user);
 
   t.equal(readSession.status, 200);
 
   delete readSession.data.id;
   delete readSession.data.dateCreated;
+  delete readSession.data.user;
 
   t.deepEqual(readSession.data, {
     userId: session.data.userId,

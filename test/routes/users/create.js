@@ -56,7 +56,6 @@ test('users > create', async t => {
 
   t.deepEqual(user.data, {
     email: 'me@markwylde.com',
-    githubUsername: null,
     allowedProjectCreate: null
   });
 
