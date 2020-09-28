@@ -1,13 +1,3 @@
-// const getGithubUser = memoize((githubUrl, authorization) => {
-//   return axios(githubUrl + '/user', {
-//     headers: {
-//       authorization
-//     }
-//   });
-// }, { maxAge: 60000, preFetch: true });
-//
-// const githubUser = await getGithubUser(config.githubApiUrl, authorization);
-
 async function authenticate ({ db, config }, authorization) {
   if (!authorization) {
     throw Object.assign(new Error('unauthorized'), { statusCode: 401 });
