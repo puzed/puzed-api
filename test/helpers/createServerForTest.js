@@ -2,12 +2,12 @@ const database = require('../../common/database');
 const createServer = require('../../createServer');
 
 const config = {
-  httpPort: 80,
-  httpsPort: 443,
+  httpPort: 8080,
+  httpsPort: 8443,
   serverId: 'manual-local',
   forceHttps: false,
   domains: {
-    api: ['localhost'],
+    api: ['localhost:8443'],
     client: []
   },
   dockerRuntime: 'runc',
@@ -78,8 +78,8 @@ async function createServerForTest (configOverrides) {
 
   return {
     config,
-    httpUrl: 'http://localhost',
-    httpsUrl: 'https://localhost',
+    httpUrl: 'http://localhost:8080',
+    httpsUrl: 'https://localhost:8443',
     close: () => {
       server.httpsServer.close();
       server.httpServer.close();
