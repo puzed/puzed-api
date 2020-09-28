@@ -6,7 +6,7 @@ const authenticate = require('../../../../common/authenticate');
 
 async function logInstance ({ db, config }, request, response, tokens) {
   request.setTimeout(60 * 60 * 1000);
-  const user = await authenticate({ db, config }, request.headers.authorization);
+  const { user } = await authenticate({ db, config }, request.headers.authorization);
 
   const instance = await db.getOne(`
     SELECT "instances".*

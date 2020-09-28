@@ -5,14 +5,13 @@ const writeResponse = require('write-response');
 const finalStream = promisify(require('final-stream'));
 
 const pickRandomServer = require('../../../common/pickRandomServer');
-const getLatestCommitHash = require('../../../common/getLatestCommitHash');
 const buildInsertStatement = require('../../../common/buildInsertStatement');
 const authenticate = require('../../../common/authenticate');
 
 const getDeploymentById = require('../../../services/deployments/getDeploymentById');
 
-async function createDeployment ({ db, config }, request, response, tokens) {
-  const user = await authenticate({ db, config }, request.headers.authorization);
+async function createDeployment ({ db, config, providers }, request, response, tokens) {
+  const { user } = await authenticate({ db, config }, request.headers.authorization);
 
   const body = await finalStream(request, JSON.parse);
   body.branch = body.branch || 'master';
@@ -27,7 +26,8 @@ async function createDeployment ({ db, config }, request, response, tokens) {
     throw Object.assign(new Error('project not found'), { statusCode: 404 });
   }
 
-  const commitHash = await getLatestCommitHash({ db, config }, project, body.branch);
+  const provider = providers[project.provider];
+  const commitHash = await provider.getLatestCommitHash({ db, config }, user, project, body.branch);
 
   const deploymentId = uuid();
 

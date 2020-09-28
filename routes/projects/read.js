@@ -4,7 +4,7 @@ const getProjectById = require('../../services/projects/getProjectById');
 const authenticate = require('../../common/authenticate');
 
 async function readProject (scope, request, response, tokens) {
-  const user = await authenticate(scope, request.headers.authorization);
+  const { user } = await authenticate(scope, request.headers.authorization);
 
   const project = await getProjectById(scope, user.id, tokens.projectId);
 

@@ -5,8 +5,10 @@ function setupDatabase (db) {
 
   return db.run(`
     CREATE TABLE IF NOT EXISTS "projects" (
-      "id" varchar,
+      "id" varchar PRIMARY KEY,
       "name" varchar,
+      "provider" varchar,
+      "providerRepositoryId" varchar,
       "image" varchar,
       "webPort" int,
       "domain" varchar,
@@ -14,14 +16,12 @@ function setupDatabase (db) {
       "environmentVariables" varchar,
       "runCommand" varchar,
       "buildCommand" varchar,
-      "owner" varchar,
-      "repo" varchar,
       "userId" varchar,
       "dateCreated" varchar
     );
 
     CREATE TABLE IF NOT EXISTS "deployments" (
-      "id" varchar,
+      "id" varchar PRIMARY KEY,
       "projectId" varchar,
       "title" varchar,
       "commitHash" varchar,
@@ -33,7 +33,7 @@ function setupDatabase (db) {
     );
 
     CREATE TABLE IF NOT EXISTS "instances" (
-      "id" varchar,
+      "id" varchar PRIMARY KEY,
       "projectId" varchar,
       "deploymentId" varchar,
       "dockerPort" int,
@@ -48,25 +48,23 @@ function setupDatabase (db) {
       "dateCreated" varchar
     );
 
-    CREATE TABLE IF NOT EXISTS "githubDeploymentKeys" (
-      "id" varchar,
-      "githubKeyId" varchar,
-      "owner" varchar,
-      "repo" varchar,
-      "publicKey" varchar,
-      "privateKey" varchar,
-      "dateCreated" varchar
-    );
-
     CREATE TABLE IF NOT EXISTS "users" (
-      "id" varchar,
-      "githubUsername" varchar,
+      "id" varchar PRIMARY KEY,
+      "email" varchar,
+      "password" varchar,
       "allowedProjectCreate" bool,
       "dateCreated" varchar
     );
 
+    CREATE TABLE IF NOT EXISTS "sessions" (
+      "id" varchar PRIMARY KEY,
+      "secret" varchar,
+      "userId" varchar,
+      "dateCreated" varchar
+    );
+
     CREATE TABLE IF NOT EXISTS "servers" (
-      "id" varchar,
+      "id" varchar PRIMARY KEY,
       "hostname" varchar,
       "apiPort" varchar,
       "sshUsername" varchar,
@@ -75,7 +73,7 @@ function setupDatabase (db) {
     );
 
     CREATE TABLE IF NOT EXISTS "certificates" (
-      "id" varchar,
+      "id" varchar PRIMARY KEY,
       "domain" varchar,
       "privatekey" varchar,
       "fullchain" varchar,

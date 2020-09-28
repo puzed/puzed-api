@@ -14,6 +14,10 @@ async function listDeployments ({ db }, userId, projectId) {
     ORDER BY "deployments"."dateCreated" ASC
   `, [userId, projectId]);
 
+  if (deployments.length === 0) {
+    return [];
+  }
+
   const production = deployments.find(deployment => deployment.title === 'production');
   const deploymentsWithoutProduction = deployments.filter(deployment => deployment.title !== 'production');
 

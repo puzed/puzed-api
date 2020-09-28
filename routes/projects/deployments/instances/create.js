@@ -7,7 +7,7 @@ const authenticate = require('../../../../common/authenticate');
 const pickRandomServer = require('../../../../common/pickRandomServer');
 
 async function createInstance ({ db, config }, request, response, tokens) {
-  const user = await authenticate({ db, config }, request.headers.authorization);
+  const { user } = await authenticate({ db, config }, request.headers.authorization);
 
   const project = await db.getOne(`
     SELECT *

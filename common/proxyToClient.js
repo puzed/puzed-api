@@ -1,7 +1,7 @@
 const http = require('http');
 
 async function proxyToClient ({ db }, request, response) {
-  const proxyRequest = http.request(`http://localhost:8000${request.url}`, {
+  const proxyRequest = http.request(`http://localhost:8080${request.url}`, {
     method: request.method
   }, function (proxyResponse) {
     response.writeHead(proxyResponse.statusCode, proxyResponse.headers);

@@ -1,14 +1,14 @@
+const writeResponse = require('write-response');
+
 function handleError (error, request, response) {
   if (error.statusCode) {
-    response.writeHead(error.statusCode);
-    response.end(error.message);
+    writeResponse(error.statusCode, error.message, response);
     return;
   }
 
   console.log(error);
 
-  response.writeHead(500);
-  response.end('Unexpected Server Error');
+  writeResponse(500, { error: { messages: ['unexpected server error'] } }, response);
 }
 
 module.exports = handleError;

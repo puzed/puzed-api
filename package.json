@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon -r async-bugs index",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test"
   },
   "keywords": [],
   "author": "",
@@ -19,9 +19,11 @@
     "get-port": "^5.1.1",
     "github-username-regex": "^1.0.0",
     "is-ip": "^3.1.0",
+    "jsonwebtoken": "^8.5.1",
     "memoizee": "^0.4.14",
     "node-rsa": "^1.1.1",
     "notify-over-http": "^2.0.2",
+    "pbkdf2-wrapper": "^1.3.2",
     "pg-promise": "^10.6.1",
     "routemeup": "^1.5.0",
     "string-to-color": "^2.2.2",
@@ -30,7 +32,8 @@
     "write-response": "^1.2.3"
   },
   "devDependencies": {
+    "semistandard": "^14.2.3",
     "tape": "^5.0.1",
-    "semistandard": "^14.2.3"
+    "tape-catch": "^1.0.6"
   }
 }

@@ -163,6 +163,10 @@ async function getCertificateForDomain ({ config, db }, domain) {
 
 function getCertificate ({ config, db }, options) {
   const getCachedCertificates = memoizee(async function (servername) {
+    if (servername === 'localhost') {
+      return tls.createSecureContext(options.defaultCertificates);
+    }
+
     let certificates;
     if (await options.isAllowedDomain(servername)) {
       certificates = await getCertificateForDomain({ config, db }, servername);

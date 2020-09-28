@@ -7,35 +7,15 @@ const execa = require('execa');
 const tar = require('tar-fs');
 const getPort = require('get-port');
 
-const githubUsernameRegex = require('github-username-regex');
-
 const { instanceLogListeners, instanceLogs } = require('./instanceLogger');
 
-async function deployRepositoryToServer ({ db, notify, config }, instanceId) {
+async function deployRepositoryToServer (scope, instanceId) {
+  const { db, notify, providers, config } = scope;
+
   const instance = await db.getOne('SELECT * FROM "instances" WHERE "id" = $1', [instanceId]);
   const project = await db.getOne('SELECT * FROM "projects" WHERE "id" = $1', [instance.projectId]);
 
-  if (!githubUsernameRegex.test(project.owner)) {
-    throw Object.assign(new Error('invalid github owner'), {
-      statusCode: 422,
-      body: {
-        errors: {
-          owner: ['not a valid owner according to validation policy']
-        }
-      }
-    });
-  }
-
-  if (!githubUsernameRegex.test(project.repo)) {
-    throw Object.assign(new Error('invalid github repo name'), {
-      statusCode: 422,
-      body: {
-        errors: {
-          repo: ['not a valid repo name according to validation policy']
-        }
-      }
-    });
-  }
+  const provider = providers[project.provider];
 
   const secrets = JSON.parse(project.secrets);
 
@@ -46,16 +26,6 @@ async function deployRepositoryToServer ({ db, notify, config }, instanceId) {
   `, [instanceId]);
   notify.broadcast(instanceId);
 
-  const ignoreSshHostFileCheck = `GIT_SSH_COMMAND="ssh -i /tmp/${instanceId}.key -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"`;
-
-  const deployKey = await db.getOne(`
-    SELECT * FROM "githubDeploymentKeys" WHERE "owner" = $1 AND "repo" = $2
-  `, [project.owner, project.repo]);
-
-  if (!deployKey) {
-    throw new Error('no deploy key');
-  }
-
   function log (...args) {
     const loggable = args.join(', ');
     (instanceLogListeners[instanceId] || []).forEach(output => output(loggable));
@@ -64,10 +34,7 @@ async function deployRepositoryToServer ({ db, notify, config }, instanceId) {
   }
 
   async function execCommand (command, options) {
-    const loggable = '\n> ' + command
-      .replace(ignoreSshHostFileCheck, '')
-      .replace(deployKey.privateKey, '[hidden]')
-      .trim() + '\n';
+    const loggable = '\n> ' + command.trim() + '\n';
 
     log(loggable);
 
@@ -87,18 +54,14 @@ async function deployRepositoryToServer ({ db, notify, config }, instanceId) {
   }
 
   try {
-    log('\n' + chalkCtx.greenBright('Adding ssh key'));
-    await execCommand(`
-      echo "${deployKey.privateKey}" > /tmp/${instanceId}.key && chmod 600 /tmp/${instanceId}.key
-    `);
-
     log('\n' + chalkCtx.greenBright('Cloning repo from github'));
-    await execCommand(`
-      ${ignoreSshHostFileCheck} git clone git@github.com:${project.owner}/${project.repo}.git /tmp/${instanceId}
-    `);
-
-    log('\n' + chalkCtx.greenBright('Checkout correct branch'));
-    await execCommand(`${ignoreSshHostFileCheck} git checkout ${instance.commitHash}`, { cwd: `/tmp/${instanceId}` });
+    await provider.cloneRepository(scope, {
+      project,
+      instance,
+      providerRepositoryId: project.providerRepositoryId,
+      branch: instance.commitHash,
+      target: `/tmp/${instanceId}`
+    });
 
     log('\n' + chalkCtx.greenBright('Creating Dockerfile from template'));
     const dockerfileTemplate = await fs.readFile(path.resolve(__dirname, '../dockerfileTemplates/Dockerfile.nodejs12'), 'utf8');
@@ -214,7 +177,6 @@ async function deployRepositoryToServer ({ db, notify, config }, instanceId) {
 
     log('\n' + chalkCtx.greenBright('Cleaning up build directory'));
     await execCommand(`rm -rf /tmp/${instanceId}`, { cwd: '/tmp' });
-    await execCommand(`rm -rf /tmp/${instanceId}.key`, { cwd: '/tmp' });
 
     log('\n' + chalkCtx.cyanBright('🟢 Your website is now live'));
     (instanceLogListeners[instanceId] || []).forEach(output => output(null));
@@ -233,7 +195,6 @@ async function deployRepositoryToServer ({ db, notify, config }, instanceId) {
     (instanceLogListeners[instanceId] || []).forEach(output => output(null));
     try {
       await execCommand(`rm -rf /tmp/${instanceId}`, { cwd: '/tmp' });
-      await execCommand(`rm -rf /tmp/${instanceId}.key`, { cwd: '/tmp' });
     } catch (error) {
       console.log(error);
     }
