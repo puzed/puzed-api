@@ -1,6 +1,18 @@
 const verifyInternalSecret = require('../common/verifyInternalSecret');
 
 module.exports = {
+  '/users': {
+    POST: require('./users/create')
+  },
+
+  '/sessions': {
+    POST: require('./sessions/create')
+  },
+
+  '/sessions/current': {
+    GET: require('./sessions/read')
+  },
+
   '/projects': {
     GET: require('./projects/list'),
     POST: require('./projects/create')

@@ -62,7 +62,7 @@ async function ensureDeployKeyOnProject ({ db, config }, owner, repo, authorizat
 async function createProject ({ db, config }, request, response) {
   request.setTimeout(60 * 60 * 1000);
 
-  const user = await authenticate({ db, config }, request.headers.authorization);
+  const { user } = await authenticate({ db, config }, request.headers.authorization);
 
   if (!user.allowedProjectCreate) {
     response.writeHead(403);

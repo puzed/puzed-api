@@ -17,6 +17,8 @@ const acmeUtilities = require('./common/acmeUtilities');
 const performHealthchecks = require('./common/performHealthchecks');
 const performAutoSwitches = require('./common/performAutoSwitches');
 
+const timers = [];
+
 async function createServer (config) {
   hint('puzed.db', 'connecting');
   const db = await database.connect(config.cockroach);
@@ -43,8 +45,15 @@ async function createServer (config) {
     db
   };
 
-  setInterval(() => performHealthchecks(scope), 3000);
-  setInterval(() => performAutoSwitches(scope), 3000);
+  scope.providers = require('./providers')(scope);
+
+  timers.push(
+    setInterval(() => performHealthchecks(scope), 3000)
+  );
+
+  timers.push(
+    setInterval(() => performAutoSwitches(scope), 3000)
+  );
 
   const routes = require('./routes');
 
@@ -66,7 +75,10 @@ async function createServer (config) {
         return notify.handle(request, response);
       }
 
-      const route = routemeup(routes, request);
+      const route = routemeup({
+        ...scope.providers.routes,
+        ...routes
+      }, request);
       if (route) {
         const result = route.controller(scope, request, response, route.tokens);
         if (result.catch) {
@@ -100,7 +112,9 @@ async function createServer (config) {
   });
 
   httpServer.on('close', function () {
-    db.end();
+    db.close();
+    timers.forEach(timer => clearTimeout(timer));
+    timers.forEach(timer => clearInterval(timer));
   });
 
   httpServer.listen(config.httpPort);

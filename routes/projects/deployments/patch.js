@@ -8,7 +8,7 @@ const buildUpdateStatement = require('../../../common/buildUpdateStatement');
 const authenticate = require('../../../common/authenticate');
 
 async function patchDeployment ({ db, config }, request, response, tokens) {
-  const user = await authenticate({ db, config }, request.headers.authorization);
+  const { user } = await authenticate({ db, config }, request.headers.authorization);
 
   const body = await finalStream(request, JSON.parse);
 

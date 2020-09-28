@@ -6,7 +6,8 @@ async function connect (options) {
   return {
     getOne: pgp.oneOrNone.bind(pgp),
     getAll: pgp.manyOrNone.bind(pgp),
-    run: pgp.any.bind(pgp)
+    run: pgp.any.bind(pgp),
+    close: pgp.$pool.end.bind(pgp)
   };
 }
 

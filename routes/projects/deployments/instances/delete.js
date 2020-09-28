@@ -5,7 +5,7 @@ const writeResponse = require('write-response');
 const authenticate = require('../../../../common/authenticate');
 
 async function deleteInstance ({ db, config }, request, response, tokens) {
-  const user = await authenticate({ db, config }, request.headers.authorization);
+  const { user } = await authenticate({ db, config }, request.headers.authorization);
 
   const instance = await db.getOne(`
     SELECT "instances".*

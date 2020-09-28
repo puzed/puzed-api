@@ -12,7 +12,7 @@ function presentProject (data) {
     runCommand: data.runCommand,
     buildCommand: data.buildCommand,
     userId: data.userId,
-    datecreated: Date.now()
+    dateCreated: data.dateCreated
   };
 }
 

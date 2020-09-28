@@ -12,7 +12,7 @@ const authenticate = require('../../../common/authenticate');
 const getDeploymentById = require('../../../services/deployments/getDeploymentById');
 
 async function createDeployment ({ db, config }, request, response, tokens) {
-  const user = await authenticate({ db, config }, request.headers.authorization);
+  const { user } = await authenticate({ db, config }, request.headers.authorization);
 
   const body = await finalStream(request, JSON.parse);
   body.branch = body.branch || 'master';
