@@ -1,8 +1,20 @@
 const execa = require('execa');
 const githubUsernameRegex = require('github-username-regex');
+const generateAccessToken = require('./generateAccessToken');
 
-async function getLatestCommitHash ({ db, config }, project, branch = 'master') {
-  if (!githubUsernameRegex.test(project.owner)) {
+async function getLatestCommitHash (scope, user, project, branch = 'master') {
+  const { db } = scope;
+
+  const { githubInstallationId } = await db.getOne(`
+    SELECT "githubInstallationId" FROM "githubUserLinks" WHERE "userId" = $1
+  `, [user.id]);
+
+  const accessToken = await generateAccessToken(scope, githubInstallationId);
+
+  const owner = project.providerRepositoryId.split('/')[0];
+  const repo = project.providerRepositoryId.split('/')[1];
+
+  if (!githubUsernameRegex.test(owner)) {
     throw Object.assign(new Error('invalid github owner'), {
       statusCode: 422,
       body: {
@@ -13,7 +25,7 @@ async function getLatestCommitHash ({ db, config }, project, branch = 'master') 
     });
   }
 
-  if (!githubUsernameRegex.test(project.repo)) {
+  if (!githubUsernameRegex.test(repo)) {
     throw Object.assign(new Error('invalid github repo name'), {
       statusCode: 422,
       body: {
@@ -24,15 +36,7 @@ async function getLatestCommitHash ({ db, config }, project, branch = 'master') 
     });
   }
 
-  const ignoreSshHostFileCheck = `GIT_SSH_COMMAND="ssh -i /tmp/${project.id}.key -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"`;
-
-  const deployKey = await db.getOne(`
-    SELECT * FROM "githubDeploymentKeys" WHERE "owner" = $1 AND "repo" = $2
-  `, [project.owner, project.repo]);
-
-  if (!deployKey) {
-    throw new Error('no deploy key');
-  }
+  const ignoreSshHostFileCheck = 'GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"';
 
   async function execCommand (command, options) {
     const result = await execa('sh', ['-c', command], options);
@@ -47,26 +51,13 @@ async function getLatestCommitHash ({ db, config }, project, branch = 'master') 
   }
 
   try {
-    await execCommand(`
-      echo "${deployKey.privateKey}" > /tmp/${project.id}.key && chmod 600 /tmp/${project.id}.key
-    `);
-
     const result = await execCommand(`
-      ${ignoreSshHostFileCheck} git ls-remote git@github.com:${project.owner}/${project.repo}.git ${branch} | awk '{ print $1}'
+      ${ignoreSshHostFileCheck} git ls-remote https://x-access-token:${accessToken}@github.com/${owner}/${repo}.git ${branch} | awk '{ print $1}'
     `);
-
-    await execCommand(`rm -rf /tmp/${project.id}.key`, { cwd: '/tmp' });
 
     return result.stdout;
   } catch (error) {
     console.log(error);
-
-    try {
-      await execCommand(`rm -rf /tmp/${project.id}.key`, { cwd: '/tmp' });
-    } catch (error) {
-      console.log(error);
-    }
-
     throw new Error('could not get latest commit hash', { statusCode: 500 });
   }
 }

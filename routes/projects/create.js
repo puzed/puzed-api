@@ -3,61 +3,10 @@ const { promisify } = require('util');
 const uuidv4 = require('uuid').v4;
 const finalStream = promisify(require('final-stream'));
 const axios = require('axios');
-const NodeRSA = require('node-rsa');
 
 const authenticate = require('../../common/authenticate');
 const buildInsertStatement = require('../../common/buildInsertStatement');
 const presentProject = require('../../presenters/project');
-
-async function ensureDeployKeyOnProject ({ db, config }, owner, repo, authorization) {
-  const deployKey = await db.getOne(`
-    SELECT * FROM "githubDeploymentKeys" WHERE "owner" = $1 AND "repo" = $2
-  `, [owner, repo]);
-
-  if (!deployKey) {
-    const key = new NodeRSA({ b: 2048 }, 'openssh');
-
-    const publicKey = key.exportKey('openssh-public');
-    const privateKey = key.exportKey('openssh');
-
-    const creationResponse = await axios({
-      url: `${config.githubApiUrl}/repos/${owner}/${repo}/keys`,
-      method: 'post',
-      headers: {
-        authorization
-      },
-      data: JSON.stringify({
-        key: publicKey.trim()
-      })
-    });
-
-    const statement = buildInsertStatement('githubDeploymentKeys', {
-      id: uuidv4(),
-      githubKeyId: creationResponse.data.id,
-      owner,
-      repo,
-      publicKey,
-      privateKey
-    });
-    await db.run(statement.sql, statement.parameters);
-
-    return;
-  }
-
-  await axios({
-    url: `${config.githubApiUrl}/repos/${owner}/${repo}/keys/${deployKey.githubKeyId}`,
-    headers: {
-      authorization
-    }
-  }).catch(error => {
-    if (error.response.status === 404) {
-      return db.run('DELETE FROM "githubDeploymentKeys" WHERE "id" = $1', [deployKey.id])
-        .then(() => ensureDeployKeyOnProject({ db, config }, owner, repo, authorization));
-    }
-
-    console.log(error);
-  });
-}
 
 async function createProject ({ db, config }, request, response) {
   request.setTimeout(60 * 60 * 1000);
@@ -95,13 +44,13 @@ async function createProject ({ db, config }, request, response) {
   const statement = buildInsertStatement('projects', {
     id: projectId,
     name: body.name,
+    provider: body.provider,
+    providerRepositoryId: body.providerRepositoryId,
     image: body.image,
     webPort: body.webPort,
     domain: body.domain,
     secrets: JSON.stringify(body.secrets),
     environmentVariables: body.environmentVariables,
-    owner: body.owner,
-    repo: body.repo,
     runCommand: body.runCommand,
     buildCommand: body.buildCommand,
     userId: user.id,
@@ -127,8 +76,6 @@ async function createProject ({ db, config }, request, response) {
 
   response.statusCode = 200;
   response.write(JSON.stringify(presentProject(project), response));
-
-  await ensureDeployKeyOnProject({ db, config }, body.owner, body.repo, request.headers.authorization);
 
   response.end();
 }

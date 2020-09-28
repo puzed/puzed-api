@@ -7,6 +7,8 @@ function setupDatabase (db) {
     CREATE TABLE IF NOT EXISTS "projects" (
       "id" varchar PRIMARY KEY,
       "name" varchar,
+      "provider" varchar,
+      "providerRepositoryId" varchar,
       "image" varchar,
       "webPort" int,
       "domain" varchar,
@@ -14,8 +16,6 @@ function setupDatabase (db) {
       "environmentVariables" varchar,
       "runCommand" varchar,
       "buildCommand" varchar,
-      "owner" varchar,
-      "repo" varchar,
       "userId" varchar,
       "dateCreated" varchar
     );
@@ -48,21 +48,10 @@ function setupDatabase (db) {
       "dateCreated" varchar
     );
 
-    CREATE TABLE IF NOT EXISTS "githubDeploymentKeys" (
-      "id" varchar PRIMARY KEY,
-      "githubKeyId" varchar,
-      "owner" varchar,
-      "repo" varchar,
-      "publicKey" varchar,
-      "privateKey" varchar,
-      "dateCreated" varchar
-    );
-
     CREATE TABLE IF NOT EXISTS "users" (
       "id" varchar PRIMARY KEY,
       "email" varchar,
       "password" varchar,
-      "githubInstallationId" varchar,
       "allowedProjectCreate" bool,
       "dateCreated" varchar
     );

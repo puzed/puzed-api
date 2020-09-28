@@ -3,7 +3,7 @@ const axios = require('axios');
 
 const createSession = require('../../services/sessions/createSession');
 
-async function githubProviderOauthRoute (scope, request, response) {
+async function providerOauthRoute (scope, request, response) {
   const { db, config } = scope;
 
   const url = new URL(request.url, `http://${request.headers.host}`);
@@ -53,4 +53,4 @@ async function githubProviderOauthRoute (scope, request, response) {
   }
 }
 
-module.exports = githubProviderOauthRoute;
+module.exports = providerOauthRoute;
