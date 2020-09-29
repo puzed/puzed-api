@@ -4,13 +4,15 @@ const generateAccessToken = require('./generateAccessToken');
 const authenticate = require('../../common/authenticate');
 
 async function listRepositoriesHandler (scope, request, response, tokens) {
+  const { db } = scope;
+
   const { user } = await authenticate(scope, request.headers.authorization);
 
-  const { githubInstallationId } = await scope.db.getOne(`
-    SELECT "githubInstallationId" FROM "githubUserLinks" WHERE "userId" = $1
-  `, [user.id]);
+  const link = await db.getOne(`
+    SELECT * FROM "links" WHERE "providerId" = $1 AND "userId" = $2
+  `, ['github', user.id]);
 
-  const accessToken = await generateAccessToken(scope, githubInstallationId);
+  const accessToken = await generateAccessToken(scope, link.config.installationId);
 
   const branches = await axios({
     url: `https://api.github.com/repos/${tokens.owner}/${tokens.repo}/branches`,

@@ -6,15 +6,11 @@ async function cloneRepository (scope, options) {
   const { db } = scope;
   const { service, instance, target } = options;
 
-  const user = await db.getOne(`
-    SELECT * FROM "users" WHERE "id" = $1
-  `, [service.userId]);
+  const link = await db.getOne(`
+    SELECT * FROM "links" WHERE "providerId" = $1 AND "userId" = $2
+  `, ['github', service.userId]);
 
-  const { githubInstallationId } = await db.getOne(`
-    SELECT "githubInstallationId" FROM "githubUserLinks" WHERE "userId" = $1
-  `, [user.id]);
-
-  const accessToken = await generateAccessToken(scope, githubInstallationId);
+  const accessToken = await generateAccessToken(scope, link.config.installationId);
 
   const owner = service.providerRepositoryId.split('/')[0];
   const repo = service.providerRepositoryId.split('/')[1];

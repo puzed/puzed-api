@@ -5,11 +5,11 @@ const generateAccessToken = require('./generateAccessToken');
 async function getLatestCommitHash (scope, user, service, branch = 'master') {
   const { db } = scope;
 
-  const { githubInstallationId } = await db.getOne(`
-    SELECT "githubInstallationId" FROM "githubUserLinks" WHERE "userId" = $1
-  `, [user.id]);
+  const link = await db.getOne(`
+    SELECT * FROM "links" WHERE "providerId" = $1 AND "userId" = $2
+  `, ['github', user.id]);
 
-  const accessToken = await generateAccessToken(scope, githubInstallationId);
+  const accessToken = await generateAccessToken(scope, link.config.installationId);
 
   const owner = service.providerRepositoryId.split('/')[0];
   const repo = service.providerRepositoryId.split('/')[1];

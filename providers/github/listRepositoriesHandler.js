@@ -3,14 +3,16 @@ const axios = require('axios');
 const generateAccessToken = require('./generateAccessToken');
 const authenticate = require('../../common/authenticate');
 
-async function githubListRepositoriesHandler (scope, request, response) {
+async function listRepositoriesHandler (scope, request, response) {
+  const { db } = scope;
+
   const { user } = await authenticate(scope, request.headers.authorization);
 
-  const { githubInstallationId } = await scope.db.getOne(`
-    SELECT "githubInstallationId" FROM "githubUserLinks" WHERE "userId" = $1
-  `, [user.id]);
+  const link = await db.getOne(`
+    SELECT * FROM "links" WHERE "providerId" = $1 AND "userId" = $2
+  `, ['github', user.id]);
 
-  const accessToken = await generateAccessToken(scope, githubInstallationId);
+  const accessToken = await generateAccessToken(scope, link.config.installationId);
 
   const repositories = await axios({
     url: 'https://api.github.com/installation/repositories',
@@ -22,4 +24,4 @@ async function githubListRepositoriesHandler (scope, request, response) {
   writeResponse(200, repositories.data.repositories, response);
 }
 
-module.exports = githubListRepositoriesHandler;
+module.exports = listRepositoriesHandler;

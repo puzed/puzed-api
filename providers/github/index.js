@@ -7,16 +7,6 @@ const getLatestCommitHash = require('./getLatestCommitHash');
 const cloneRepository = require('./cloneRepository');
 
 function githubProvider ({ db, config }) {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS "githubUserLinks" (
-      "id" varchar PRIMARY KEY,
-      "userId" varchar,
-      "githubUsername" varchar,
-      "githubInstallationId" varchar,
-      "dateCreated" varchar
-    );
-  `);
-
   return {
     generateAccessToken,
     cloneRepository,

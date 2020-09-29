@@ -69,7 +69,7 @@ module.exports = {
           "sshPort" varchar,
           "dateCreated" varchar
         );
-      `), db.run(`
+        `), db.run(`
         CREATE TABLE IF NOT EXISTS "providers" (
           "id" varchar PRIMARY KEY,
           "driver" varchar,
@@ -78,6 +78,15 @@ module.exports = {
           "clientId" varchar,
           "clientSecret" varchar,
           "clientKey" varchar
+        );
+      `), db.run(`
+        CREATE TABLE IF NOT EXISTS "links" (
+          "id" varchar PRIMARY KEY,
+          "providerId" varchar,
+          "externalUserId" varchar,
+          "userId" varchar,
+          "config" json,
+          "dateCreated" varchar
         );
       `), db.run(`
         CREATE TABLE IF NOT EXISTS "certificates" (

@@ -1,6 +1,9 @@
 const writeResponse = require('write-response');
 const axios = require('axios');
+const uuidv4 = require('uuid').v4;
 
+const buildInsertStatement = require('../../common/buildInsertStatement');
+const authenticate = require('../../common/authenticate');
 const createSession = require('../../services/sessions/createSession');
 const getGithubConfig = require('./getGithubConfig');
 
@@ -39,17 +42,49 @@ async function providerOauthRoute (scope, request, response) {
 
     const githubUserLink = await db.getOne(`
       SELECT *
-        FROM "githubUserLinks"
-      WHERE "githubUsername" = $1
+        FROM "links"
+      WHERE "externalUserId" = $1
+      LIMIT 1
     `, [githubUser.data.login]);
 
-    if (!githubUserLink) {
+    // Fail: Brand new user
+    if (!request.headers.authorization && !githubUserLink) {
       throw new Error('oauth failed');
     }
 
-    const session = await createSession(scope, githubUserLink.userId);
+    // Create session: User and link exists
+    if (!request.headers.authorization && githubUserLink) {
+      const session = await createSession(scope, githubUserLink.userId);
+      writeResponse(200, {
+        session,
+        actionTaken: 'sessionCreated'
+      }, response);
 
-    writeResponse(200, session, response);
+      return;
+    }
+
+    // Create session: User and link exists
+    if (request.headers.authorization && !githubUserLink) {
+      const { user } = await authenticate(scope, request.headers.authorization);
+
+      const linkId = uuidv4();
+      const statement = buildInsertStatement('links', {
+        id: linkId,
+        providerId: 'github',
+        userId: user.id,
+        externalUserId: githubUser.data.login,
+        config: JSON.stringify({
+          installationId: url.searchParams.get('installationId')
+        }),
+        dateCreated: Date.now()
+      });
+      await db.run(statement.sql, statement.parameters);
+
+      writeResponse(201, { id: linkId, actionTaken: 'linkCreated' }, response);
+      return;
+    }
+
+    throw new Error('oauth failed');
   } catch (error) {
     console.log(error);
     throw new Error('oauth failed');
