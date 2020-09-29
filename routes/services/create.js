@@ -6,16 +6,16 @@ const axios = require('axios');
 
 const authenticate = require('../../common/authenticate');
 const buildInsertStatement = require('../../common/buildInsertStatement');
-const presentProject = require('../../presenters/project');
+const presentService = require('../../presenters/service');
 
-async function createProject ({ db, config }, request, response) {
+async function createService ({ db, config }, request, response) {
   request.setTimeout(60 * 60 * 1000);
 
   const { user } = await authenticate({ db, config }, request.headers.authorization);
 
-  if (!user.allowedProjectCreate) {
+  if (!user.allowedServiceCreate) {
     response.writeHead(403);
-    response.end('no permission to create projects');
+    response.end('no permission to create services');
     return;
   }
 
@@ -39,10 +39,10 @@ async function createProject ({ db, config }, request, response) {
     });
   }
 
-  const projectId = uuidv4();
+  const serviceId = uuidv4();
 
-  const statement = buildInsertStatement('projects', {
-    id: projectId,
+  const statement = buildInsertStatement('services', {
+    id: serviceId,
     name: body.name,
     provider: body.provider,
     providerRepositoryId: body.providerRepositoryId,
@@ -58,7 +58,7 @@ async function createProject ({ db, config }, request, response) {
   });
   await db.run(statement.sql, statement.parameters);
 
-  await axios(`https://localhost:${config.httpsPort}/projects/${projectId}/deployments`, {
+  await axios(`https://localhost:${config.httpsPort}/services/${serviceId}/deployments`, {
     method: 'POST',
     headers: {
       host: config.domains.api[0],
@@ -70,14 +70,14 @@ async function createProject ({ db, config }, request, response) {
     })
   });
 
-  const project = await db.getOne(`
-    SELECT * FROM projects WHERE id = $1
-  `, [projectId]);
+  const service = await db.getOne(`
+    SELECT * FROM services WHERE id = $1
+  `, [serviceId]);
 
   response.statusCode = 200;
-  response.write(JSON.stringify(presentProject(project), response));
+  response.write(JSON.stringify(presentService(service), response));
 
   response.end();
 }
 
-module.exports = createProject;
+module.exports = createService;

@@ -12,7 +12,7 @@ async function patchDeployment ({ db, config }, request, response, tokens) {
 
   const body = await finalStream(request, JSON.parse);
 
-  const deployment = await getDeploymentById({ db }, user.id, tokens.projectId, tokens.deploymentId);
+  const deployment = await getDeploymentById({ db }, user.id, tokens.serviceId, tokens.deploymentId);
   if (!deployment) {
     throw Object.assign(new Error('deployment not found'), { statusCode: 404 });
   }
@@ -22,7 +22,7 @@ async function patchDeployment ({ db, config }, request, response, tokens) {
   `, [tokens.deploymentId, body]);
   await db.run(statement.sql, statement.parameters);
 
-  const deploymentResult = await getDeploymentById({ db }, user.id, tokens.projectId, tokens.deploymentId);
+  const deploymentResult = await getDeploymentById({ db }, user.id, tokens.serviceId, tokens.deploymentId);
 
   writeResponse(200, {
     ...deploymentResult

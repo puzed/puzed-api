@@ -8,19 +8,19 @@ async function readInstance ({ db, config }, request, response, tokens) {
   const instance = await db.getOne(`
     SELECT
       "instances"."id" as id,
-      "instances"."projectId",
+      "instances"."serviceId",
       "instances"."deploymentId",
       "instances"."status",
       "instances"."commitHash",
       "instances"."branch",
       "instances"."dateCreated"
      FROM "instances"
-LEFT JOIN "projects" ON "instances"."projectId" = "projects"."id"
+LEFT JOIN "services" ON "instances"."serviceId" = "services"."id"
     WHERE "userId" = $1
-      AND "projectId" = $2
+      AND "serviceId" = $2
       AND "instances"."id" = $3
  ORDER BY "dateCreated" DESC
-  `, [user.id, tokens.projectId, tokens.instanceId]);
+  `, [user.id, tokens.serviceId, tokens.instanceId]);
 
   if (!instance) {
     throw Object.assign(new Error('instance not found'), { statusCode: 404 });

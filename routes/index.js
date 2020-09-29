@@ -13,41 +13,41 @@ module.exports = {
     GET: require('./sessions/read')
   },
 
-  '/projects': {
-    GET: require('./projects/list'),
-    POST: require('./projects/create')
+  '/services': {
+    GET: require('./services/list'),
+    POST: require('./services/create')
   },
 
-  '/projects/:projectId': {
-    GET: require('./projects/read')
+  '/services/:serviceId': {
+    GET: require('./services/read')
   },
 
-  '/projects/:projectId/deployments': {
-    GET: require('./projects/deployments/list'),
-    POST: require('./projects/deployments/create')
+  '/services/:serviceId/deployments': {
+    GET: require('./services/deployments/list'),
+    POST: require('./services/deployments/create')
   },
 
-  '/projects/:projectId/deployments/:deploymentId': {
-    GET: require('./projects/deployments/read'),
-    PATCH: require('./projects/deployments/patch')
+  '/services/:serviceId/deployments/:deploymentId': {
+    GET: require('./services/deployments/read'),
+    PATCH: require('./services/deployments/patch')
   },
 
-  '/projects/:projectId/deployments/:deploymentId/instances': {
-    POST: require('./projects/deployments/instances/create'),
-    GET: require('./projects/deployments/instances/list')
+  '/services/:serviceId/deployments/:deploymentId/instances': {
+    POST: require('./services/deployments/instances/create'),
+    GET: require('./services/deployments/instances/list')
   },
 
-  '/projects/:projectId/deployments/:deploymentId/instances/:instanceId': {
-    GET: require('./projects/deployments/instances/read'),
-    DELETE: require('./projects/deployments/instances/delete')
+  '/services/:serviceId/deployments/:deploymentId/instances/:instanceId': {
+    GET: require('./services/deployments/instances/read'),
+    DELETE: require('./services/deployments/instances/delete')
   },
 
-  '/projects/:projectId/deployments/:deploymentId/instances/:instanceId/log': {
-    GET: require('./projects/deployments/instances/log')
+  '/services/:serviceId/deployments/:deploymentId/instances/:instanceId/log': {
+    GET: require('./services/deployments/instances/log')
   },
 
-  '/projects/:projectId/deployments/:deploymentId/instances/:instanceId/buildlog': {
-    GET: require('./projects/deployments/instances/buildlog')
+  '/services/:serviceId/deployments/:deploymentId/instances/:instanceId/buildlog': {
+    GET: require('./services/deployments/instances/buildlog')
   },
 
   '/auth': {

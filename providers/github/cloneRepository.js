@@ -4,11 +4,11 @@ const generateAccessToken = require('./generateAccessToken');
 
 async function cloneRepository (scope, options) {
   const { db } = scope;
-  const { project, instance, target } = options;
+  const { service, instance, target } = options;
 
   const user = await db.getOne(`
     SELECT * FROM "users" WHERE "id" = $1
-  `, [project.userId]);
+  `, [service.userId]);
 
   const { githubInstallationId } = await db.getOne(`
     SELECT "githubInstallationId" FROM "githubUserLinks" WHERE "userId" = $1
@@ -16,8 +16,8 @@ async function cloneRepository (scope, options) {
 
   const accessToken = await generateAccessToken(scope, githubInstallationId);
 
-  const owner = project.providerRepositoryId.split('/')[0];
-  const repo = project.providerRepositoryId.split('/')[1];
+  const owner = service.providerRepositoryId.split('/')[0];
+  const repo = service.providerRepositoryId.split('/')[1];
 
   if (!githubUsernameRegex.test(owner)) {
     throw Object.assign(new Error('invalid github owner'), {

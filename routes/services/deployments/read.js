@@ -7,7 +7,7 @@ const getDeploymentById = require('../../../services/deployments/getDeploymentBy
 async function readDeployment ({ db, config }, request, response, tokens) {
   const { user } = await authenticate({ db, config }, request.headers.authorization);
 
-  const deployment = await getDeploymentById({ db }, user.id, tokens.projectId, tokens.deploymentId);
+  const deployment = await getDeploymentById({ db }, user.id, tokens.serviceId, tokens.deploymentId);
 
   if (!deployment) {
     throw Object.assign(new Error('deployment not found'), { statusCode: 404 });

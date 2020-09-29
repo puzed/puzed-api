@@ -56,7 +56,7 @@ test('users > create', async t => {
 
   t.deepEqual(user.data, {
     email: 'me@markwylde.com',
-    allowedProjectCreate: null
+    allowedServiceCreate: null
   });
 
   server.close();

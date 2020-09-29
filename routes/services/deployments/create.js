@@ -16,18 +16,18 @@ async function createDeployment ({ db, config, providers }, request, response, t
   const body = await finalStream(request, JSON.parse);
   body.branch = body.branch || 'master';
 
-  const project = await db.getOne(`
+  const service = await db.getOne(`
     SELECT *
-      FROM "projects"
+      FROM "services"
      WHERE "userId" = $1 AND "id" = $2
-  `, [user.id, tokens.projectId]);
+  `, [user.id, tokens.serviceId]);
 
-  if (!project) {
-    throw Object.assign(new Error('project not found'), { statusCode: 404 });
+  if (!service) {
+    throw Object.assign(new Error('service not found'), { statusCode: 404 });
   }
 
-  const provider = providers[project.provider];
-  const commitHash = await provider.getLatestCommitHash({ db, config }, user, project, body.branch);
+  const provider = providers[service.provider];
+  const commitHash = await provider.getLatestCommitHash({ db, config }, user, service, body.branch);
 
   const deploymentId = uuid();
 
@@ -35,7 +35,7 @@ async function createDeployment ({ db, config, providers }, request, response, t
 
   const statement = buildInsertStatement('deployments', {
     id: deploymentId,
-    projectId: project.id,
+    serviceId: service.id,
     title: body.title,
     commitHash,
     guardianServerId: guardian.id,
@@ -43,7 +43,7 @@ async function createDeployment ({ db, config, providers }, request, response, t
   });
   await db.run(statement.sql, statement.parameters);
 
-  const deployment = await getDeploymentById({ db }, user.id, tokens.projectId, deploymentId);
+  const deployment = await getDeploymentById({ db }, user.id, tokens.serviceId, deploymentId);
 
   writeResponse(200, deployment, response);
 }

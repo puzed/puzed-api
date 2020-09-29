@@ -34,7 +34,8 @@ const config = {
 async function wipe () {
   const db = await database.connect(config.cockroach);
   await db.run(`
-    DROP TABLE IF EXISTS "projects";
+    DROP TABLE IF EXISTS "_migrations";
+    DROP TABLE IF EXISTS "services";
     DROP TABLE IF EXISTS "deployments";
     DROP TABLE IF EXISTS "instances";
     DROP TABLE IF EXISTS "githubDeploymentKeys";
@@ -52,7 +53,14 @@ async function clean () {
   const db = await database.connect(config.cockroach);
 
   await db.run(`
-    DELETE FROM test;
+    DELETE FROM "services";
+    DELETE FROM "deployments";
+    DELETE FROM "instances";
+    DELETE FROM "githubDeploymentKeys";
+    DELETE FROM "users";
+    DELETE FROM "sessions";
+    DELETE FROM "servers";
+    DELETE FROM "certificates";
   `).catch(error => {
     if (!error.message.includes('does not exist')) {
       throw error;

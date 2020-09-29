@@ -13,11 +13,11 @@ async function deployRepositoryToServer (scope, instanceId) {
   const { db, notify, providers, config } = scope;
 
   const instance = await db.getOne('SELECT * FROM "instances" WHERE "id" = $1', [instanceId]);
-  const project = await db.getOne('SELECT * FROM "projects" WHERE "id" = $1', [instance.projectId]);
+  const service = await db.getOne('SELECT * FROM "services" WHERE "id" = $1', [instance.serviceId]);
 
-  const provider = providers[project.provider];
+  const provider = providers[service.provider];
 
-  const secrets = JSON.parse(project.secrets);
+  const secrets = JSON.parse(service.secrets);
 
   await db.run(`
     UPDATE "instances"
@@ -56,9 +56,9 @@ async function deployRepositoryToServer (scope, instanceId) {
   try {
     log('\n' + chalkCtx.greenBright('Cloning repo from github'));
     await provider.cloneRepository(scope, {
-      project,
+      service,
       instance,
-      providerRepositoryId: project.providerRepositoryId,
+      providerRepositoryId: service.providerRepositoryId,
       branch: instance.commitHash,
       target: `/tmp/${instanceId}`
     });
@@ -66,8 +66,8 @@ async function deployRepositoryToServer (scope, instanceId) {
     log('\n' + chalkCtx.greenBright('Creating Dockerfile from template'));
     const dockerfileTemplate = await fs.readFile(path.resolve(__dirname, '../dockerfileTemplates/Dockerfile.nodejs12'), 'utf8');
     const dockerfileContent = dockerfileTemplate
-      .replace('{{buildCommand}}', project.buildCommand)
-      .replace('{{runCommand}}', secrets.length > 0 ? 'sleep 10000000 || ' + project.runCommand : project.runCommand);
+      .replace('{{buildCommand}}', service.buildCommand)
+      .replace('{{runCommand}}', secrets.length > 0 ? 'sleep 10000000 || ' + service.runCommand : service.runCommand);
     await fs.writeFile(`/tmp/${instanceId}/Dockerfile`, dockerfileContent);
 
     log('\n' + chalkCtx.greenBright('Creating .dockerignore'));
@@ -75,7 +75,7 @@ async function deployRepositoryToServer (scope, instanceId) {
     await fs.writeFile(`/tmp/${instanceId}/.dockerignore`, dockerignoreTemplate);
 
     log('\n' + chalkCtx.greenBright('Build docker image'));
-    const imageTagName = `${project.name}:${instanceId}`;
+    const imageTagName = `${service.name}:${instanceId}`;
 
     const buildImageResponse = await axios({
       method: 'post',
@@ -106,14 +106,14 @@ async function deployRepositoryToServer (scope, instanceId) {
         'content-type': 'application/json'
       },
       data: JSON.stringify({
-        Env: project.environmentVariables ? project.environmentVariables.split('\n') : undefined,
+        Env: service.environmentVariables ? service.environmentVariables.split('\n') : undefined,
         Image: imageTagName,
         ExposedPorts: {
-          [`${project.webPort}/tcp`]: {}
+          [`${service.webPort}/tcp`]: {}
         },
         HostConfig: {
           PortBindings: {
-            [`${project.webPort}/tcp`]: [{
+            [`${service.webPort}/tcp`]: [{
               HostPort: (await getPort()).toString()
             }]
           },
