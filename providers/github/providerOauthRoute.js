@@ -2,17 +2,20 @@ const writeResponse = require('write-response');
 const axios = require('axios');
 
 const createSession = require('../../services/sessions/createSession');
+const getGithubConfig = require('./getGithubConfig');
 
 async function providerOauthRoute (scope, request, response) {
-  const { db, config } = scope;
+  const { db } = scope;
 
   const url = new URL(request.url, `http://${request.headers.host}`);
   const token = url.searchParams.get('token');
 
+  const githubConfig = await getGithubConfig(scope);
+
   try {
     const oauthResponse = await axios({
       method: 'post',
-      url: `https://github.com/login/oauth/access_token?client_id=${config.githubClientId}&client_secret=${config.githubClientSecret}&code=${token}`,
+      url: `https://github.com/login/oauth/access_token?client_id=${githubConfig.clientId}&client_secret=${githubConfig.clientSecret}&code=${token}`,
       headers: {
         accept: 'application/json'
       },

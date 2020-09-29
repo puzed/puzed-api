@@ -14,9 +14,6 @@ module.exports = {
   dockerRuntime: 'runc',
   internalSecret: 'CHANGE_ME',
   responsibilities: ['127.0.0.1'],
-  githubApiUrl: 'https://api.github.com',
-  githubClientId: 'YOUR_GITHUB_CLIENT_ID',
-  githubClientSecret: 'YOUR_GITHUB_CLIENT_SECRET',
   email: 'YOUR_EMAIL_ADDRESS_FOR_ACME',
   directoryUrl: 'https://acme-staging-v02.api.letsencrypt.org/directory',
   // directoryUrl: 'https://acme-v02.api.letsencrypt.org/directory',
@@ -31,5 +28,12 @@ module.exports = {
       key: fs.readFileSync('./config/client.key').toString(),
       cert: fs.readFileSync('./config/client.crt').toString()
     }
+  },
+  hashConfig: {
+    encoding: 'hex',
+    digest: 'sha256',
+    hashBytes: 32,
+    saltBytes: 16,
+    iterations: 372791
   }
 };

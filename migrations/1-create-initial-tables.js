@@ -70,6 +70,16 @@ module.exports = {
           "dateCreated" varchar
         );
       `), db.run(`
+        CREATE TABLE IF NOT EXISTS "providers" (
+          "id" varchar PRIMARY KEY,
+          "driver" varchar,
+          "apiUrl" varchar,
+          "appId" varchar,
+          "clientId" varchar,
+          "clientSecret" varchar,
+          "clientKey" varchar
+        );
+      `), db.run(`
         CREATE TABLE IF NOT EXISTS "certificates" (
           "id" varchar PRIMARY KEY,
           "domain" varchar,
