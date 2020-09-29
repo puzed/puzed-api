@@ -7,7 +7,7 @@ const listDeployments = require('../../../services/deployments/listDeployments')
 async function listDeploymentsRoute ({ db, config }, request, response, tokens) {
   const { user } = await authenticate({ db, config }, request.headers.authorization);
 
-  const deployments = await listDeployments({ db }, user.id, tokens.projectId);
+  const deployments = await listDeployments({ db }, user.id, tokens.serviceId);
 
   writeResponse(200, deployments, response);
 }

@@ -9,23 +9,23 @@ const pickRandomServer = require('../../../../common/pickRandomServer');
 async function createInstance ({ db, config }, request, response, tokens) {
   const { user } = await authenticate({ db, config }, request.headers.authorization);
 
-  const project = await db.getOne(`
+  const service = await db.getOne(`
     SELECT *
-      FROM "projects"
+      FROM "services"
      WHERE "userId" = $1 AND "id" = $2
-  `, [user.id, tokens.projectId]);
+  `, [user.id, tokens.serviceId]);
 
   const deployment = await db.getOne(`
     SELECT "deployments".*
       FROM "deployments"
- LEFT JOIN "projects" ON "projects".id = "deployments"."projectId"
+ LEFT JOIN "services" ON "services".id = "deployments"."serviceId"
      WHERE "userId" = $1
-       AND "deployments"."projectId" = $2
+       AND "deployments"."serviceId" = $2
        AND "deployments"."id" = $3
-  `, [user.id, tokens.projectId, tokens.deploymentId]);
+  `, [user.id, tokens.serviceId, tokens.deploymentId]);
 
-  if (!project) {
-    throw Object.assign(new Error('project not found'), { statusCode: 404 });
+  if (!service) {
+    throw Object.assign(new Error('service not found'), { statusCode: 404 });
   }
 
   if (!deployment) {
@@ -37,7 +37,7 @@ async function createInstance ({ db, config }, request, response, tokens) {
   const instanceId = uuid();
   const statement = buildInsertStatement('instances', {
     id: instanceId,
-    projectId: project.id,
+    serviceId: service.id,
     deploymentId: deployment.id,
     dockerHost: server.hostname,
     commitHash: deployment.commitHash,

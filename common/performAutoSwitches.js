@@ -15,9 +15,9 @@ async function performAutoSwitches ({ db, notify, config }) {
       const targetDeployment = await db.getOne(`
         SELECT *
           FROM "deployments"
-        WHERE "projectId" = $1
+        WHERE "serviceId" = $1
           AND "title" = $2
-      `, [deployment.projectId, deployment.autoSwitch.targetDeployment]);
+      `, [deployment.serviceId, deployment.autoSwitch.targetDeployment]);
 
       await db.run(`
         UPDATE "deployments"

@@ -11,7 +11,7 @@ async function proxyToInstance ({ db }, request, response) {
   SELECT * FROM (
     SELECT "dockerHost", "dockerId", "dockerPort"
       FROM "instances"
- LEFT JOIN "projects" ON "projects"."id" = "instances"."projectId"
+ LEFT JOIN "services" ON "services"."id" = "instances"."serviceId"
  LEFT JOIN "deployments" ON "deployments"."id" = "instances"."deploymentId"
      WHERE (
       concat("deployments"."title", '--', "domain") = $1

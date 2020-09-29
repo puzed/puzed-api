@@ -11,13 +11,13 @@ async function logInstance ({ db, config }, request, response, tokens) {
   const instance = await db.getOne(`
     SELECT "instances".*
       FROM "instances"
- LEFT JOIN "projects" ON "instances"."projectId" = "projects"."id"
+ LEFT JOIN "services" ON "instances"."serviceId" = "services"."id"
  LEFT JOIN "deployments" ON "instances"."deploymentId" = "deployments"."id"
      WHERE "userId" = $1
-       AND "instances"."projectId" = $2
+       AND "instances"."serviceId" = $2
        AND "instances"."deploymentId" = $3
        AND "instances"."id" = $4
-  `, [user.id, tokens.projectId, tokens.deploymentId, tokens.instanceId]);
+  `, [user.id, tokens.serviceId, tokens.deploymentId, tokens.instanceId]);
 
   if (!instance) {
     throw Object.assign(new Error('instance not found'), { statusCode: 404 });

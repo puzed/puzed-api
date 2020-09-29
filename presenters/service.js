@@ -1,4 +1,4 @@
-function presentProject (data) {
+function presentService (data) {
   return {
     id: data.id,
     name: data.name,
@@ -16,4 +16,4 @@ function presentProject (data) {
   };
 }
 
-module.exports = presentProject;
+module.exports = presentService;

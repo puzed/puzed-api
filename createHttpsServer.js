@@ -16,9 +16,9 @@ function createHttpsServer (config, scope, handler) {
     SNICallback: acmeUtilities.getCertificate(scope, {
       defaultCertificates,
       isAllowedDomain: async domain => {
-        const allowedProject = await db.getAll('SELECT * FROM projects WHERE $1 LIKE domain', [domain]);
+        const allowedService = await db.getAll('SELECT * FROM services WHERE $1 LIKE domain', [domain]);
         const allowedCertificate = await db.getAll('SELECT * FROM certificates WHERE $1 LIKE domain', [domain]);
-        return allowedProject || allowedCertificate;
+        return allowedService || allowedCertificate;
       }
     })
   }, handler);

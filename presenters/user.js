@@ -3,7 +3,7 @@ function presentUser (data) {
     id: data.id,
     email: data.email,
     githubInstallationId: data.githubInstallationId,
-    allowedProjectCreate: data.allowedProjectCreate,
+    allowedServiceCreate: data.allowedServiceCreate,
     dateCreated: data.dateCreated
   };
 }

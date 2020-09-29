@@ -2,7 +2,7 @@ const execa = require('execa');
 const githubUsernameRegex = require('github-username-regex');
 const generateAccessToken = require('./generateAccessToken');
 
-async function getLatestCommitHash (scope, user, project, branch = 'master') {
+async function getLatestCommitHash (scope, user, service, branch = 'master') {
   const { db } = scope;
 
   const { githubInstallationId } = await db.getOne(`
@@ -11,8 +11,8 @@ async function getLatestCommitHash (scope, user, project, branch = 'master') {
 
   const accessToken = await generateAccessToken(scope, githubInstallationId);
 
-  const owner = project.providerRepositoryId.split('/')[0];
-  const repo = project.providerRepositoryId.split('/')[1];
+  const owner = service.providerRepositoryId.split('/')[0];
+  const repo = service.providerRepositoryId.split('/')[1];
 
   if (!githubUsernameRegex.test(owner)) {
     throw Object.assign(new Error('invalid github owner'), {

@@ -10,9 +10,9 @@ async function deleteInstance ({ db, config }, request, response, tokens) {
   const instance = await db.getOne(`
     SELECT "instances".*
       FROM "instances"
- LEFT JOIN "projects" ON "instances"."projectId" = "projects"."id"
-     WHERE "userId" = $1 AND "projectId" = $2 AND "instances"."id" = $3
- `, [user.id, tokens.projectId, tokens.instanceId]);
+ LEFT JOIN "services" ON "instances"."serviceId" = "services"."id"
+     WHERE "userId" = $1 AND "serviceId" = $2 AND "instances"."id" = $3
+ `, [user.id, tokens.serviceId, tokens.instanceId]);
 
   if (!instance) {
     throw Object.assign(new Error('instance not found'), { statusCode: 404 });

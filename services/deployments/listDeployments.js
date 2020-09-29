@@ -1,4 +1,4 @@
-async function listDeployments ({ db }, userId, projectId) {
+async function listDeployments ({ db }, userId, serviceId) {
   const deployments = await db.getAll(`
       SELECT "deployments".*, 
       (
@@ -8,11 +8,11 @@ async function listDeployments ({ db }, userId, projectId) {
           AND "instances"."status" NOT IN ('destroyed')
       ) as "instanceCount"
     FROM "deployments"
-    LEFT JOIN "projects" ON "projects"."id" = "deployments"."projectId"
-    WHERE "projects"."userId" = $1
-      AND "projects"."id" = $2
+    LEFT JOIN "services" ON "services"."id" = "deployments"."serviceId"
+    WHERE "services"."userId" = $1
+      AND "services"."id" = $2
     ORDER BY "deployments"."dateCreated" ASC
-  `, [userId, projectId]);
+  `, [userId, serviceId]);
 
   if (deployments.length === 0) {
     return [];

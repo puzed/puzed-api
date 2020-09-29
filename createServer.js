@@ -6,9 +6,10 @@ const createNotifyServer = require('notify-over-http');
 const hint = require('./modules/hint');
 
 const database = require('./common/database');
+const migrationDriver = require('./migrations');
+const { getMigrationsFromDirectory, up } = require('node-mini-migrations');
 
 const createHttpsServer = require('./createHttpsServer');
-const setupDatabase = require('./setupDatabase');
 const proxyToInstance = require('./common/proxyToInstance');
 const proxyToClient = require('./common/proxyToClient');
 
@@ -23,7 +24,8 @@ async function createServer (config) {
   hint('puzed.db', 'connecting');
   const db = await database.connect(config.cockroach);
 
-  await setupDatabase(db);
+  hint('puzed.db', 'running migrations');
+  await up(migrationDriver(db), getMigrationsFromDirectory('./migrations'));
 
   hint('puzed.db', 'fetching all servers');
   const servers = await db.getAll('SELECT * FROM "servers"');
