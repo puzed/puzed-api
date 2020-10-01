@@ -1,10 +1,2 @@
 node_modules
-cockroach-binary
-config/id_rsa
-config/id_rsa.pub
-config/ca.crt
-config/client.crt
-config/client.key
-config/index.js
 config/acme-account.pem
-config/githubClientKey.pem

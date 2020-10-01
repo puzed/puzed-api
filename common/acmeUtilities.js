@@ -167,9 +167,11 @@ function getCertificate ({ config, db }, options) {
       return tls.createSecureContext(options.defaultCertificates);
     }
 
-    let certificates;
+    let certificates = options.defaultCertificates;
     if (await options.isAllowedDomain(servername)) {
-      certificates = await getCertificateForDomain({ config, db }, servername);
+      if (config.directoryUrl && config.directoryUrl !== 'none') {
+        certificates = await getCertificateForDomain({ config, db }, servername);
+      }
     } else {
       console.log('domain', servername, 'is not allowed a certificate');
     }

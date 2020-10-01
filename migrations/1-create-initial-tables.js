@@ -65,8 +65,6 @@ module.exports = {
           "id" varchar PRIMARY KEY,
           "hostname" varchar,
           "apiPort" varchar,
-          "sshUsername" varchar,
-          "sshPort" varchar,
           "dateCreated" varchar
         );
         `), db.run(`
