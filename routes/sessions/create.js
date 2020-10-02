@@ -1,8 +1,6 @@
-const { promisify } = require('util');
-
 const uuid = require('uuid').v4;
 const writeResponse = require('write-response');
-const finalStream = promisify(require('final-stream'));
+const finalStream = require('final-stream');
 const verifyHash = require('pbkdf2-wrapper/verifyHash');
 
 const validateUser = require('../../validators/user');
@@ -10,7 +8,9 @@ const buildInsertStatement = require('../../common/buildInsertStatement');
 const createRandomString = require('../../common/createRandomString');
 
 async function createSession ({ db, config }, request, response, tokens) {
-  const body = await finalStream(request).then(JSON.parse);
+  const body = await finalStream(request)
+    .then(buffer => buffer.toString('utf8'))
+    .then(JSON.parse);
 
   const validationErrors = validateUser(body);
 

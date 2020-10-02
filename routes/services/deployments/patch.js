@@ -1,7 +1,5 @@
-const { promisify } = require('util');
-
 const writeResponse = require('write-response');
-const finalStream = promisify(require('final-stream'));
+const finalStream = require('final-stream');
 
 const getDeploymentById = require('../../../services/deployments/getDeploymentById');
 const buildUpdateStatement = require('../../../common/buildUpdateStatement');
@@ -10,7 +8,9 @@ const authenticate = require('../../../common/authenticate');
 async function patchDeployment ({ db, config }, request, response, tokens) {
   const { user } = await authenticate({ db, config }, request.headers.authorization);
 
-  const body = await finalStream(request, JSON.parse);
+  const body = await finalStream(request)
+    .then(buffer => buffer.toString('utf8'))
+    .then(JSON.parse);
 
   const deployment = await getDeploymentById({ db }, user.id, tokens.serviceId, tokens.deploymentId);
   if (!deployment) {

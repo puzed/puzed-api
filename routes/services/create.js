@@ -1,7 +1,5 @@
-const { promisify } = require('util');
-
 const uuidv4 = require('uuid').v4;
-const finalStream = promisify(require('final-stream'));
+const finalStream = require('final-stream');
 const axios = require('axios');
 
 const authenticate = require('../../common/authenticate');
@@ -19,7 +17,9 @@ async function createService ({ db, settings, config }, request, response) {
     return;
   }
 
-  const body = await finalStream(request, JSON.parse);
+  const body = await finalStream(request)
+    .then(buffer => buffer.toString('utf8'))
+    .then(JSON.parse);
 
   if (settings.domains.api.includes(body.domain)) {
     throw Object.assign(new Error('Validation error'), {

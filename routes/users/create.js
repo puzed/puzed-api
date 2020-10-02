@@ -1,8 +1,6 @@
-const { promisify } = require('util');
-
 const uuid = require('uuid').v4;
 const writeResponse = require('write-response');
-const finalStream = promisify(require('final-stream'));
+const finalStream = require('final-stream');
 const hashText = require('pbkdf2-wrapper/hashText');
 
 const buildInsertStatement = require('../../common/buildInsertStatement');
@@ -10,7 +8,9 @@ const presentUser = require('../../presenters/user');
 const validateUser = require('../../validators/user');
 
 async function createUser ({ db, settings, config }, request, response, tokens) {
-  const body = await finalStream(request).then(JSON.parse);
+  const body = await finalStream(request)
+    .then(buffer => buffer.toString('utf8'))
+    .then(JSON.parse);
 
   const existingUser = await db.getOne(`
     SELECT *

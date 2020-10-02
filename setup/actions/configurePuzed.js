@@ -11,7 +11,7 @@ const ip = require('ip');
 const Docker = require('dockerode');
 const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 const stream = require('stream');
-const finalStream = require('util').promisify(require('final-stream'));
+const finalStream = require('final-stream');
 
 async function readFileInVolume (volumeName, filePath) {
   const stdout = new stream.PassThrough();
@@ -30,7 +30,7 @@ async function readFileInVolume (volumeName, filePath) {
     }
   });
 
-  return finalStream(stdout);
+  return finalStream(stdout).then(buffer => buffer.toString());
 }
 
 function insert (db, tableName, record) {

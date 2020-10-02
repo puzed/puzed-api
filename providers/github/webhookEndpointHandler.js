@@ -1,6 +1,4 @@
-const { promisify } = require('util');
-
-const finalStream = promisify(require('final-stream'));
+const finalStream = require('final-stream');
 const hint = require('../../modules/hint');
 
 async function githubWebhookEndpointHandler (scope, request, response) {

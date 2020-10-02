@@ -1,8 +1,6 @@
-const { promisify } = require('util');
-
 const uuid = require('uuid').v4;
 const writeResponse = require('write-response');
-const finalStream = promisify(require('final-stream'));
+const finalStream = require('final-stream');
 
 const pickRandomServer = require('../../../common/pickRandomServer');
 const buildInsertStatement = require('../../../common/buildInsertStatement');
@@ -13,7 +11,10 @@ const getDeploymentById = require('../../../services/deployments/getDeploymentBy
 async function createDeployment ({ db, config, providers }, request, response, tokens) {
   const { user } = await authenticate({ db, config }, request.headers.authorization);
 
-  const body = await finalStream(request, JSON.parse);
+  const body = await finalStream(request)
+    .then(buffer => buffer.toString('utf8'))
+    .then(JSON.parse);
+
   body.branch = body.branch || 'master';
 
   const service = await db.getOne(`
