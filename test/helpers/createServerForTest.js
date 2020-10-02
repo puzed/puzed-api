@@ -104,16 +104,6 @@ async function prepareDefaultData (db) {
       hostname: '0.0.0.0',
       apiPort: '443',
       dateCreated: Date.now()
-    }),
-
-    insert(db, 'providers', {
-      id: 'test',
-      driver: 'test',
-      apiUrl: 'https://test',
-      appId: '1',
-      clientId: 'test-client-id',
-      clientSecret: 'test-client-secret',
-      clientKey: 'test-client-key'
     })
   ]);
 }
@@ -162,6 +152,8 @@ async function createServerForTest (configOverrides) {
     config,
     httpUrl: 'http://localhost:8080',
     httpsUrl: 'https://localhost:8443',
+    db,
+    insert: insert.bind(null, db),
     close: () => {
       closeTimer = setTimeout(() => {
         server.httpsServer.close();

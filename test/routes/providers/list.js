@@ -9,6 +9,16 @@ test('providers > list',
 
     const server = await createServerForTest();
 
+    server.insert('providers', {
+      id: 'test',
+      driver: 'test',
+      apiUrl: 'https://test',
+      appId: '1',
+      clientId: 'test-client-id',
+      clientSecret: 'test-client-secret',
+      clientKey: 'test-client-key'
+    });
+
     const session = await axios(`${server.httpsUrl}/providers`, {
       validateStatus: () => true
     });
