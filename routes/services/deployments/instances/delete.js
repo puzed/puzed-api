@@ -24,7 +24,7 @@ async function deleteInstance ({ db, settings, config }, request, response, toke
     method: 'DELETE',
     headers: {
       host: settings.domains.api[0],
-      'x-internal-secret': settings.internalSecret
+      'x-internal-secret': settings.secret
     }
   });
 

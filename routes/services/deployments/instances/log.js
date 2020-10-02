@@ -34,7 +34,7 @@ async function logInstance ({ db, settings, config }, request, response, tokens)
   https.request(`https://${server.hostname}:${server.apiPort}/internal/instances/${instance.id}/livelog`, {
     headers: {
       host: settings.domains.api[0],
-      'x-internal-secret': settings.internalSecret
+      'x-internal-secret': settings.secret
     }
   }, function (liveLogResponse) {
     liveLogResponse.pipe(response);

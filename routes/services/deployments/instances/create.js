@@ -50,7 +50,7 @@ async function createInstance ({ db, settings, config }, request, response, toke
     method: 'POST',
     headers: {
       host: settings.domains.api[0],
-      'x-internal-secret': settings.internalSecret
+      'x-internal-secret': settings.secret
     }
   });
 

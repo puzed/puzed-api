@@ -42,7 +42,7 @@ module.exports = {
           "buildLog" text,
           "liveLog" text,
           "status" varchar,
-          "statusDate" varchar,
+          "statusDate" int,
           "dateCreated" int
         );
       `), db.run(`

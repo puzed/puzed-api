@@ -14,7 +14,7 @@ function multilinePrompt () {
     rl.on('line', function (line) {
       input.push(line);
 
-      if (line.includes('END PRIVATE KEY') || line.trim() === '') {
+      if (line.trim() === '') {
         resolve(input.join('\n'));
         rl.close();
       }
