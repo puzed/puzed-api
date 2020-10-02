@@ -17,7 +17,13 @@ const config = {
   serverId: 'manual-local',
   forceHttps: false,
   dockerRuntime: 'runc',
-  cockroach: {
+  cockroach: process.env.IS_INSIDE_TRAVIS ? {
+    host: 'localhost',
+    database: 'test',
+    user: 'postgres',
+    password: 'mysecretpassword',
+    port: 5432
+  } : {
     host: process.env.COCKROACH_HOST || '127.0.0.1',
     database: process.env.COCKROACH_DATABASE || 'postgres',
     user: process.env.COCKROACH_USER || 'root',
