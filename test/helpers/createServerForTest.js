@@ -50,7 +50,7 @@ async function wipe (db) {
     db.run('DELETE FROM "links";'),
     db.run('DELETE FROM "settings";'),
     db.run('DELETE FROM "certificates";')
-  ]);
+  ]).catch(_ => () => {});
 
   await up(migrationDriver(db), getMigrationsFromDirectory('./migrations'));
 
