@@ -12,6 +12,10 @@ async function listRepositoriesHandler (scope, request, response) {
     SELECT * FROM "links" WHERE "providerId" = $1 AND "userId" = $2
   `, ['github', user.id]);
 
+  if (!link) {
+    throw Object.assign(new Error('no link'), { statusCode: 404 });
+  }
+
   const accessToken = await generateAccessToken(scope, link.config.installationId);
 
   const repositories = await axios({
