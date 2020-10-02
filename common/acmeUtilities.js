@@ -148,6 +148,7 @@ async function getCertificateForDomain ({ settings, db }, domain) {
   const fullchain = pems.cert + '\n' + pems.chain + '\n';
 
   const statement = buildInsertStatement('certificates', {
+    id: uuid(),
     domain,
     status: 'success',
     fullchain,
