@@ -1,6 +1,5 @@
 const generateAccessToken = require('./generateAccessToken');
 const providerOauthRoute = require('./providerOauthRoute');
-const listRepositoriesHandler = require('./listRepositoriesHandler');
 const webhookEndpointHandler = require('./webhookEndpointHandler');
 const listBranchesForRepositoryHandler = require('./listBranchesForRepositoryHandler');
 const listRepositories = require('./listRepositories');
@@ -17,10 +16,6 @@ function githubProvider ({ db, config }) {
     routes: {
       '/providers/github/repositories/:owner/:repo/branches': {
         GET: listBranchesForRepositoryHandler
-      },
-
-      '/providers/github/repositories': {
-        GET: listRepositoriesHandler
       },
 
       '/providers/github/webhookEndpoint': {
