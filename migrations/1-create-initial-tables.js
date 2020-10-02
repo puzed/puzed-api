@@ -8,14 +8,14 @@ module.exports = {
           "provider" varchar,
           "providerRepositoryId" varchar,
           "image" varchar,
-          "webPort" int,
+          "webPort" bigint,
           "domain" varchar,
           "secrets" text,
           "environmentVariables" varchar,
           "runCommand" varchar,
           "buildCommand" varchar,
           "userId" varchar,
-          "dateCreated" int
+          "dateCreated" bigint
         );
       `), db.run(`
         CREATE TABLE IF NOT EXISTS "deployments" (
@@ -27,7 +27,7 @@ module.exports = {
           "guardianServerId" varchar,
           "stable" bool,
           "autoSwitch" json,
-          "dateCreated" int
+          "dateCreated" bigint
         );
       `), db.run(`      
         CREATE TABLE IF NOT EXISTS "instances" (
@@ -35,15 +35,15 @@ module.exports = {
           "serviceId" varchar,
           "deploymentId" varchar,
           "serverId" varchar,
-          "dockerPort" int,
+          "dockerPort" bigint,
           "dockerId" varchar,
           "commitHash" varchar,
           "branch" varchar,
           "buildLog" text,
           "liveLog" text,
           "status" varchar,
-          "statusDate" int,
-          "dateCreated" int
+          "statusDate" bigint,
+          "dateCreated" bigint
         );
       `), db.run(`
         CREATE TABLE IF NOT EXISTS "users" (
@@ -51,21 +51,21 @@ module.exports = {
           "email" varchar,
           "password" varchar,
           "allowedServiceCreate" bool,
-          "dateCreated" int
+          "dateCreated" bigint
         );
       `), db.run(`
         CREATE TABLE IF NOT EXISTS "sessions" (
           "id" varchar PRIMARY KEY,
           "secret" varchar,
           "userId" varchar,
-          "dateCreated" int
+          "dateCreated" bigint
         );
       `), db.run(`
         CREATE TABLE IF NOT EXISTS "servers" (
           "id" varchar PRIMARY KEY,
           "hostname" varchar,
           "apiPort" varchar,
-          "dateCreated" int
+          "dateCreated" bigint
         );
         `), db.run(`
         CREATE TABLE IF NOT EXISTS "providers" (
@@ -84,7 +84,7 @@ module.exports = {
           "externalUserId" varchar,
           "userId" varchar,
           "config" json,
-          "dateCreated" int
+          "dateCreated" bigint
         );
       `), db.run(`
         CREATE TABLE IF NOT EXISTS "settings" (
