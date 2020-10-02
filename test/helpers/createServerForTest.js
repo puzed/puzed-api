@@ -1,95 +1,172 @@
 const database = require('../../common/database');
 const createServer = require('../../createServer');
 
+const buildInsertStatement = require('../../common/buildInsertStatement');
+
+const migrationDriver = require('../../migrations');
+const { getMigrationsFromDirectory, up } = require('node-mini-migrations');
+
+function insert (db, tableName, record) {
+  const statement = buildInsertStatement(tableName, record);
+  return db.run(statement.sql, statement.parameters);
+}
+
 const config = {
   httpPort: 8080,
   httpsPort: 8443,
   serverId: 'manual-local',
   forceHttps: false,
-  domains: {
-    api: ['localhost:8443'],
-    client: []
-  },
   dockerRuntime: 'runc',
-  internalSecret: 'CHANGE_ME',
-  email: 'me@markwylde.com',
-  directoryUrl: 'https://acme-staging-v02.api.letsencrypt.org/directory',
   cockroach: {
-    host: 'localhost',
-    database: 'test',
-    user: 'postgres',
-    password: 'mysecretpassword',
-    port: 5432
-  },
-  hashConfig: {
-    encoding: 'hex',
-    digest: 'sha256',
-    hashBytes: 32,
-    saltBytes: 16,
-    iterations: 1
+    host: process.env.COCKROACH_HOST || '127.0.0.1',
+    database: process.env.COCKROACH_DATABASE || 'postgres',
+    user: process.env.COCKROACH_USER || 'root',
+    port: process.env.COCKROACH_PORT || 26257,
+    ssl: {
+      rejectUnauthorized: false,
+      caFile: process.env.COCKROACH_CA_FILE || './config/cockroachCa.crt',
+      keyFile: process.env.COCKROACH_KEY_FILE || './config/cockroachNode.key',
+      certFile: process.env.COCKROACH_CERT_FILE || './config/cockroachNode.crt'
+    }
   }
 };
 
-async function wipe () {
-  const db = await database.connect(config.cockroach);
-  await db.run(`
-    DROP TABLE IF EXISTS "_migrations";
-    DROP TABLE IF EXISTS "services";
-    DROP TABLE IF EXISTS "deployments";
-    DROP TABLE IF EXISTS "instances";
-    DROP TABLE IF EXISTS "githubDeploymentKeys";
-    DROP TABLE IF EXISTS "users";
-    DROP TABLE IF EXISTS "sessions";
-    DROP TABLE IF EXISTS "servers";
-    DROP TABLE IF EXISTS "certificates";
-  `);
-  await db.close();
+async function wipe (db) {
+  await Promise.all([
+    db.run('DELETE FROM "_migrations";'),
+    db.run('DELETE FROM "services";'),
+    db.run('DELETE FROM "deployments";'),
+    db.run('DELETE FROM "instances";'),
+    db.run('DELETE FROM "users";'),
+    db.run('DELETE FROM "sessions";'),
+    db.run('DELETE FROM "servers";'),
+    db.run('DELETE FROM "providers";'),
+    db.run('DELETE FROM "links";'),
+    db.run('DELETE FROM "settings";'),
+    db.run('DELETE FROM "certificates";')
+  ]);
+
+  await up(migrationDriver(db), getMigrationsFromDirectory('./migrations'));
+
+  await prepareDefaultData(db);
 
   process.testHasWipedDatabase = true;
 }
 
-async function clean () {
-  const db = await database.connect(config.cockroach);
+async function prepareDefaultData (db) {
+  return Promise.all([
+    insert(db, 'settings', {
+      key: 'domains',
+      value: JSON.stringify({
+        api: ['localhost:8443'],
+        client: ['puzed.test']
+      })
+    }),
 
-  await db.run(`
-    DELETE FROM "services";
-    DELETE FROM "deployments";
-    DELETE FROM "instances";
-    DELETE FROM "githubDeploymentKeys";
-    DELETE FROM "users";
-    DELETE FROM "sessions";
-    DELETE FROM "servers";
-    DELETE FROM "certificates";
-  `).catch(error => {
-    if (!error.message.includes('does not exist')) {
-      throw error;
-    }
-  });
+    insert(db, 'settings', {
+      key: 'hashConfig',
+      value: JSON.stringify({
+        encoding: 'hex',
+        digest: 'sha256',
+        hashBytes: 32,
+        saltBytes: 16,
+        iterations: 372791
+      })
+    }),
 
-  await db.close();
+    insert(db, 'settings', {
+      key: 'installed',
+      value: JSON.stringify(true)
+    }),
+
+    insert(db, 'settings', {
+      key: 'acmeDirectoryUrl',
+      value: JSON.stringify('none')
+    }),
+
+    insert(db, 'settings', {
+      key: 'forceHttps',
+      value: JSON.stringify(true)
+    }),
+
+    insert(db, 'settings', {
+      key: 'acmeEmail',
+      value: JSON.stringify('test@example.com')
+    }),
+
+    insert(db, 'settings', {
+      key: 'secret',
+      value: JSON.stringify('testsecret')
+    }),
+
+    insert(db, 'servers', {
+      id: 'first',
+      hostname: '0.0.0.0',
+      apiPort: '443',
+      dateCreated: Date.now()
+    }),
+
+    insert(db, 'providers', {
+      id: 'test',
+      driver: 'test',
+      apiUrl: 'https://test',
+      appId: '1',
+      clientId: 'test-client-id',
+      clientSecret: 'test-client-secret',
+      clientKey: 'test-client-key'
+    })
+  ]);
 }
+
+async function clean (db) {
+  await Promise.all([
+    db.run('DELETE FROM "services";'),
+    db.run('DELETE FROM "deployments";'),
+    db.run('DELETE FROM "instances";'),
+    db.run('DELETE FROM "links";'),
+    db.run('DELETE FROM "providers";'),
+    db.run('DELETE FROM "settings";'),
+    db.run('DELETE FROM "sessions";'),
+    db.run('DELETE FROM "servers";'),
+    db.run('DELETE FROM "certificates";')
+  ]);
+
+  await prepareDefaultData(db);
+}
+
+let server;
+let closeTimer;
+let db;
 
 async function createServerForTest (configOverrides) {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+  db = db || await database.connect(config.cockroach);
+
+  clearTimeout(closeTimer);
 
   if (process.testHasWipedDatabase) {
-    await clean();
+    await clean(db);
   } else {
-    await wipe();
+    await wipe(db);
   }
 
-  const server = await createServer({
-    ...config,
-    ...configOverrides
-  });
+  if (!server) {
+    server = await createServer({
+      ...config,
+      ...configOverrides,
+      db
+    });
+  }
 
   return {
     config,
     httpUrl: 'http://localhost:8080',
     httpsUrl: 'https://localhost:8443',
     close: () => {
-      server.httpsServer.close();
-      server.httpServer.close();
+      closeTimer = setTimeout(() => {
+        server.httpsServer.close();
+        server.httpServer.close();
+      }, 500);
     },
     ...server
   };

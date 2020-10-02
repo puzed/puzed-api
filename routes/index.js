@@ -17,6 +17,10 @@ module.exports = {
     GET: require('./links/list')
   },
 
+  '/providers': {
+    GET: require('./providers/list')
+  },
+
   '/services': {
     GET: require('./services/list'),
     POST: require('./services/create')

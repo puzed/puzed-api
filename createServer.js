@@ -39,7 +39,7 @@ async function loadSettingsFromDatabase (db) {
 
 async function createServer (config) {
   hint('puzed.db', 'connecting');
-  const db = await database.connect(config.cockroach);
+  const db = config.db || await database.connect(config.cockroach);
 
   hint('puzed.db', 'running migrations');
   await up(migrationDriver(db), getMigrationsFromDirectory('./migrations'));
