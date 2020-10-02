@@ -4,12 +4,13 @@ const writeResponse = require('write-response');
 
 const authenticate = require('../../../../common/authenticate');
 
-async function deleteInstance ({ db, config }, request, response, tokens) {
+async function deleteInstance ({ db, settings, config }, request, response, tokens) {
   const { user } = await authenticate({ db, config }, request.headers.authorization);
 
   const instance = await db.getOne(`
-    SELECT "instances".*
+    SELECT "instances".*, "hostname"
       FROM "instances"
+ LEFT JOIN "servers" ON "servers"."id" = "instances"."serverId"
  LEFT JOIN "services" ON "instances"."serviceId" = "services"."id"
      WHERE "userId" = $1 AND "serviceId" = $2 AND "instances"."id" = $3
  `, [user.id, tokens.serviceId, tokens.instanceId]);
@@ -18,12 +19,12 @@ async function deleteInstance ({ db, config }, request, response, tokens) {
     throw Object.assign(new Error('instance not found'), { statusCode: 404 });
   }
 
-  const server = await db.getOne('SELECT * FROM "servers" WHERE "hostname" = $1', [instance.dockerHost]);
+  const server = await db.getOne('SELECT * FROM "servers" WHERE "hostname" = $1', [instance.hostname]);
   await axios(`https://${server.hostname}:${server.apiPort}/internal/instances/${instance.id}`, {
     method: 'DELETE',
     headers: {
-      host: config.domains.api[0],
-      'x-internal-secret': config.internalSecret
+      host: settings.domains.api[0],
+      'x-internal-secret': settings.internalSecret
     }
   });
 

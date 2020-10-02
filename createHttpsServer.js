@@ -10,7 +10,7 @@ const defaultCertificates = {
 };
 
 function createHttpsServer (config, scope, handler) {
-  const { db } = scope;
+  const { db, settings } = scope;
 
   const httpsServer = https.createServer({
     SNICallback: acmeUtilities.getCertificate(scope, {
@@ -18,7 +18,8 @@ function createHttpsServer (config, scope, handler) {
       isAllowedDomain: async domain => {
         const allowedService = await db.getAll('SELECT * FROM services WHERE $1 LIKE domain', [domain]);
         const allowedCertificate = await db.getAll('SELECT * FROM certificates WHERE $1 LIKE domain', [domain]);
-        return allowedService || allowedCertificate;
+
+        return settings.domains.api.includes(domain) || settings.domains.client.includes(domain) || allowedService || allowedCertificate;
       }
     })
   }, handler);

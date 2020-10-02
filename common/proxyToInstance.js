@@ -9,8 +9,9 @@ async function proxyToInstance ({ db }, request, response) {
 
   const record = await db.getOne(`
   SELECT * FROM (
-    SELECT "dockerHost", "dockerId", "dockerPort"
+    SELECT "hostname", "dockerId", "dockerPort"
       FROM "instances"
+ LEFT JOIN "servers" ON "servers"."id" = "instances"."serverId"
  LEFT JOIN "services" ON "services"."id" = "instances"."serviceId"
  LEFT JOIN "deployments" ON "deployments"."id" = "instances"."deploymentId"
      WHERE (
@@ -28,7 +29,7 @@ async function proxyToInstance ({ db }, request, response) {
     return;
   }
 
-  const proxyRequest = http.request(`http://${record.dockerHost}:${record.dockerPort}${request.url}`, {
+  const proxyRequest = http.request(`http://${record.hostname}:${record.dockerPort}${request.url}`, {
     method: request.method,
     headers: request.headers
   }, function (proxyResponse) {

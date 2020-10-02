@@ -4,15 +4,16 @@ const hint = require('../modules/hint');
 
 async function instanceHealthChecks ({ db, notify, config }) {
   const instances = await db.getAll(`
-    SELECT "id", "dockerHost", "dockerPort", "status", "statusDate"
+    SELECT "instances"."id", "serverId", "hostname", "dockerPort", "status", "statusDate"
       FROM "instances"
-     WHERE "dockerHost" = ANY ($1)
+ LEFT JOIN "servers" ON "servers"."id" = "instances"."serverId"
+     WHERE "serverId" = $1
        AND "status" IN ('starting', 'unhealthy', 'healthy')
-  `, [config.responsibilities]);
+  `, [config.serverId]);
 
   const promises = instances.map(async instance => {
     try {
-      await axios(`http://${instance.dockerHost}:${instance.dockerPort}/health`, {
+      await axios(`http://${instance.hostname}:${instance.dockerPort}/health`, {
         validateStatus: () => true
       });
       if (instance.status !== 'healthy') {

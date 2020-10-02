@@ -9,7 +9,7 @@ const buildInsertStatement = require('../../common/buildInsertStatement');
 const presentUser = require('../../presenters/user');
 const validateUser = require('../../validators/user');
 
-async function createUser ({ db, config }, request, response, tokens) {
+async function createUser ({ db, settings, config }, request, response, tokens) {
   const body = await finalStream(request).then(JSON.parse);
 
   const existingUser = await db.getOne(`
@@ -35,7 +35,7 @@ async function createUser ({ db, config }, request, response, tokens) {
 
   const userId = uuid();
 
-  const passwordHash = await hashText(body.password, config.hashConfig);
+  const passwordHash = await hashText(body.password, settings.hashConfig);
 
   const statement = buildInsertStatement('users', {
     id: userId,

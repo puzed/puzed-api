@@ -8,7 +8,7 @@ const authenticate = require('../../common/authenticate');
 const buildInsertStatement = require('../../common/buildInsertStatement');
 const presentService = require('../../presenters/service');
 
-async function createService ({ db, config }, request, response) {
+async function createService ({ db, settings, config }, request, response) {
   request.setTimeout(60 * 60 * 1000);
 
   const { user } = await authenticate({ db, config }, request.headers.authorization);
@@ -21,7 +21,7 @@ async function createService ({ db, config }, request, response) {
 
   const body = await finalStream(request, JSON.parse);
 
-  if (config.domains.api.includes(body.domain)) {
+  if (settings.domains.api.includes(body.domain)) {
     throw Object.assign(new Error('Validation error'), {
       statusCode: 422,
       body: {
@@ -30,7 +30,7 @@ async function createService ({ db, config }, request, response) {
     });
   }
 
-  if (config.domains.client.includes(body.domain)) {
+  if (settings.domains.client.includes(body.domain)) {
     throw Object.assign(new Error('Validation error'), {
       statusCode: 422,
       body: {
@@ -61,7 +61,7 @@ async function createService ({ db, config }, request, response) {
   await axios(`https://localhost:${config.httpsPort}/services/${serviceId}/deployments`, {
     method: 'POST',
     headers: {
-      host: config.domains.api[0],
+      host: settings.domains.api[0],
       authorization: request.headers.authorization
     },
     data: JSON.stringify({

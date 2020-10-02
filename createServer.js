@@ -20,12 +20,32 @@ const performAutoSwitches = require('./common/performAutoSwitches');
 
 const timers = [];
 
+async function loadSettingsFromDatabase (db) {
+  const settings = await db.getAll('SELECT * FROM "settings"');
+
+  const objectifiedSettings = settings.reduce((result, setting) => {
+    result[setting.key] = setting.value;
+    return result;
+  }, {});
+
+  if (!objectifiedSettings.installed) {
+    console.log('Puzed instance is not installed. Will try again in 2 seconds.');
+    await (() => new Promise(resolve => setTimeout(resolve, 2000)))();
+    return loadSettingsFromDatabase(db);
+  }
+
+  return objectifiedSettings;
+}
+
 async function createServer (config) {
   hint('puzed.db', 'connecting');
   const db = await database.connect(config.cockroach);
 
   hint('puzed.db', 'running migrations');
   await up(migrationDriver(db), getMigrationsFromDirectory('./migrations'));
+
+  hint('puzed.settings', 'grabbing settings from db');
+  const settings = await loadSettingsFromDatabase(db, 'settings');
 
   hint('puzed.db', 'fetching all servers');
   const servers = await db.getAll('SELECT * FROM "servers"');
@@ -36,13 +56,14 @@ async function createServer (config) {
       .map(server => ({
         url: `https://${server.hostname}:${server.apiPort}/notify`,
         headers: {
-          host: config.domains.api[0]
+          host: settings.domains.api[0]
         }
       }))
   });
 
   const scope = {
     config,
+    settings,
     notify,
     db
   };
@@ -62,7 +83,7 @@ async function createServer (config) {
   async function handler (request, response) {
     hint('puzed.router:request', 'incoming request', request.method, request.headers.host, request.url);
 
-    if (config.domains.api.includes(request.headers.host)) {
+    if (settings.domains.api.includes(request.headers.host)) {
       response.setHeader('Access-Control-Allow-Origin', '*');
       response.setHeader('Access-Control-Allow-Methods', '*');
       response.setHeader('Access-Control-Allow-Headers', 'authorization');
@@ -98,7 +119,7 @@ async function createServer (config) {
       return;
     }
 
-    if (config.domains.client.includes(request.headers.host)) {
+    if (settings.domains.client.includes(request.headers.host)) {
       hint('puzed.router.proxy', `proxying host "${request.headers.host}" to the puzed http client`);
       proxyToClient(scope, request, response);
       return;
@@ -107,7 +128,7 @@ async function createServer (config) {
     hint('puzed.router.proxy', `proxying host "${request.headers.host}" to a instance`);
     proxyToInstance(scope, request, response);
   }
-  const httpServer = http.createServer(acmeUtilities.createHttpHandler(config, scope, handler));
+  const httpServer = http.createServer(acmeUtilities.createHttpHandler(settings, scope, handler));
 
   httpServer.on('listening', () => {
     hint('puzed.router', 'listening (http) on port:', httpServer.address().port);

@@ -12,7 +12,6 @@ const config = {
   },
   dockerRuntime: 'runc',
   internalSecret: 'CHANGE_ME',
-  responsibilities: ['localhost'],
   email: 'me@markwylde.com',
   directoryUrl: 'https://acme-staging-v02.api.letsencrypt.org/directory',
   cockroach: {

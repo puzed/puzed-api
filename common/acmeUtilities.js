@@ -57,7 +57,7 @@ async function getAcmeAccount (acme, email) {
   return { account, accountKey };
 }
 
-async function getCertificateForDomain ({ config, db }, domain) {
+async function getCertificateForDomain ({ settings, db }, domain) {
   // Already in database (success)
   const existingCertificate = await db.getOne('SELECT * FROM certificates WHERE $1 LIKE domain AND status = \'success\' LIMIT 1', [domain]);
 
@@ -81,7 +81,7 @@ async function getCertificateForDomain ({ config, db }, domain) {
   }
   inProgress[domain] = true;
 
-  const email = config.email;
+  const email = settings.acmeEmail;
 
   const errors = [];
   function notify (ev, msg) {
@@ -93,7 +93,7 @@ async function getCertificateForDomain ({ config, db }, domain) {
   }
 
   const acme = ACME.create({ maintainerEmail: email, packageAgent, notify });
-  await acme.init(config.directoryUrl);
+  await acme.init(settings.acmeDirectoryUrl);
 
   const { account, accountKey } = await getAcmeAccount(acme, email);
 
@@ -161,7 +161,7 @@ async function getCertificateForDomain ({ config, db }, domain) {
   }
 }
 
-function getCertificate ({ config, db }, options) {
+function getCertificate ({ settings, db }, options) {
   const getCachedCertificates = memoizee(async function (servername) {
     if (servername === 'localhost') {
       return tls.createSecureContext(options.defaultCertificates);
@@ -169,8 +169,8 @@ function getCertificate ({ config, db }, options) {
 
     let certificates = options.defaultCertificates;
     if (await options.isAllowedDomain(servername)) {
-      if (config.directoryUrl && config.directoryUrl !== 'none') {
-        certificates = await getCertificateForDomain({ config, db }, servername);
+      if (settings.acmeDirectoryUrl && settings.acmeDirectoryUrl !== 'none') {
+        certificates = await getCertificateForDomain({ settings, db }, servername);
       }
     } else {
       console.log('domain', servername, 'is not allowed a certificate');
@@ -190,7 +190,7 @@ function getCertificate ({ config, db }, options) {
   };
 }
 
-async function handleHttpChallenge ({ db, config }, request, response) {
+async function handleHttpChallenge ({ db, settings }, request, response) {
   const certificates = await db.getAll('SELECT * FROM certificates WHERE domain = $1', [request.headers.host]);
   for (const certificate of certificates) {
     const challenge = JSON.parse(certificate.challenge);
@@ -206,7 +206,7 @@ async function handleHttpChallenge ({ db, config }, request, response) {
   return false;
 }
 
-function createHttpHandler (config, scope, handler) {
+function createHttpHandler (settings, scope, handler) {
   return async function (request, response) {
     hint('puzed.router:request', 'incoming request', request.method, request.headers.host, request.url);
 
@@ -221,7 +221,7 @@ function createHttpHandler (config, scope, handler) {
       return;
     }
 
-    if (config.forceHttps) {
+    if (settings.forceHttps) {
       const redirectUrl = 'https://' + request.headers.host + request.url;
       hint('puzed.router:respond', `redirecting to ${redirectUrl}`);
       response.writeHead(302, { location: redirectUrl });

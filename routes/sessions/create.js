@@ -5,11 +5,23 @@ const writeResponse = require('write-response');
 const finalStream = promisify(require('final-stream'));
 const verifyHash = require('pbkdf2-wrapper/verifyHash');
 
+const validateUser = require('../../validators/user');
 const buildInsertStatement = require('../../common/buildInsertStatement');
 const createRandomString = require('../../common/createRandomString');
 
 async function createSession ({ db, config }, request, response, tokens) {
   const body = await finalStream(request).then(JSON.parse);
+
+  const validationErrors = validateUser(body);
+
+  if (validationErrors) {
+    throw Object.assign(new Error('invalid user data'), {
+      statusCode: 422,
+      message: {
+        error: validationErrors
+      }
+    });
+  }
 
   const user = await db.getOne(`
     SELECT *
@@ -21,7 +33,11 @@ async function createSession ({ db, config }, request, response, tokens) {
     throw Object.assign(new Error('unauthorised'), { statusCode: 401 });
   }
 
-  if (!verifyHash(body.password, user.password)) {
+  if (!user.password) {
+    throw Object.assign(new Error('server error'), { statusCode: 500 });
+  }
+
+  if (!await verifyHash(body.password, user.password)) {
     throw Object.assign(new Error('unauthorised'), { statusCode: 401 });
   }
 

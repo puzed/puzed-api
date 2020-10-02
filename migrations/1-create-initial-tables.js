@@ -15,7 +15,7 @@ module.exports = {
           "runCommand" varchar,
           "buildCommand" varchar,
           "userId" varchar,
-          "dateCreated" varchar
+          "dateCreated" int
         );
       `), db.run(`
         CREATE TABLE IF NOT EXISTS "deployments" (
@@ -27,15 +27,15 @@ module.exports = {
           "guardianServerId" varchar,
           "stable" bool,
           "autoSwitch" json,
-          "dateCreated" varchar
+          "dateCreated" int
         );
       `), db.run(`      
         CREATE TABLE IF NOT EXISTS "instances" (
           "id" varchar PRIMARY KEY,
           "serviceId" varchar,
           "deploymentId" varchar,
+          "serverId" varchar,
           "dockerPort" int,
-          "dockerHost" varchar,
           "dockerId" varchar,
           "commitHash" varchar,
           "branch" varchar,
@@ -43,7 +43,7 @@ module.exports = {
           "liveLog" text,
           "status" varchar,
           "statusDate" varchar,
-          "dateCreated" varchar
+          "dateCreated" int
         );
       `), db.run(`
         CREATE TABLE IF NOT EXISTS "users" (
@@ -51,21 +51,21 @@ module.exports = {
           "email" varchar,
           "password" varchar,
           "allowedServiceCreate" bool,
-          "dateCreated" varchar
+          "dateCreated" int
         );
       `), db.run(`
         CREATE TABLE IF NOT EXISTS "sessions" (
           "id" varchar PRIMARY KEY,
           "secret" varchar,
           "userId" varchar,
-          "dateCreated" varchar
+          "dateCreated" int
         );
       `), db.run(`
         CREATE TABLE IF NOT EXISTS "servers" (
           "id" varchar PRIMARY KEY,
           "hostname" varchar,
           "apiPort" varchar,
-          "dateCreated" varchar
+          "dateCreated" int
         );
         `), db.run(`
         CREATE TABLE IF NOT EXISTS "providers" (
@@ -84,7 +84,12 @@ module.exports = {
           "externalUserId" varchar,
           "userId" varchar,
           "config" json,
-          "dateCreated" varchar
+          "dateCreated" int
+        );
+      `), db.run(`
+        CREATE TABLE IF NOT EXISTS "settings" (
+          "key" varchar PRIMARY KEY,
+          "value" json
         );
       `), db.run(`
         CREATE TABLE IF NOT EXISTS "certificates" (
@@ -108,6 +113,8 @@ module.exports = {
         DROP TABLE "users";
         DROP TABLE "sessions";
         DROP TABLE "servers";
+        DROP TABLE "links";
+        DROP TABLE "settings";
         DROP TABLE "certificates";
       `)
     ]);

@@ -6,7 +6,7 @@ const buildInsertStatement = require('../../../../common/buildInsertStatement');
 const authenticate = require('../../../../common/authenticate');
 const pickRandomServer = require('../../../../common/pickRandomServer');
 
-async function createInstance ({ db, config }, request, response, tokens) {
+async function createInstance ({ db, settings, config }, request, response, tokens) {
   const { user } = await authenticate({ db, config }, request.headers.authorization);
 
   const service = await db.getOne(`
@@ -39,7 +39,7 @@ async function createInstance ({ db, config }, request, response, tokens) {
     id: instanceId,
     serviceId: service.id,
     deploymentId: deployment.id,
-    dockerHost: server.hostname,
+    serverId: server.id,
     commitHash: deployment.commitHash,
     status: 'queued',
     dateCreated: Date.now()
@@ -49,8 +49,8 @@ async function createInstance ({ db, config }, request, response, tokens) {
   axios(`https://${server.hostname}:${server.apiPort}/internal/instances/${instanceId}`, {
     method: 'POST',
     headers: {
-      host: config.domains.api[0],
-      'x-internal-secret': config.internalSecret
+      host: settings.domains.api[0],
+      'x-internal-secret': settings.internalSecret
     }
   });
 
