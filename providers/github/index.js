@@ -3,6 +3,7 @@ const providerOauthRoute = require('./providerOauthRoute');
 const listRepositoriesHandler = require('./listRepositoriesHandler');
 const webhookEndpointHandler = require('./webhookEndpointHandler');
 const listBranchesForRepositoryHandler = require('./listBranchesForRepositoryHandler');
+const listRepositories = require('./listRepositories');
 const getLatestCommitHash = require('./getLatestCommitHash');
 const cloneRepository = require('./cloneRepository');
 
@@ -10,6 +11,7 @@ function githubProvider ({ db, config }) {
   return {
     generateAccessToken,
     cloneRepository,
+    listRepositories,
     getLatestCommitHash,
 
     routes: {

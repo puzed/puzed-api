@@ -49,7 +49,6 @@ async function providerOauthRoute (scope, request, response) {
 
     // Fail: Brand new user
     if (!request.headers.authorization && !githubUserLink) {
-      console.log('oh1');
       throw new Error('oauth failed');
     }
 
@@ -85,7 +84,6 @@ async function providerOauthRoute (scope, request, response) {
       return;
     }
 
-    console.log('oh2');
     throw new Error('oauth failed');
   } catch (error) {
     console.log(error);

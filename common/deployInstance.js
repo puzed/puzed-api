@@ -13,9 +13,14 @@ async function deployRepositoryToServer (scope, instanceId) {
   const { db, notify, providers, config } = scope;
 
   const instance = await db.getOne('SELECT * FROM "instances" WHERE "id" = $1', [instanceId]);
-  const service = await db.getOne('SELECT * FROM "services" WHERE "id" = $1', [instance.serviceId]);
+  const service = await db.getOne(`
+    SELECT "services".*, "providerId"
+      FROM "services"
+ LEFT JOIN "links" ON "links"."id" = "services"."linkId"
+     WHERE "services"."id" = $1
+  `, [instance.serviceId]);
 
-  const provider = providers[service.provider];
+  const provider = providers[service.providerId];
 
   const secrets = JSON.parse(service.secrets);
 

@@ -2,7 +2,7 @@ function presentService (data) {
   return {
     id: data.id,
     name: data.name,
-    provider: data.provider,
+    linkId: data.linkId,
     providerRepositoryId: data.repo,
     image: data.image,
     webPort: data.webPort,

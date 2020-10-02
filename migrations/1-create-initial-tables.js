@@ -5,7 +5,7 @@ module.exports = {
         CREATE TABLE IF NOT EXISTS "services" (
           "id" varchar PRIMARY KEY,
           "name" varchar,
-          "provider" varchar,
+          "linkId" varchar,
           "providerRepositoryId" varchar,
           "image" varchar,
           "webPort" bigint,

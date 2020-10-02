@@ -18,16 +18,18 @@ async function createDeployment ({ db, config, providers }, request, response, t
   body.branch = body.branch || 'master';
 
   const service = await db.getOne(`
-    SELECT *
+    SELECT "services".*, "providerId"
       FROM "services"
-     WHERE "userId" = $1 AND "id" = $2
+ LEFT JOIN "links" ON "links"."id" = "services"."linkId"
+     WHERE "services"."userId" = $1
+       AND "services"."id" = $2
   `, [user.id, tokens.serviceId]);
 
   if (!service) {
     throw Object.assign(new Error('service not found'), { statusCode: 404 });
   }
 
-  const provider = providers[service.provider];
+  const provider = providers[service.providerId];
   const commitHash = await provider.getLatestCommitHash({ db, config }, user, service, body.branch);
 
   const deploymentId = uuid();

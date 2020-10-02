@@ -44,7 +44,7 @@ async function createService ({ db, settings, config }, request, response) {
   const statement = buildInsertStatement('services', {
     id: serviceId,
     name: body.name,
-    provider: body.provider,
+    linkId: body.linkId,
     providerRepositoryId: body.providerRepositoryId,
     image: body.image,
     webPort: body.webPort,

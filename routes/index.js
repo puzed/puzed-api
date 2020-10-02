@@ -17,6 +17,10 @@ module.exports = {
     GET: require('./links/list')
   },
 
+  '/links/:linkId/repositories': {
+    GET: require('./links/repositories/list')
+  },
+
   '/providers': {
     GET: require('./providers/list')
   },
