@@ -1,6 +1,7 @@
 const fs = require('fs');
 const tls = require('tls');
 
+const uuid = require('uuid').v4;
 const Keypairs = require('@root/keypairs');
 const ACME = require('@root/acme');
 const CSR = require('@root/csr');
@@ -116,6 +117,7 @@ async function getCertificateForDomain ({ settings, db }, domain) {
       },
       set: async function (data) {
         const statement = buildInsertStatement('certificates', {
+          id: uuid(),
           domain,
           challenge: JSON.stringify(data.challenge),
           token: data.challenge.token,
