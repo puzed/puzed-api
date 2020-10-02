@@ -14,7 +14,8 @@ function pullImage (imageName) {
 async function pullImages () {
   try {
     await Promise.all([
-      pullImage('cockroachdb/cockroach')
+      pullImage('cockroachdb/cockroach'),
+      pullImage('alpine')
     ]);
 
     console.log('  done');
