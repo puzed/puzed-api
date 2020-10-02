@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon -r async-bugs index",
+    "start": "node index",
+    "setup": "node setup",
     "test": "node test"
   },
   "keywords": [],

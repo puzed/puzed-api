@@ -1,7 +1,20 @@
 # puzed-api
 
 ## How to run
+### Install the project
 ```bash
-docker build -t puzed-api .
-docker run --restart always --net=host -it -v /var/run/docker.sock:/var/run/docker.sock -v `pwd`/config:/app/config puzed-api
+git clone https://github.com/puzed/puzed-api.git
+cd puzed-api
+npm install
+```
+
+
+### Setup the database
+```bash
+npm run setup
+```
+
+### Run the server
+```bash
+npm run start
 ```
