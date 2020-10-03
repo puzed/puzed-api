@@ -5,7 +5,7 @@ const validSubdomain = new RegExp('^[a-z0-9-]+$');
 function validateService ({ validDomains }, data) {
   const validDomain = validDomains.find(domain => data.domain.endsWith(domain.domain));
 
-  const subDomain = validDomain ? data.domain.slice(0, -validDomain.length) : data.domain;
+  const subDomain = validDomain && validDomain.domain ? data.domain.slice(0, -validDomain.domain.length) : '';
 
   const schema = {
     name: [
@@ -41,8 +41,9 @@ function validateService ({ validDomains }, data) {
 
     domain: [
       value => !value && 'is required',
-      value => subDomain && !subDomain.match(validSubdomain) && 'should be a valid subdomain',
-      value => value && value.includes('--') && 'can not contain more than one dash (-) in a row',
+      value => subDomain && !subDomain.slice(0, -1).match(validSubdomain) && 'should be a valid subdomain',
+      value => subDomain && subDomain.slice(-1) !== '.' && 'should have a dot between the subdomain and domain',
+      value => subDomain && subDomain.includes('--') && 'subdomain can not contain more than one dash (-) in a row',
       value => value && value.startsWith('-') && 'can not start with a dash (-)',
       value => value && value.endsWith('-') && 'can not end with a dash (-)',
       value => value && !validDomain && 'must be from a verified domain you have access to'
