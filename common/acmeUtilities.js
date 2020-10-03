@@ -16,7 +16,7 @@ const packageAgent = 'test-' + pkg.name + '/' + pkg.version;
 
 const inProgress = {};
 
-const getCertificates = async function (scope, options, servername) {
+const getCertificate = async function (scope, options, servername) {
   const { settings, db } = scope;
 
   if (servername === 'localhost') {
@@ -35,7 +35,7 @@ const getCertificates = async function (scope, options, servername) {
   return tls.createSecureContext(certificates || options.defaultCertificates);
 };
 
-const getCachedCertificates = memoizee(getCertificates, { maxAge: 60000 });
+const getCachedCertificate = memoizee(getCertificate, { maxAge: 60000 });
 
 async function createAcmeAccount (acme, email) {
   const accountKeypair = await Keypairs.generate({ kty: 'EC', format: 'jwk' });
@@ -79,7 +79,29 @@ async function getAcmeAccount (acme, email) {
   return { account, accountKey };
 }
 
-async function getCertificateForDomain ({ settings, db }, domain) {
+function waitForResult(fn) {
+  return new Promise((resolve, reject) => {
+    let pollInterval
+    let timeoutTimeout = setTimeout(() => {
+      clearInterval(pollInterval);
+      clearTimeout(timeoutTimeout);
+      reject()
+    }, 30000)
+
+    pollInterval = setInterval(async () => {
+      const result = await fn()
+      if (result) {
+        clearInterval(pollInterval);
+        clearTimeout(timeoutTimeout);
+        resolve(result);
+      }
+    }, 1000);
+  });
+}
+
+async function getCertificateForDomain (scope, domain) {
+  const { settings, db } = scope;
+
   // Already in database (success)
   const existingCertificate = await db.getOne('SELECT * FROM certificates WHERE $1 LIKE domain AND status = \'success\' LIMIT 1', [domain]);
 
@@ -93,13 +115,15 @@ async function getCertificateForDomain ({ settings, db }, domain) {
   // Already in database (pending)
   if (await db.getOne('SELECT * FROM certificates WHERE $1 LIKE domain', [domain])) {
     console.log('acmeUtils: already in database, but not finished');
-    return;
+    await waitForResult(() => db.getOne('SELECT * FROM certificates WHERE $1 LIKE domain AND status = \'success\' LIMIT 1', [domain]));
+    return getCertificateForDomain (scope, domain);
   }
 
   // Already processing
   if (inProgress[domain]) {
     console.log('acmeUtils: already progressing');
-    return;
+    await waitForResult(() => db.getOne('SELECT * FROM certificates WHERE $1 LIKE domain AND status = \'success\' LIMIT 1', [domain]));
+    return getCertificateForDomain (scope, domain);
   }
   inProgress[domain] = true;
 
@@ -145,7 +169,7 @@ async function getCertificateForDomain ({ settings, db }, domain) {
           status: 'pending'
         });
         await db.run(statement.sql, statement.parameters);
-        memoizee.delete(getCertificates);
+        getCachedCertificate.clear();
 
         return null;
       },
@@ -177,7 +201,7 @@ async function getCertificateForDomain ({ settings, db }, domain) {
     privatekey: serverPem
   });
   await db.run(statement.sql, statement.parameters);
-  memoizee.delete(getCertificates);
+  getCachedCertificate.clear();
 
   if (errors.length) {
     console.warn();
@@ -185,11 +209,14 @@ async function getCertificateForDomain ({ settings, db }, domain) {
     console.warn('The following warnings and/or errors were encountered:');
     console.warn(errors.join('\n'));
   }
+
+  return getCertificateForDomain (scope, domain)
 }
 
 function getCertificateHandler (scope, options) {
   return async (servername, cb) => {
-    const ctx = await getCachedCertificates(scope, options, servername);
+    console.log('Getting certificate for', servername);
+    const ctx = await getCachedCertificate(scope, options, servername);
 
     if (cb) {
       cb(null, ctx);
