@@ -16,6 +16,27 @@ const packageAgent = 'test-' + pkg.name + '/' + pkg.version;
 
 const inProgress = {};
 
+const getCertificates = async function (scope, options, servername) {
+  const { settings, db } = scope;
+
+  if (servername === 'localhost') {
+    return tls.createSecureContext(options.defaultCertificates);
+  }
+
+  let certificates = options.defaultCertificates;
+  if (await options.isAllowedDomain(servername)) {
+    if (settings.acmeDirectoryUrl && settings.acmeDirectoryUrl !== 'none') {
+      certificates = await getCertificateForDomain({ settings, db }, servername);
+    }
+  } else {
+    console.log('domain', servername, 'is not allowed a certificate');
+  }
+
+  return tls.createSecureContext(certificates || options.defaultCertificates);
+};
+
+const getCachedCertificates = memoizee(getCertificates, { maxAge: 60000 });
+
 async function createAcmeAccount (acme, email) {
   const accountKeypair = await Keypairs.generate({ kty: 'EC', format: 'jwk' });
   const accountKey = accountKeypair.private;
@@ -124,6 +145,7 @@ async function getCertificateForDomain ({ settings, db }, domain) {
           status: 'pending'
         });
         await db.run(statement.sql, statement.parameters);
+        memoizee.delete(getCertificates);
 
         return null;
       },
@@ -155,6 +177,7 @@ async function getCertificateForDomain ({ settings, db }, domain) {
     privatekey: serverPem
   });
   await db.run(statement.sql, statement.parameters);
+  memoizee.delete(getCertificates);
 
   if (errors.length) {
     console.warn();
@@ -164,26 +187,9 @@ async function getCertificateForDomain ({ settings, db }, domain) {
   }
 }
 
-function getCertificate ({ settings, db }, options) {
-  const getCachedCertificates = memoizee(async function (servername) {
-    if (servername === 'localhost') {
-      return tls.createSecureContext(options.defaultCertificates);
-    }
-
-    let certificates = options.defaultCertificates;
-    if (await options.isAllowedDomain(servername)) {
-      if (settings.acmeDirectoryUrl && settings.acmeDirectoryUrl !== 'none') {
-        certificates = await getCertificateForDomain({ settings, db }, servername);
-      }
-    } else {
-      console.log('domain', servername, 'is not allowed a certificate');
-    }
-
-    return tls.createSecureContext(certificates || options.defaultCertificates);
-  }, { maxAge: 60000 });
-
+function getCertificateHandler (scope, options) {
   return async (servername, cb) => {
-    const ctx = await getCachedCertificates(servername);
+    const ctx = await getCachedCertificates(scope, options, servername);
 
     if (cb) {
       cb(null, ctx);
@@ -238,6 +244,6 @@ function createHttpHandler (settings, scope, handler) {
 
 module.exports = {
   createHttpHandler,
-  getCertificate,
+  getCertificateHandler,
   handleHttpChallenge
 };

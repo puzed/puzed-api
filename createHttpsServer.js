@@ -13,7 +13,7 @@ function createHttpsServer (config, scope, handler) {
   const { db, settings } = scope;
 
   const httpsServer = https.createServer({
-    SNICallback: acmeUtilities.getCertificate(scope, {
+    SNICallback: acmeUtilities.getCertificateHandler(scope, {
       defaultCertificates,
       isAllowedDomain: async domain => {
         const allowedService = await db.getAll('SELECT * FROM services WHERE $1 LIKE domain', [domain]);
