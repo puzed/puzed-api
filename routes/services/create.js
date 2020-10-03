@@ -1,12 +1,18 @@
 const uuidv4 = require('uuid').v4;
 const finalStream = require('final-stream');
 const axios = require('axios');
+const writeResponse = require('write-response');
 
 const authenticate = require('../../common/authenticate');
 const buildInsertStatement = require('../../common/buildInsertStatement');
 const presentService = require('../../presenters/service');
+const listAvailableDomains = require('../../services/domains/listAvailableDomains');
 
-async function createService ({ db, settings, config }, request, response) {
+const validateService = require('../../validators/service');
+
+async function createService (scope, request, response) {
+  const { db, settings, config } = scope;
+
   request.setTimeout(60 * 60 * 1000);
 
   const { user } = await authenticate({ db, config }, request.headers.authorization);
@@ -21,7 +27,7 @@ async function createService ({ db, settings, config }, request, response) {
     .then(buffer => buffer.toString('utf8'))
     .then(JSON.parse);
 
-  if (settings.domains.api.includes(body.domain)) {
+  if (settings.domains.api.includes(body.domain) || settings.domains.client.includes(body.domain)) {
     throw Object.assign(new Error('Validation error'), {
       statusCode: 422,
       body: {
@@ -30,11 +36,15 @@ async function createService ({ db, settings, config }, request, response) {
     });
   }
 
-  if (settings.domains.client.includes(body.domain)) {
-    throw Object.assign(new Error('Validation error'), {
+  const validDomains = await listAvailableDomains(scope, user.id);
+
+  const validationErrors = validateService({ validDomains }, body);
+
+  if (validationErrors) {
+    throw Object.assign(new Error('invalid service data'), {
       statusCode: 422,
-      body: {
-        errors: [`domain of "${body.domain}" is already taken`]
+      message: {
+        error: validationErrors
       }
     });
   }
@@ -74,10 +84,7 @@ async function createService ({ db, settings, config }, request, response) {
     SELECT * FROM services WHERE id = $1
   `, [serviceId]);
 
-  response.statusCode = 200;
-  response.write(JSON.stringify(presentService(service), response));
-
-  response.end();
+  writeResponse(201, JSON.stringify(presentService(service)), response);
 }
 
 module.exports = createService;

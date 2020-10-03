@@ -1,5 +1,5 @@
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-process.env.HINT = process.env.HINT || '*,-puzed.healthchecks*,-puzed.router.proxy*,-puzed.router.request*';
+process.env.HINT = process.env.HINT || '*,-puzed.healthchecks*,-puzed.autoSwitches*,-puzed.domainValidations*,-puzed.router.proxy*,-puzed.router.request*';
 
 module.exports = {
   httpPort: 80,

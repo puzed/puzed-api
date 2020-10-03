@@ -11,6 +11,17 @@ async function getLatestCommitHash (scope, user, service, branch = 'master') {
 
   const accessToken = await generateAccessToken(scope, link.config.installationId);
 
+  if (!service.providerRepositoryId) {
+    throw Object.assign(new Error('no providerRepositoryId provided'), {
+      statusCode: 422,
+      body: {
+        errors: {
+          repo: ['not a valid repo name according to validation policy']
+        }
+      }
+    });
+  }
+
   const owner = service.providerRepositoryId.split('/')[0];
   const repo = service.providerRepositoryId.split('/')[1];
 

@@ -92,6 +92,17 @@ module.exports = {
           "value" json
         );
       `), db.run(`
+        CREATE TABLE IF NOT EXISTS "domains" (
+          "id" varchar PRIMARY KEY,
+          "domain" varchar,
+          "userId" varchar,
+          "verificationStatus" varchar,
+          "verificationCode" varchar,
+          "verificationDate" bigint,
+          "guardianServerId" varchar,
+          "dateCreated" bigint
+        );
+      `), db.run(`
         CREATE TABLE IF NOT EXISTS "certificates" (
           "id" varchar PRIMARY KEY,
           "domain" varchar,

@@ -17,6 +17,7 @@ const handleError = require('./common/handleError');
 const acmeUtilities = require('./common/acmeUtilities');
 const performHealthchecks = require('./common/performHealthchecks');
 const performAutoSwitches = require('./common/performAutoSwitches');
+const performDomainValidations = require('./common/performDomainValidations');
 
 const timers = [];
 
@@ -76,6 +77,10 @@ async function createServer (config) {
 
   timers.push(
     setInterval(() => performAutoSwitches(scope), 3000)
+  );
+
+  timers.push(
+    setInterval(() => performDomainValidations(scope), 3000)
   );
 
   const routes = require('./routes');

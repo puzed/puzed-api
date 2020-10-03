@@ -79,17 +79,18 @@ async function getAcmeAccount (acme, email) {
   return { account, accountKey };
 }
 
-function waitForResult(fn) {
+function waitForResult (fn) {
   return new Promise((resolve, reject) => {
-    let pollInterval
-    let timeoutTimeout = setTimeout(() => {
+    let pollInterval = null;
+
+    const timeoutTimeout = setTimeout(() => {
       clearInterval(pollInterval);
       clearTimeout(timeoutTimeout);
-      reject()
-    }, 30000)
+      reject(new Error('waitForResult timed out'));
+    }, 30000);
 
     pollInterval = setInterval(async () => {
-      const result = await fn()
+      const result = await fn();
       if (result) {
         clearInterval(pollInterval);
         clearTimeout(timeoutTimeout);
@@ -116,14 +117,14 @@ async function getCertificateForDomain (scope, domain) {
   if (await db.getOne('SELECT * FROM certificates WHERE $1 LIKE domain', [domain])) {
     console.log('acmeUtils: already in database, but not finished');
     await waitForResult(() => db.getOne('SELECT * FROM certificates WHERE $1 LIKE domain AND status = \'success\' LIMIT 1', [domain]));
-    return getCertificateForDomain (scope, domain);
+    return getCertificateForDomain(scope, domain);
   }
 
   // Already processing
   if (inProgress[domain]) {
     console.log('acmeUtils: already progressing');
     await waitForResult(() => db.getOne('SELECT * FROM certificates WHERE $1 LIKE domain AND status = \'success\' LIMIT 1', [domain]));
-    return getCertificateForDomain (scope, domain);
+    return getCertificateForDomain(scope, domain);
   }
   inProgress[domain] = true;
 
@@ -210,12 +211,11 @@ async function getCertificateForDomain (scope, domain) {
     console.warn(errors.join('\n'));
   }
 
-  return getCertificateForDomain (scope, domain)
+  return getCertificateForDomain(scope, domain);
 }
 
 function getCertificateHandler (scope, options) {
   return async (servername, cb) => {
-    console.log('Getting certificate for', servername);
     const ctx = await getCachedCertificate(scope, options, servername);
 
     if (cb) {

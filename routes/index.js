@@ -13,6 +13,10 @@ module.exports = {
     GET: require('./sessions/read')
   },
 
+  '/domains': {
+    GET: require('./domains/list')
+  },
+
   '/links': {
     GET: require('./links/list')
   },

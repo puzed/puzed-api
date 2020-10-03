@@ -1,7 +1,7 @@
 const hint = require('../modules/hint');
 
 async function performAutoSwitches ({ db, notify, config }) {
-  hint('puzed.healthchecks', 'starting autoswitches batch');
+  hint('puzed.autoSwitches', 'starting autoswitches batch');
 
   const deployments = await db.getAll(`
    SELECT *
