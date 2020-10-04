@@ -5,30 +5,7 @@
 [![GitHub package.json version](https://img.shields.io/github/package-json/v/puzed/puzed-api)](https://github.com/puzed/puzed-api/releases)
 [![GitHub](https://img.shields.io/github/license/puzed/puzed-api)](https://github.com/puzed/puzed-api/blob/master/LICENSE)
 
-## Development
-### Install the project
-```bash
-git clone https://github.com/puzed/puzed-api.git
-cd puzed-api
-npm install
-```
-
-### Setup the database
-```bash
-npm run setup
-```
-
-### Run the tests
-```bash
-npm run test
-```
-
-### Run the server
-```bash
-npm run start
-```
-
-## Production
+## Installation
 ### Install PM2
 ```bash
 npm install --global pm2
