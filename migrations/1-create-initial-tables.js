@@ -110,7 +110,9 @@ module.exports = {
           "fullchain" varchar,
           "status" varchar,
           "challenge" varchar,
-          "token" varchar
+          "token" varchar,
+          "dateRenewal" bigint,
+          "dateCreated" bigint
         );
       `)
     ]);

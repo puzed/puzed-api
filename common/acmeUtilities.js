@@ -104,7 +104,7 @@ async function getCertificateForDomain (scope, domain) {
   const { settings, db } = scope;
 
   // Already in database (success)
-  const existingCertificate = await db.getOne('SELECT * FROM "certificates" WHERE $1 LIKE "domain" AND "status" = \'success\' LIMIT 1', [domain]);
+  const existingCertificate = await db.getOne('SELECT * FROM "certificates" WHERE $1 LIKE "domain" AND "status" = \'success\' ORDER BY "dateCreated" DESC LIMIT 1', [domain]);
 
   if (existingCertificate) {
     return {
@@ -167,7 +167,8 @@ async function getCertificateForDomain (scope, domain) {
           domain,
           challenge: JSON.stringify(data.challenge),
           token: data.challenge.token,
-          status: 'pending'
+          status: 'pending',
+          dateCreated: Date.now()
         });
         await db.run(statement.sql, statement.parameters);
         getCachedCertificate.clear();
@@ -199,7 +200,9 @@ async function getCertificateForDomain (scope, domain) {
     domain,
     status: 'success',
     fullchain,
-    privatekey: serverPem
+    privatekey: serverPem,
+    dateRenewal: Date.now() + ((24 * 40) * 60 * 60 * 1000),
+    dateCreated: Date.now()
   });
   await db.run(statement.sql, statement.parameters);
   getCachedCertificate.clear();
@@ -248,8 +251,8 @@ function createHttpHandler (settings, scope, handler) {
   return async function (request, response) {
     hint('puzed.router:request', 'incoming request', request.method, request.headers.host, request.url);
 
-    if (isIp(request.headers.host.split(':')[0])) {
-      hint('puzed.router:respond', `replying with ${hint.redBright('statusCode 404')} as host was an IP`);
+    if (!request.headers.host || isIp(request.headers.host.split(':')[0])) {
+      hint('puzed.router:respond', `replying with ${hint.redBright('statusCode 404')} as no host header was provided`);
       response.writeHead(404, { 'content-type': 'text/html' });
       response.end('No domain provided');
       return;
