@@ -18,9 +18,12 @@ async function createService (scope, request, response) {
   const { user } = await authenticate({ db, config }, request.headers.authorization);
 
   if (!user.allowedServiceCreate) {
-    response.writeHead(403);
-    response.end('no permission to create services');
-    return;
+    throw Object.assign(new Error('Validation error'), {
+      statusCode: 422,
+      body: {
+        errors: ['You do not have permission to create services']
+      }
+    });
   }
 
   const body = await finalStream(request)
