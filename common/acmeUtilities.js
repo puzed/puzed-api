@@ -14,8 +14,6 @@ const hint = require('../modules/hint');
 const pkg = require('../package.json');
 const packageAgent = 'test-' + pkg.name + '/' + pkg.version;
 
-const inProgress = {};
-
 const getCertificate = async function (scope, options, servername) {
   const { settings, db } = scope;
 
@@ -101,12 +99,17 @@ function waitForResult (fn) {
 }
 
 async function getCertificateForDomain (scope, domain) {
-  const { settings, db } = scope;
+  const { db } = scope;
 
   // Already in database (success)
   const existingCertificate = await db.getOne('SELECT * FROM "certificates" WHERE $1 LIKE "domain" AND "status" = \'success\' ORDER BY "dateCreated" DESC LIMIT 1', [domain]);
 
   if (existingCertificate) {
+    console.log(existingCertificate.dateRenewal, Date.now(), existingCertificate.dateRenewal < Date.now());
+    if (existingCertificate.dateRenewal < Date.now()) {
+      generateCertificateForDomain(scope, domain);
+    }
+
     return {
       key: existingCertificate.privatekey,
       cert: existingCertificate.fullchain
@@ -114,19 +117,29 @@ async function getCertificateForDomain (scope, domain) {
   }
 
   // Already in database (pending)
-  if (await db.getOne('SELECT * FROM "certificates" WHERE $1 LIKE "domain"', [domain])) {
+  if (await db.getOne('SELECT * FROM "certificates" WHERE $1 LIKE "domain" LIMIT 1', [domain])) {
     console.log('acmeUtils: already in database, but not finished');
     await waitForResult(() => db.getOne('SELECT * FROM "certificates" WHERE $1 LIKE "domain" AND "status" = \'success\' LIMIT 1', [domain]));
     return getCertificateForDomain(scope, domain);
   }
 
-  // Already processing
-  if (inProgress[domain]) {
-    console.log('acmeUtils: already progressing');
-    await waitForResult(() => db.getOne('SELECT * FROM "certificates" WHERE $1 LIKE "domain" AND "status" = \'success\' LIMIT 1', [domain]));
-    return getCertificateForDomain(scope, domain);
-  }
-  inProgress[domain] = true;
+  await generateCertificateForDomain(scope, domain);
+
+  return getCertificateForDomain(scope, domain);
+}
+
+async function generateCertificateForDomain (scope, domain) {
+  const { db, settings } = scope;
+
+  const temporaryCertificateId = uuid();
+
+  const statement = buildInsertStatement('certificates', {
+    id: temporaryCertificateId,
+    domain,
+    status: 'pending',
+    dateCreated: Date.now()
+  });
+  await db.run(statement.sql, statement.parameters);
 
   const email = settings.acmeEmail;
 
@@ -162,16 +175,9 @@ async function getCertificateForDomain (scope, domain) {
         return null;
       },
       set: async function (data) {
-        const statement = buildInsertStatement('certificates', {
-          id: uuid(),
-          domain,
-          challenge: JSON.stringify(data.challenge),
-          token: data.challenge.token,
-          status: 'pending',
-          dateCreated: Date.now()
-        });
-        await db.run(statement.sql, statement.parameters);
-        getCachedCertificate.clear();
+        db.run('UPDATE "certificates" SET "challenge" = $1, "token" = $2 WHERE "id" = $3', [
+          JSON.stringify(data.challenge), data.challenge.token, temporaryCertificateId
+        ]);
 
         return null;
       },
@@ -195,7 +201,7 @@ async function getCertificateForDomain (scope, domain) {
   });
   const fullchain = pems.cert + '\n' + pems.chain + '\n';
 
-  const statement = buildInsertStatement('certificates', {
+  const successStatement = buildInsertStatement('certificates', {
     id: uuid(),
     domain,
     status: 'success',
@@ -204,7 +210,7 @@ async function getCertificateForDomain (scope, domain) {
     dateRenewal: Date.now() + ((24 * 40) * 60 * 60 * 1000),
     dateCreated: Date.now()
   });
-  await db.run(statement.sql, statement.parameters);
+  await db.run(successStatement.sql, successStatement.parameters);
   getCachedCertificate.clear();
 
   if (errors.length) {
@@ -213,8 +219,6 @@ async function getCertificateForDomain (scope, domain) {
     console.warn('The following warnings and/or errors were encountered:');
     console.warn(errors.join('\n'));
   }
-
-  return getCertificateForDomain(scope, domain);
 }
 
 function getCertificateHandler (scope, options) {
