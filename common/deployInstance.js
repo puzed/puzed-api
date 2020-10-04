@@ -80,7 +80,7 @@ async function deployRepositoryToServer (scope, instanceId) {
     await fs.writeFile(`/tmp/${instanceId}/.dockerignore`, dockerignoreTemplate);
 
     log('\n' + chalkCtx.greenBright('Build docker image'));
-    const imageTagName = `${service.name}:${instanceId}`;
+    const imageTagName = `${service.name.toLowerCase()}:${instanceId}`;
 
     const buildImageResponse = await axios({
       method: 'post',

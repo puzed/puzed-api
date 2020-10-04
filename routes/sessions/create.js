@@ -34,7 +34,7 @@ async function createSession ({ db, config }, request, response, tokens) {
   }
 
   if (!user.password) {
-    throw Object.assign(new Error('server error'), { statusCode: 500 });
+    throw Object.assign(new Error('unauthorised'), { statusCode: 401 });
   }
 
   if (!await verifyHash(body.password, user.password)) {
