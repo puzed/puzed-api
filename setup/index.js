@@ -24,8 +24,8 @@ async function main () {
   const options = await prompts([{
     type: 'confirm',
     name: 'pullImages',
-    message: 'Would you like to pull the latest docker images?',
-    initial: false
+    message: 'Would you like to pull the latest docker cockroachdb image?',
+    initial: true
   }, {
     type: 'list',
     name: 'apiDomains',
