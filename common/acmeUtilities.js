@@ -104,7 +104,7 @@ async function getCertificateForDomain (scope, domain) {
   const { settings, db } = scope;
 
   // Already in database (success)
-  const existingCertificate = await db.getOne('SELECT * FROM certificates WHERE $1 LIKE domain AND status = \'success\' LIMIT 1', [domain]);
+  const existingCertificate = await db.getOne('SELECT * FROM "certificates" WHERE $1 LIKE "domain" AND "status" = \'success\' LIMIT 1', [domain]);
 
   if (existingCertificate) {
     return {
@@ -114,16 +114,16 @@ async function getCertificateForDomain (scope, domain) {
   }
 
   // Already in database (pending)
-  if (await db.getOne('SELECT * FROM certificates WHERE $1 LIKE domain', [domain])) {
+  if (await db.getOne('SELECT * FROM "certificates" WHERE $1 LIKE "domain"', [domain])) {
     console.log('acmeUtils: already in database, but not finished');
-    await waitForResult(() => db.getOne('SELECT * FROM certificates WHERE $1 LIKE domain AND status = \'success\' LIMIT 1', [domain]));
+    await waitForResult(() => db.getOne('SELECT * FROM "certificates" WHERE $1 LIKE "domain" AND "status" = \'success\' LIMIT 1', [domain]));
     return getCertificateForDomain(scope, domain);
   }
 
   // Already processing
   if (inProgress[domain]) {
     console.log('acmeUtils: already progressing');
-    await waitForResult(() => db.getOne('SELECT * FROM certificates WHERE $1 LIKE domain AND status = \'success\' LIMIT 1', [domain]));
+    await waitForResult(() => db.getOne('SELECT * FROM "certificates" WHERE $1 LIKE "domain" AND "status" = \'success\' LIMIT 1', [domain]));
     return getCertificateForDomain(scope, domain);
   }
   inProgress[domain] = true;
@@ -175,11 +175,11 @@ async function getCertificateForDomain (scope, domain) {
         return null;
       },
       get: async function (data) {
-        const result = await db.getOne('SELECT challenge FROM certificates WHERE token = $1', [data.challenge.token]);
+        const result = await db.getOne('SELECT "challenge" FROM "certificates" WHERE "token" = $1', [data.challenge.token]);
         return JSON.parse(result.challenge);
       },
       remove: async function (data) {
-        await db.run('DELETE FROM certificates WHERE token = $1', [data.challenge.token]);
+        await db.run('DELETE FROM "certificates" WHERE "token" = $1', [data.challenge.token]);
       }
     }
   };
@@ -227,7 +227,9 @@ function getCertificateHandler (scope, options) {
 }
 
 async function handleHttpChallenge ({ db, settings }, request, response) {
-  const certificates = await db.getAll('SELECT * FROM certificates WHERE domain = $1', [request.headers.host]);
+  const token = request.url.replace('/.well-known/acme-challenge/', '');
+
+  const certificates = await db.getAll('SELECT * FROM "certificates" WHERE "token" = $1', [token]);
   for (const certificate of certificates) {
     const challenge = JSON.parse(certificate.challenge);
     if (!challenge) {
