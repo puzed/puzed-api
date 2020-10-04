@@ -105,7 +105,6 @@ async function getCertificateForDomain (scope, domain) {
   const existingCertificate = await db.getOne('SELECT * FROM "certificates" WHERE $1 LIKE "domain" AND "status" = \'success\' ORDER BY "dateCreated" DESC LIMIT 1', [domain]);
 
   if (existingCertificate) {
-    console.log(existingCertificate.dateRenewal, Date.now(), existingCertificate.dateRenewal < Date.now());
     if (existingCertificate.dateRenewal < Date.now()) {
       generateCertificateForDomain(scope, domain);
     }
