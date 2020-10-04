@@ -20,8 +20,10 @@ async function createService (scope, request, response) {
   if (!user.allowedServiceCreate) {
     throw Object.assign(new Error('Validation error'), {
       statusCode: 422,
-      body: {
-        errors: ['You do not have permission to create services']
+      message: {
+        error: {
+          messages: ['You do not have permission to create services']
+        }
       }
     });
   }
@@ -33,8 +35,13 @@ async function createService (scope, request, response) {
   if (settings.domains.api.includes(body.domain) || settings.domains.client.includes(body.domain)) {
     throw Object.assign(new Error('Validation error'), {
       statusCode: 422,
-      body: {
-        errors: [`domain of "${body.domain}" is already taken`]
+      message: {
+        error: {
+          messages: [`domain of "${body.domain}" is already taken`],
+          fields: {
+            domain: [`domain of "${body.domain}" is already taken`]
+          }
+        }
       }
     });
   }
