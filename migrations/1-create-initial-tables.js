@@ -70,12 +70,15 @@ module.exports = {
         `), db.run(`
         CREATE TABLE IF NOT EXISTS "providers" (
           "id" varchar PRIMARY KEY,
+          "title" varchar,
           "driver" varchar,
           "apiUrl" varchar,
           "appId" varchar,
           "clientId" varchar,
           "clientSecret" varchar,
-          "clientKey" varchar
+          "clientKey" varchar,
+          "ssoEnabled" bool,
+          "ssoUrl" varchar
         );
       `), db.run(`
         CREATE TABLE IF NOT EXISTS "links" (
@@ -89,7 +92,8 @@ module.exports = {
       `), db.run(`
         CREATE TABLE IF NOT EXISTS "settings" (
           "key" varchar PRIMARY KEY,
-          "value" json
+          "value" json,
+          "public" bool
         );
       `), db.run(`
         CREATE TABLE IF NOT EXISTS "domains" (

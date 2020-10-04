@@ -57,11 +57,6 @@ async function main () {
     initial: true
   }, {
     type: (prev, values) => values.setupGithub ? 'text' : null,
-    name: 'githubApiUrl',
-    message: 'What is the URL to the GitHub API?',
-    initial: 'https://api.github.com'
-  }, {
-    type: (prev, values) => values.setupGithub ? 'text' : null,
     name: 'githubAppId',
     message: 'What is your GitHub App ID?',
     initial: 82621

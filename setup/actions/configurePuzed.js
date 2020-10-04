@@ -83,7 +83,14 @@ async function configurePuzed (options) {
 
       insert(db, 'settings', {
         key: 'installed',
-        value: JSON.stringify(true)
+        value: JSON.stringify(true),
+        public: true
+      }),
+
+      insert(db, 'settings', {
+        key: 'enableRegistrations',
+        value: JSON.stringify(true),
+        public: true
       }),
 
       insert(db, 'settings', {
@@ -115,12 +122,15 @@ async function configurePuzed (options) {
 
       options.setupGithub && insert(db, 'providers', {
         id: 'github',
+        title: 'GitHub',
         driver: 'github',
-        apiUrl: options.githubApiUrl.toString(),
+        apiUrl: 'https://api.github.com',
         appId: options.githubAppId.toString(),
         clientId: options.githubClientId.toString(),
         clientSecret: options.githubClientSecret.toString(),
-        clientKey: options.githubClientKey.toString()
+        clientKey: options.githubClientKey.toString(),
+        ssoEnabled: true,
+        ssoUrl: 'https://github.com/login/oauth/authorize?scope=repo&client_id=' + options.githubClientId
       })
     ]);
 

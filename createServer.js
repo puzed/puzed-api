@@ -83,49 +83,58 @@ async function createServer (config) {
     setInterval(() => performDomainValidations(scope), 3000)
   );
 
+  function handleApiRoute (scope, request, response, url) {
+    response.setHeader('Access-Control-Allow-Origin', '*');
+    response.setHeader('Access-Control-Allow-Methods', '*');
+    response.setHeader('Access-Control-Allow-Headers', 'authorization');
+
+    if (request.method === 'OPTIONS') {
+      response.end();
+      return;
+    }
+
+    if (url.startsWith('/notify')) {
+      hint('puzed.router:request', 'sending request to notify handler');
+      return notify.handle(request, response);
+    }
+
+    const route = routemeup({
+      ...scope.providers.routes,
+      ...routes
+    }, { method: request.method, url });
+    if (route) {
+      const result = route.controller(scope, request, response, route.tokens);
+      if (result.catch) {
+        result.catch((error) => {
+          handleError(error, request, response);
+        });
+      }
+      return;
+    }
+
+    hint('puzed.router:respond', `replying with ${hint.redBright('statusCode 404')} as not route for path "${hint.redBright(url)}" was found`);
+    response.writeHead(404);
+    response.end(`Path ${url} not found`);
+  }
+
   const routes = require('./routes');
 
   async function handler (request, response) {
     hint('puzed.router:request', 'incoming request', request.method, request.headers.host, request.url);
 
     if (settings.domains.api.includes(request.headers.host)) {
-      response.setHeader('Access-Control-Allow-Origin', '*');
-      response.setHeader('Access-Control-Allow-Methods', '*');
-      response.setHeader('Access-Control-Allow-Headers', 'authorization');
-
-      if (request.method === 'OPTIONS') {
-        response.end();
-        return;
-      }
-
-      if (request.url.startsWith('/notify')) {
-        hint('puzed.router:request', 'sending request to notify handler');
-        return notify.handle(request, response);
-      }
-
-      const route = routemeup({
-        ...scope.providers.routes,
-        ...routes
-      }, request);
-      if (route) {
-        const result = route.controller(scope, request, response, route.tokens);
-        if (result.catch) {
-          result.catch((error) => {
-            handleError(error, request, response);
-          });
-        }
-        return;
-      }
-
-      hint('puzed.router:respond', `replying with ${hint.redBright('statusCode 404')} as not route for path "${hint.redBright(request.url)}" was found`);
-      response.writeHead(404);
-      response.end(`Path ${request.url} not found`);
-
+      handleApiRoute(scope, request, response);
       return;
     }
 
     if (settings.domains.client.includes(request.headers.host)) {
       hint('puzed.router.proxy', `proxying host "${request.headers.host}" to the puzed http client`);
+      if (request.url.startsWith('/api/')) {
+        const url = request.url.slice(4);
+        handleApiRoute(scope, request, response, url);
+        return;
+      }
+
       proxyToClient(scope, request, response);
       return;
     }
