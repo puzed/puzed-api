@@ -12,6 +12,7 @@ const { getMigrationsFromDirectory, up } = require('node-mini-migrations');
 const createHttpsServer = require('./createHttpsServer');
 const proxyToInstance = require('./common/proxyToInstance');
 const proxyToClient = require('./common/proxyToClient');
+const networkProxy = require('./common/networkProxy');
 
 const handleError = require('./common/handleError');
 const acmeUtilities = require('./common/acmeUtilities');
@@ -50,6 +51,11 @@ async function createServer (config) {
 
   hint('puzed.db', 'fetching all servers');
   const servers = await db.getAll('SELECT * FROM "servers"');
+
+  let networkProxyInstance;
+  if (settings.networkMicroManagement) {
+    networkProxyInstance = networkProxy();
+  }
 
   hint('puzed.notify', 'creating notify server');
   const notify = createNotifyServer({
@@ -150,6 +156,7 @@ async function createServer (config) {
 
   httpServer.on('close', function () {
     db.close();
+    networkProxyInstance && networkProxyInstance.close();
     timers.forEach(timer => clearTimeout(timer));
     timers.forEach(timer => clearInterval(timer));
   });

@@ -185,7 +185,7 @@ async function generateCertificateForDomain (scope, domain) {
         return JSON.parse(result.challenge);
       },
       remove: async function (data) {
-        await db.run('DELETE FROM "certificates" WHERE "token" = $1', [data.challenge.token]);
+        // Will cleanup at the end
       }
     }
   };
@@ -211,6 +211,8 @@ async function generateCertificateForDomain (scope, domain) {
   });
   await db.run(successStatement.sql, successStatement.parameters);
   getCachedCertificate.clear();
+
+  await db.run('DELETE FROM "certificates" WHERE "id" = $1', [temporaryCertificateId]);
 
   if (errors.length) {
     console.warn();
