@@ -14,7 +14,8 @@ module.exports = {
   },
 
   '/domains': {
-    GET: require('./domains/list')
+    GET: require('./domains/list'),
+    POST: require('./domains/create')
   },
 
   '/links': {
