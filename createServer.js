@@ -123,7 +123,7 @@ async function createServer (config) {
     hint('puzed.router:request', 'incoming request', request.method, request.headers.host, request.url);
 
     if (settings.domains.api.includes(request.headers.host)) {
-      handleApiRoute(scope, request, response);
+      handleApiRoute(scope, request, response, request.url);
       return;
     }
 
