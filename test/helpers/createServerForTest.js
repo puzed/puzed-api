@@ -25,7 +25,7 @@ const config = {
     port: 5432
   } : {
     host: process.env.COCKROACH_HOST || '127.0.0.1',
-    database: process.env.COCKROACH_DATABASE || 'postgres',
+    database: process.env.COCKROACH_DATABASE || 'test',
     user: process.env.COCKROACH_USER || 'root',
     port: process.env.COCKROACH_PORT || 26257,
     ssl: {
@@ -39,17 +39,18 @@ const config = {
 
 async function wipe (db) {
   await Promise.all([
-    db.run('DELETE FROM "_migrations";'),
-    db.run('DELETE FROM "services";'),
-    db.run('DELETE FROM "deployments";'),
-    db.run('DELETE FROM "instances";'),
-    db.run('DELETE FROM "users";'),
-    db.run('DELETE FROM "sessions";'),
-    db.run('DELETE FROM "servers";'),
-    db.run('DELETE FROM "providers";'),
-    db.run('DELETE FROM "links";'),
-    db.run('DELETE FROM "settings";'),
-    db.run('DELETE FROM "certificates";')
+    db.run('CREATE DATABASE "test";'),
+    db.run('DROP TABLE "_migrations";'),
+    db.run('DROP TABLE "services";'),
+    db.run('DROP TABLE "deployments";'),
+    db.run('DROP TABLE "instances";'),
+    db.run('DROP TABLE "users";'),
+    db.run('DROP TABLE "sessions";'),
+    db.run('DROP TABLE "servers";'),
+    db.run('DROP TABLE "providers";'),
+    db.run('DROP TABLE "links";'),
+    db.run('DROP TABLE "settings";'),
+    db.run('DROP TABLE "certificates";')
   ]).catch(_ => () => {});
 
   await up(migrationDriver(db), getMigrationsFromDirectory('./migrations'));
