@@ -62,6 +62,11 @@ async function main () {
     initial: 82621
   }, {
     type: (prev, values) => values.setupGithub ? 'text' : null,
+    name: 'githubInstallUrl',
+    message: 'What is the URL to install your GitHub app?',
+    initial: 'https://github.com/apps/puzed-local/installations/new'
+  }, {
+    type: (prev, values) => values.setupGithub ? 'text' : null,
     name: 'githubClientId',
     message: 'What is your GitHub Client ID?',
     initial: 'Iv1.6e1c81a97956c1d1'

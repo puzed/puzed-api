@@ -126,6 +126,7 @@ async function configurePuzed (options) {
         driver: 'github',
         apiUrl: 'https://api.github.com',
         appId: options.githubAppId.toString(),
+        installUrl: options.githubInstallUrl,
         clientId: options.githubClientId.toString(),
         clientSecret: options.githubClientSecret.toString(),
         clientKey: options.githubClientKey.toString(),

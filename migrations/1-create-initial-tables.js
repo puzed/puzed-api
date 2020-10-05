@@ -74,6 +74,7 @@ module.exports = {
           "driver" varchar,
           "apiUrl" varchar,
           "appId" varchar,
+          "installUrl" varchar,
           "clientId" varchar,
           "clientSecret" varchar,
           "clientKey" varchar,
