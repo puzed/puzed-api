@@ -77,7 +77,7 @@ async function prepareDefaultData (db) {
         digest: 'sha256',
         hashBytes: 32,
         saltBytes: 16,
-        iterations: 372791
+        iterations: 1
       })
     }),
 
