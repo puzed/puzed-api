@@ -1,4 +1,5 @@
 const path = require('path');
+const http = require('http');
 const fs = require('fs').promises;
 const chalk = require('chalk');
 const chalkCtx = new chalk.Instance({ level: 3 });
@@ -6,6 +7,7 @@ const axios = require('axios');
 const execa = require('execa');
 const tar = require('tar-fs');
 const getPort = require('get-port');
+const ndJsonFe = require('ndjson-fe');
 
 const { instanceLogListeners, instanceLogs } = require('./instanceLogger');
 
@@ -36,6 +38,30 @@ async function deployRepositoryToServer (scope, instanceId) {
     (instanceLogListeners[instanceId] || []).forEach(output => output(loggable));
     instanceLogs[instanceId] = instanceLogs[instanceId] || '';
     instanceLogs[instanceId] = instanceLogs[instanceId] + loggable;
+  }
+
+  function buildImage (imageTagName, data) {
+    return new Promise((resolve, reject) => {
+      const feed = ndJsonFe();
+
+      const buildImageRequest = http.request({
+        method: 'post',
+        socketPath: '/var/run/docker.sock',
+        path: `/v1.26/build?t=${imageTagName}`,
+        headers: {
+          'content-type': 'application/x-tar'
+        }
+      }, function (response) {
+        response.on('error', reject);
+        response.on('end', resolve);
+
+        feed.on('next', row => {
+          log(row.stream);
+        });
+        response.pipe(feed);
+      });
+      data.pipe(buildImageRequest);
+    });
   }
 
   async function execCommand (command, options) {
@@ -79,20 +105,10 @@ async function deployRepositoryToServer (scope, instanceId) {
     const dockerignoreTemplate = await fs.readFile(path.resolve(__dirname, '../dockerfileTemplates/.dockerignore'), 'utf8');
     await fs.writeFile(`/tmp/${instanceId}/.dockerignore`, dockerignoreTemplate);
 
-    log('\n' + chalkCtx.greenBright('Build docker image'));
+    log('\n' + chalkCtx.greenBright('Build docker image\n'));
     const imageTagName = `${service.name.toLowerCase()}:${instanceId}`;
 
-    const buildImageResponse = await axios({
-      method: 'post',
-      socketPath: '/var/run/docker.sock',
-      url: `/v1.26/build?t=${imageTagName}`,
-      headers: {
-        'content-type': 'application/x-tar'
-      },
-      data: tar.pack(`/tmp/${instanceId}`)
-    });
-
-    log('\n' + buildImageResponse.data);
+    await buildImage(imageTagName, tar.pack(`/tmp/${instanceId}`));
 
     await db.run(`
       UPDATE "instances"
@@ -136,7 +152,6 @@ async function deployRepositoryToServer (scope, instanceId) {
       socketPath: '/var/run/docker.sock',
       url: `/v1.26/containers/${dockerId}/start`
     });
-    log('\nstarted');
 
     if (secrets.length > 0) {
       log('\n' + chalkCtx.greenBright('Creating secrets'));
