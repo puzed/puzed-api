@@ -11,12 +11,15 @@ test('providers > list',
 
     server.insert('providers', {
       id: 'test',
+      title: 'Test',
       driver: 'test',
       apiUrl: 'https://test',
       appId: '1',
+      installUrl: 'https://install',
       clientId: 'test-client-id',
       clientSecret: 'test-client-secret',
-      clientKey: 'test-client-key'
+      clientKey: 'test-client-key',
+      ssoEnabled: false
     });
 
     const session = await axios(`${server.httpsUrl}/providers`, {
@@ -26,9 +29,13 @@ test('providers > list',
     t.equal(session.status, 200);
     t.deepEqual(session.data, [{
       id: 'test',
+      title: 'Test',
       driver: 'test',
       appId: '1',
-      clientId: 'test-client-id'
+      installUrl: 'https://install',
+      clientId: 'test-client-id',
+      ssoEnabled: false,
+      ssoUrl: null
     }]);
 
     server.close();
