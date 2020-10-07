@@ -52,11 +52,6 @@ async function createServer (config) {
   hint('puzed.db', 'fetching all servers');
   const servers = await db.getAll('SELECT * FROM "servers"');
 
-  let networkProxyInstance;
-  if (settings.networkMicroManagement) {
-    networkProxyInstance = networkProxy();
-  }
-
   hint('puzed.notify', 'creating notify server');
   const notify = createNotifyServer({
     servers: servers
@@ -76,6 +71,11 @@ async function createServer (config) {
   };
 
   scope.providers = require('./providers')(scope);
+
+  let networkProxyInstance;
+  if (settings.networkMicroManagement) {
+    networkProxyInstance = networkProxy(scope);
+  }
 
   timers.push(
     setInterval(() => performHealthchecks(scope), 3000)

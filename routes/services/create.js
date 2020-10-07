@@ -3,6 +3,7 @@ const finalStream = require('final-stream');
 const axios = require('axios');
 const writeResponse = require('write-response');
 
+const createRandomString = require('../../common/createRandomString');
 const authenticate = require('../../common/authenticate');
 const buildInsertStatement = require('../../common/buildInsertStatement');
 const presentService = require('../../presenters/service');
@@ -73,6 +74,7 @@ async function createService (scope, request, response) {
     environmentVariables: body.environmentVariables,
     runCommand: body.runCommand,
     buildCommand: body.buildCommand,
+    networkAccessToken: await createRandomString(40),
     userId: user.id,
     dateCreated: Date.now()
   });

@@ -106,7 +106,7 @@ async function main () {
   await deployCockroach(options);
 
   console.log(chalk.green(`[${currentJob++}/${jobCount}]`), 'Waiting for Cockroach to come online');
-  await waitPort({ output: 'silent', host: options.internalIpAddress, port: 26257 });
+  await waitPort({ output: 'silent', host: 'localhost', port: 26257 });
 
   console.log(chalk.green(`[${currentJob++}/${jobCount}]`), 'Configuring Puzed Instance');
   await configurePuzed(options);

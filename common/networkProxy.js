@@ -2,13 +2,24 @@ const socks = require('socksv5');
 const hint = require('../modules/hint');
 
 module.exports = function (scope) {
-  const server = socks.createServer(function (info, accept, deny) {
-    if (!info.auth || info.auth.user !== 'user' || info.auth.pass !== 'pass') {
-      hint('puzed.networkProxy', 'access denifed to user:', info.auth && info.auth.user);
+  const server = socks.createServer(async function (info, accept, deny) {
+    if (!info.auth) {
+      hint('puzed.networkProxy', 'access denied - no auth provided');
       return deny();
     }
 
-    console.log('socks server is not implemented. will accept everything.');
+    const service = await scope.db.getOne(`
+      SELECT *
+        FROM "services"
+        WHERE "id" = $1
+          AND "networkAccessToken" = $2
+    `, [info.auth.user, info.auth.pass]);
+
+    if (!service) {
+      hint('puzed.networkProxy', 'access denied to user:', info.auth && info.auth.user);
+      return deny();
+    }
+
     accept();
   });
 
