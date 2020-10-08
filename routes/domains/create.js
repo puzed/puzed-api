@@ -2,6 +2,8 @@ const uuid = require('uuid').v4;
 const writeResponse = require('write-response');
 const finalStream = require('final-stream');
 
+const authenticate = require('../../common/authenticate');
+
 const buildInsertStatement = require('../../common/buildInsertStatement');
 const createRandomString = require('../../common/createRandomString');
 const pickRandomServer = require('../../common/pickRandomServer');
@@ -9,6 +11,8 @@ const presentDomain = require('../../presenters/domain');
 // const validateDomain = require('../../validators/domain');
 
 async function createDomain ({ db, settings, config }, request, response, tokens) {
+  const { user } = await authenticate({ db, config }, request.headers.authorization);
+
   const body = await finalStream(request)
     .then(buffer => buffer.toString('utf8'))
     .then(JSON.parse);
@@ -30,6 +34,7 @@ async function createDomain ({ db, settings, config }, request, response, tokens
   const statement = buildInsertStatement('domains', {
     id: domainId,
     domain: body.domain,
+    userId: user.id,
     guardianServerId: guardianServer.id,
     verificationCode: await createRandomString(30),
     dateCreated: Date.now()
