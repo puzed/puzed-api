@@ -1,10 +1,13 @@
 FROM node:12
 
+WORKDIR /app
+
 COPY package*.json ./
 
 RUN npm set progress=false
-RUN {{buildCommand}}
 
 COPY . .
+
+RUN {{buildCommand}}
 
 CMD {{runCommand}}
