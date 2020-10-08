@@ -36,7 +36,8 @@ module.exports = {
   },
 
   '/services/:serviceId': {
-    GET: require('./services/read')
+    GET: require('./services/read'),
+    DELETE: require('./services/delete')
   },
 
   '/services/:serviceId/deployments': {
