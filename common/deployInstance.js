@@ -72,6 +72,8 @@ async function createTextFileInContainer (containerId, destinationPath, content)
 async function deployRepositoryToServer (scope, instanceId) {
   const { db, notify, providers, config } = scope;
 
+  const server = await scope.db.getOne('SELECT * FROM "servers" WHERE "id" = $1', [scope.config.serverId]);
+
   const instance = await db.getOne('SELECT * FROM "instances" WHERE "id" = $1', [instanceId]);
   const service = await db.getOne(`
     SELECT "services".*, "providerId"
@@ -217,7 +219,7 @@ async function deployRepositoryToServer (scope, instanceId) {
     log('\n' + chalkCtx.greenBright('Applying networking layer'));
     await executeCommandInContainer(dockerId, 'mkdir -p /opt/proxychains');
     const proxychains = (await fs.readFile('./vendor/proxychains4/proxychains.conf', 'utf8'))
-      .replace('{{host}}', '192.168.1.3')
+      .replace('{{host}}', server.hostname)
       .replace('{{port}}', '1080')
       .replace('{{user}}', service.id)
       .replace('{{pass}}', service.networkAccessToken);
