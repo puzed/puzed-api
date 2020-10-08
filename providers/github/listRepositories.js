@@ -28,7 +28,7 @@ async function listRepositories (scope, userId, linkId) {
   const pages = Math.ceil(firstRepositoriesResponse.data.total_count / 100);
   for (let pageNumber = 2; pageNumber < pages + 1; pageNumber++) {
     const repositoriesResponse = axios({
-      url: `https://api.github.com/installation/repositories?page=${pageNumber}&per_page=5`,
+      url: `https://api.github.com/installation/repositories?page=${pageNumber}&per_page=100`,
       headers: {
         authorization: 'token ' + accessToken
       }
