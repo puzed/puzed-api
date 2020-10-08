@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node index",
     "setup": "node setup",
-    "reply": "node reply",
+    "repl": "node --experimental-repl-await repl",
     "test": "node test"
   },
   "keywords": [],
