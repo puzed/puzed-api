@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node index",
     "setup": "node setup",
+    "reply": "node reply",
     "test": "node test"
   },
   "keywords": [],
@@ -33,6 +34,7 @@
     "promise-retry": "^2.0.1",
     "prompts": "^2.3.2",
     "routemeup": "^1.5.0",
+    "socksv5": "file:vendor/socksv5",
     "string-to-color": "^2.2.2",
     "tar-fs": "^2.1.0",
     "uuid": "^8.3.0",

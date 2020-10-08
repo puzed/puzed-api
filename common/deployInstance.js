@@ -11,6 +11,64 @@ const ndJsonFe = require('ndjson-fe');
 
 const { instanceLogListeners, instanceLogs } = require('./instanceLogger');
 
+async function extractTarIntoContainer (containerId, tarPath, destination) {
+  const executeResponse = await axios({
+    method: 'put',
+    socketPath: '/var/run/docker.sock',
+    url: `/v1.40/containers/${containerId}/archive?path=${destination}`,
+    headers: {
+      'content-type': 'application/x-tar'
+    },
+    data: require('fs').createReadStream(tarPath)
+  });
+
+  return executeResponse;
+}
+
+async function executeCommandInContainer (containerId, command) {
+  const executeResponse = await axios({
+    method: 'post',
+    socketPath: '/var/run/docker.sock',
+    url: `/v1.26/containers/${containerId}/exec`,
+    headers: {
+      'content-type': 'application/json'
+    },
+    data: JSON.stringify({
+      AttachStdin: false,
+      AttachStdout: true,
+      AttachStderr: true,
+      Cmd: ['sh', '-c', command]
+    })
+  });
+
+  const startResponse = await axios({
+    method: 'post',
+    socketPath: '/var/run/docker.sock',
+    url: `/v1.26/exec/${executeResponse.data.Id}/start`,
+    headers: {
+      'content-type': 'application/json'
+    },
+    data: JSON.stringify({
+    })
+  });
+
+  return startResponse;
+}
+
+async function createTextFileInContainer (containerId, destinationPath, content) {
+  const data = Buffer.from(content).toString('base64');
+  const command = `(echo "${data}" | base64 -d > ${destinationPath})`;
+
+  return executeCommandInContainer(containerId, command);
+}
+
+// async function insertFileIntoContainer (containerId, sourcePath, destinationPath) {
+//   const data = await fs.readFile(sourcePath, 'base64');
+//   const command = `(echo "${data}" | base64 -d > ${destinationPath})`;
+
+//   return executeCommandInContainer(containerId, command);
+// }
+
 async function deployRepositoryToServer (scope, instanceId) {
   const { db, notify, providers, config } = scope;
 
@@ -96,9 +154,12 @@ async function deployRepositoryToServer (scope, instanceId) {
 
     log('\n' + chalkCtx.greenBright('Creating Dockerfile from template'));
     const dockerfileTemplate = await fs.readFile(path.resolve(__dirname, '../dockerfileTemplates/Dockerfile.nodejs12'), 'utf8');
+
+    const runCommand = `sleep 60 || /opt/proxychains/proxychains4 -f /opt/proxychains/proxychains.conf bash -c "${service.runCommand}"`;
+
     const dockerfileContent = dockerfileTemplate
       .replace('{{buildCommand}}', service.buildCommand)
-      .replace('{{runCommand}}', secrets.length > 0 ? 'sleep 10000000 || ' + service.runCommand : service.runCommand);
+      .replace('{{runCommand}}', runCommand);
     await fs.writeFile(`/tmp/${instanceId}/Dockerfile`, dockerfileContent);
 
     log('\n' + chalkCtx.greenBright('Creating .dockerignore'));
@@ -153,6 +214,17 @@ async function deployRepositoryToServer (scope, instanceId) {
       url: `/v1.26/containers/${dockerId}/start`
     });
 
+    log('\n' + chalkCtx.greenBright('Applying networking layer'));
+    await executeCommandInContainer(dockerId, 'mkdir -p /opt/proxychains');
+    const proxychains = (await fs.readFile('./vendor/proxychains4/proxychains.conf', 'utf8'))
+      .replace('{{host}}', '192.168.1.3')
+      .replace('{{port}}', '1080')
+      .replace('{{user}}', service.id)
+      .replace('{{pass}}', service.networkAccessToken);
+
+    await createTextFileInContainer(dockerId, '/opt/proxychains/proxychains.conf', proxychains);
+    await extractTarIntoContainer(dockerId, './vendor/proxychains4/runtime.tar', '/opt/proxychains');
+
     if (secrets.length > 0) {
       log('\n' + chalkCtx.greenBright('Creating secrets'));
       const secretsWriteScript = secrets.map(secret => {
@@ -160,32 +232,10 @@ async function deployRepositoryToServer (scope, instanceId) {
         return `(echo "${data}" | base64 -d > ${secret.name})`;
       }).join(' && ');
 
-      const secretsCreateResponse = await axios({
-        method: 'post',
-        socketPath: '/var/run/docker.sock',
-        url: `/v1.26/containers/${dockerId}/exec`,
-        headers: {
-          'content-type': 'application/json'
-        },
-        data: JSON.stringify({
-          AttachStdin: false,
-          AttachStdout: true,
-          AttachStderr: true,
-          Cmd: ['sh', '-c', `mkdir -p /run/secrets && ${secretsWriteScript} && pkill sleep`]
-        })
-      });
-      await axios({
-        method: 'post',
-        socketPath: '/var/run/docker.sock',
-        url: `/v1.26/exec/${secretsCreateResponse.data.Id}/start`,
-        headers: {
-          'content-type': 'application/json'
-        },
-        data: JSON.stringify({
-
-        })
-      });
+      await executeCommandInContainer(dockerId, `mkdir -p /run/secrets && ${secretsWriteScript}`);
     }
+
+    await executeCommandInContainer(dockerId, 'pkill sleep');
 
     log('\n' + chalkCtx.greenBright('Discovering allocated port'));
     const dockerContainer = await axios({

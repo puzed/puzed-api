@@ -14,6 +14,7 @@ module.exports = {
           "environmentVariables" varchar,
           "runCommand" varchar,
           "buildCommand" varchar,
+          "networkAccessToken" varchar,
           "userId" varchar,
           "dateCreated" bigint
         );
