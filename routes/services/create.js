@@ -69,6 +69,7 @@ async function createService (scope, request, response) {
     providerRepositoryId: body.providerRepositoryId,
     image: body.image,
     webPort: body.webPort,
+    allowInternetAccess: body.allowInternetAccess,
     domain: body.domain,
     secrets: JSON.stringify(body.secrets),
     environmentVariables: body.environmentVariables,

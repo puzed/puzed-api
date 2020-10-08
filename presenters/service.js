@@ -6,6 +6,7 @@ function presentService (data) {
     providerRepositoryId: data.repo,
     image: data.image,
     webPort: data.webPort,
+    allowInternetAccess: data.allowInternetAccess,
     domain: data.domain,
     secrets: typeof data.secrets === 'string' ? JSON.parse(data.secrets) : data.secrets,
     environmentVariables: data.environmentVariables,

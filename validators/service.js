@@ -39,6 +39,10 @@ function validateService ({ validDomains }, data) {
       value => value && isNaN(value) && 'must be a number'
     ],
 
+    allowInternetAccess: [
+      value => value && typeof value !== 'boolean' && 'must be a boolean'
+    ],
+
     domain: [
       value => !value && 'is required',
       value => subDomain && !subDomain.slice(0, -1).match(validSubdomain) && 'should be a valid subdomain',
