@@ -8,7 +8,7 @@ const buildInsertStatement = require('../../common/buildInsertStatement');
 const createRandomString = require('../../common/createRandomString');
 const pickRandomServer = require('../../common/pickRandomServer');
 const presentDomain = require('../../presenters/domain');
-// const validateDomain = require('../../validators/domain');
+const validateDomain = require('../../validators/domain');
 
 async function createDomain ({ db, settings, config }, request, response, tokens) {
   const { user } = await authenticate({ db, config }, request.headers.authorization);
@@ -17,16 +17,16 @@ async function createDomain ({ db, settings, config }, request, response, tokens
     .then(buffer => buffer.toString('utf8'))
     .then(JSON.parse);
 
-  // const validationErrors = validateDomain(body);
+  const validationErrors = validateDomain(body);
 
-  // if (validationErrors) {
-  //   throw Object.assign(new Error('invalid domain data'), {
-  //     statusCode: 422,
-  //     message: {
-  //       error: validationErrors
-  //     }
-  //   });
-  // }
+  if (validationErrors) {
+    throw Object.assign(new Error('invalid domain data'), {
+      statusCode: 422,
+      message: {
+        error: validationErrors
+      }
+    });
+  }
 
   const domainId = uuid();
   const guardianServer = await pickRandomServer({ db });
