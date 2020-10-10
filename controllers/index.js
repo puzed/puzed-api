@@ -18,6 +18,10 @@ module.exports = {
     POST: require('./domains/create')
   },
 
+  '/networkRules': {
+    GET: require('./networkRules/list')
+  },
+
   '/links': {
     GET: require('./links/list')
   },

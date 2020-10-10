@@ -13,7 +13,7 @@ function githubProvider ({ db, config }) {
     listRepositories,
     getLatestCommitHash,
 
-    routes: {
+    controllers: {
       '/providers/github/repositories/:owner/:repo/branches': {
         GET: listBranchesForRepositoryHandler
       },

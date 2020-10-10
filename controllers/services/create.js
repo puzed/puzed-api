@@ -7,7 +7,7 @@ const createRandomString = require('../../common/createRandomString');
 const authenticate = require('../../common/authenticate');
 const buildInsertStatement = require('../../common/buildInsertStatement');
 const presentService = require('../../presenters/service');
-const listAvailableDomains = require('../../services/domains/listAvailableDomains');
+const listAvailableDomains = require('../../queries/domains/listAvailableDomains');
 
 const validateService = require('../../validators/service');
 
@@ -69,7 +69,7 @@ async function createService (scope, request, response) {
     providerRepositoryId: body.providerRepositoryId,
     image: body.image,
     webPort: body.webPort,
-    allowInternetAccess: body.allowInternetAccess,
+    networkRulesId: body.networkRulesId,
     domain: body.domain,
     secrets: JSON.stringify(body.secrets),
     environmentVariables: body.environmentVariables,

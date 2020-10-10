@@ -1,7 +1,8 @@
-const socks = require('socksv5');
-const hint = require('../modules/hint');
-
+const presh = require('presh');
 const memoizee = require('memoizee');
+const socks = require('socksv5');
+
+const hint = require('../modules/hint');
 
 const getService = async (scope, serviceId, networkAccessToken) => {
   return scope.db.getOne(`
@@ -10,10 +11,19 @@ const getService = async (scope, serviceId, networkAccessToken) => {
       WHERE "id" = $1
         AND "networkAccessToken" = $2
   `, [serviceId, networkAccessToken]);
-}
+};
+
+const getNetworkRules = async (scope, id) => {
+  return scope.db.getOne(`
+    SELECT *
+      FROM "networkRules"
+      WHERE "id" = $1
+  `, [id]);
+};
 
 module.exports = function (scope) {
   const getServiceCached = memoizee(getService, { maxAge: 30000 });
+  const getNetworkRulesCached = memoizee(getNetworkRules, { maxAge: 30000 });
 
   const server = socks.createServer(async function (info, accept, deny) {
     if (!info.auth) {
@@ -28,9 +38,31 @@ module.exports = function (scope) {
       return deny();
     }
 
-    if (!service.allowInternetAccess) {
-      hint('puzed.networkProxy', 'service not allowed internet access:', info.auth && info.auth.user);
+    if (!service.networkRulesId) {
+      hint('puzed.networkProxy', 'service has no networkRulesId:', info.auth && info.auth.user);
       return deny();
+    }
+
+    const networkRules = await getNetworkRulesCached(scope, service.networkRulesId);
+
+    if (!networkRules) {
+      hint('puzed.networkProxy', 'network rules could not be found:', info.auth && info.auth.user);
+      return deny();
+    }
+
+    const ruleResult = networkRules.rules.reduce((result, rule) => {
+      const evaluated = presh(rule, {
+        hostname: info.dstAddr,
+        port: info.dstPort,
+        stringEndsWith: (value, test) => (value + '').endsWith(test)
+      });
+
+      return result || evaluated.value;
+    }, undefined);
+
+    if (ruleResult !== 'allow') {
+      deny();
+      return;
     }
 
     accept();

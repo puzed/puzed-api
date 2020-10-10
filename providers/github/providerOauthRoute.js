@@ -3,7 +3,7 @@ const axios = require('axios');
 const uuidv4 = require('uuid').v4;
 
 const buildInsertStatement = require('../../common/buildInsertStatement');
-const createSession = require('../../services/sessions/createSession');
+const createSession = require('../../queries/sessions/createSession');
 const getGithubConfig = require('./getGithubConfig');
 
 function createLink ({ db }, user, githubUser, url) {

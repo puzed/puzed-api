@@ -1,6 +1,6 @@
 const writeResponse = require('write-response');
 
-const listServices = require('../../services/services/listServices');
+const listServices = require('../../queries/services/listServices');
 const authenticate = require('../../common/authenticate');
 const presentService = require('../../presenters/service');
 

@@ -2,6 +2,8 @@ FROM node:12
 
 WORKDIR /app
 
+RUN bash
+
 COPY package*.json ./
 
 RUN npm set progress=false

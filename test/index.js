@@ -1,4 +1,5 @@
-require('./routes/users/create');
-require('./routes/sessions/create');
-require('./routes/sessions/read');
-require('./routes/providers/list');
+require('./controllers/users/create');
+require('./controllers/sessions/create');
+require('./controllers/sessions/read');
+require('./controllers/providers/list');
+require('./controllers/networkRules/list');

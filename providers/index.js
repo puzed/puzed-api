@@ -4,8 +4,8 @@ module.exports = function (scope) {
   return {
     github,
 
-    routes: {
-      ...github.routes
+    controllers: {
+      ...github.controllers
     }
   };
 };

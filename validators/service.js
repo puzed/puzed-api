@@ -39,8 +39,8 @@ function validateService ({ validDomains }, data) {
       value => value && isNaN(value) && 'must be a number'
     ],
 
-    allowInternetAccess: [
-      value => value && typeof value !== 'boolean' && 'must be a boolean'
+    networkRulesId: [
+      value => !value && 'is required'
     ],
 
     domain: [

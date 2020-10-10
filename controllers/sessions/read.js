@@ -1,6 +1,6 @@
 const writeResponse = require('write-response');
 
-const getUserById = require('../../services/users/getUserById');
+const getUserById = require('../../queries/users/getUserById');
 const presentUser = require('../../presenters/user');
 
 async function readSession (scope, request, response, tokens) {

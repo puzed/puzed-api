@@ -1,10 +1,10 @@
 const http = require('http');
 const routemeup = require('routemeup');
 
-function createGithubMockServer (routes) {
+function createGithubMockServer (controllers) {
   const server = http.createServer(function (request, response) {
     console.log('githubMockServer hit:', request.method, request.url);
-    const route = routemeup(routes, request);
+    const route = routemeup(controllers, request);
     if (route) {
       return route.controller(request, response, route.tokens);
     }

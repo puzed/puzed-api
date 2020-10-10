@@ -1,6 +1,6 @@
 const writeResponse = require('write-response');
 
-const getServiceById = require('../../services/services/getServiceById');
+const getServiceById = require('../../queries/services/getServiceById');
 const authenticate = require('../../common/authenticate');
 
 async function readService (scope, request, response, tokens) {

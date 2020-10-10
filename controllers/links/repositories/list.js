@@ -1,6 +1,6 @@
 const writeResponse = require('write-response');
 
-const getLinkById = require('../../../services/links/getLinkById');
+const getLinkById = require('../../../queries/links/getLinkById');
 const authenticate = require('../../../common/authenticate');
 
 async function linkRepositoriesListRoute (scope, request, response, tokens) {

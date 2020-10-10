@@ -57,8 +57,8 @@ async function createServer (config) {
     }
 
     const route = routemeup({
-      ...scope.providers.routes,
-      ...routes
+      ...scope.providers.controllers,
+      ...controllers
     }, { method: request.method, url });
     if (route) {
       const result = route.controller(scope, request, response, route.tokens);
@@ -75,7 +75,7 @@ async function createServer (config) {
     response.end(`Path ${url} not found`);
   }
 
-  const routes = require('./routes');
+  const controllers = require('./controllers');
 
   async function handler (request, response) {
     hint('puzed.router:request', 'incoming request', request.method, request.headers.host, request.url);

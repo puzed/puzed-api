@@ -1,7 +1,7 @@
 const writeResponse = require('write-response');
 const finalStream = require('final-stream');
 
-const getDeploymentById = require('../../../services/deployments/getDeploymentById');
+const getDeploymentById = require('../../../queries/deployments/getDeploymentById');
 const buildUpdateStatement = require('../../../common/buildUpdateStatement');
 const authenticate = require('../../../common/authenticate');
 

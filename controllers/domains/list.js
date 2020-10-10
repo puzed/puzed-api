@@ -1,6 +1,6 @@
 const writeResponse = require('write-response');
 
-const listDomains = require('../../services/domains/listDomains');
+const listDomains = require('../../queries/domains/listDomains');
 const authenticate = require('../../common/authenticate');
 const presentDomain = require('../../presenters/domain');
 

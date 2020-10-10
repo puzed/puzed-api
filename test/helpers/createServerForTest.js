@@ -50,7 +50,8 @@ async function wipe (db) {
     db.run('DROP TABLE "providers";'),
     db.run('DROP TABLE "links";'),
     db.run('DROP TABLE "settings";'),
-    db.run('DROP TABLE "certificates";')
+    db.run('DROP TABLE "certificates";'),
+    db.run('DROP TABLE "networkRules";')
   ]).catch(_ => () => {});
 
   await up(migrationDriver(db), getMigrationsFromDirectory('./migrations'));
@@ -125,7 +126,8 @@ async function clean (db) {
     db.run('DELETE FROM "settings";'),
     db.run('DELETE FROM "sessions";'),
     db.run('DELETE FROM "servers";'),
-    db.run('DELETE FROM "certificates";')
+    db.run('DELETE FROM "certificates";'),
+    db.run('DELETE FROM "networkRules";')
   ]);
 
   await prepareDefaultData(db);

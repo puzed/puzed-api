@@ -6,7 +6,7 @@ const pickRandomServer = require('../../../common/pickRandomServer');
 const buildInsertStatement = require('../../../common/buildInsertStatement');
 const authenticate = require('../../../common/authenticate');
 
-const getDeploymentById = require('../../../services/deployments/getDeploymentById');
+const getDeploymentById = require('../../../queries/deployments/getDeploymentById');
 
 async function createDeployment ({ db, config, providers }, request, response, tokens) {
   const { user } = await authenticate({ db, config }, request.headers.authorization);

@@ -1,6 +1,6 @@
 const writeResponse = require('write-response');
 
-const listLinks = require('../../services/links/listLinks');
+const listLinks = require('../../queries/links/listLinks');
 const authenticate = require('../../common/authenticate');
 const presentLink = require('../../presenters/link');
 
