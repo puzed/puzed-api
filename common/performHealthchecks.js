@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const hint = require('../modules/hint');
+const hint = require('hinton');
 
 async function instanceHealthChecks ({ db, notify, config }) {
   const instances = await db.getAll(`

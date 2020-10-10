@@ -1,4 +1,4 @@
-const hint = require('../modules/hint');
+const hint = require('hinton');
 
 async function performAutoSwitches ({ db, notify, config }) {
   hint('puzed.autoSwitches', 'starting autoswitches batch');

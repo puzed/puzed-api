@@ -1,4 +1,4 @@
-const hint = require('../modules/hint');
+const hint = require('hinton');
 
 const verifyInternalSecret = (handler) => (scope, request, response, tokens) => {
   if (request.headers['x-internal-secret'] !== scope.settings.secret) {

@@ -1,6 +1,6 @@
 const createNotifyServer = require('notify-over-http');
 
-const hint = require('./modules/hint');
+const hint = require('hinton');
 
 const database = require('./common/database');
 const migrationDriver = require('./migrations');

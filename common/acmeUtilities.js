@@ -10,7 +10,7 @@ const isIp = require('is-ip');
 const memoizee = require('memoizee');
 
 const buildInsertStatement = require('./buildInsertStatement');
-const hint = require('../modules/hint');
+const hint = require('hinton');
 const pkg = require('../package.json');
 const packageAgent = 'test-' + pkg.name + '/' + pkg.version;
 

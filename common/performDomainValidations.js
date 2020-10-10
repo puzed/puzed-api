@@ -1,6 +1,6 @@
 const dns = require('dns').promises;
 
-const hint = require('../modules/hint');
+const hint = require('hinton');
 
 async function performDomainValidations ({ db, notify, config }) {
   hint('puzed.domainValidations', 'starting domain validations');

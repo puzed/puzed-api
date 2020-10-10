@@ -2,7 +2,7 @@ const presh = require('presh');
 const memoizee = require('memoizee');
 const socks = require('socksv5');
 
-const hint = require('../modules/hint');
+const hint = require('hinton');
 
 const getService = async (scope, serviceId, networkAccessToken) => {
   return scope.db.getOne(`

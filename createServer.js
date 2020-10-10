@@ -2,7 +2,7 @@ const http = require('http');
 
 const routemeup = require('routemeup');
 
-const hint = require('./modules/hint');
+const hint = require('hinton');
 
 const createScope = require('./createScope');
 

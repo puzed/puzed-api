@@ -2,7 +2,7 @@ const https = require('https');
 const fs = require('fs');
 
 const acmeUtilities = require('./common/acmeUtilities');
-const hint = require('./modules/hint');
+const hint = require('hinton');
 
 const defaultCertificates = {
   key: fs.readFileSync('./config/default.key', 'ascii'),

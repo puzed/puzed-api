@@ -1,5 +1,5 @@
 const finalStream = require('final-stream');
-const hint = require('../../modules/hint');
+const hint = require('hinton');
 
 async function githubWebhookEndpointHandler (scope, request, response) {
   const { db } = scope;
