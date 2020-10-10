@@ -28,6 +28,7 @@ test('networkRules > list', async t => {
   server.insert('networkRules', {
     id: 'test',
     title: 'Test',
+    default: true,
     userId: null,
     rules: JSON.stringify([
       "'deny'"
@@ -54,6 +55,7 @@ test('networkRules > list', async t => {
     rules: [
       "'deny'"
     ],
+    default: true,
     userId: null,
     dateCreated: networkRule.dateCreated ? networkRule.dateCreated : t.fail()
   });
