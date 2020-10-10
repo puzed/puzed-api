@@ -1,9 +1,7 @@
-const crypto = require('crypto');
+const cryptoRandomString = require('crypto-random-string');
 
 function createRandomString (length) {
-  return crypto.randomBytes(Math.ceil(length / 2))
-    .toString('hex')
-    .slice(0, length);
+  return cryptoRandomString({ length, type: 'alphanumeric' });
 }
 
 module.exports = createRandomString;
