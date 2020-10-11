@@ -39,6 +39,7 @@ module.exports = {
           userId: null,
           rules: JSON.stringify([
             "stringEndsWith(hostname, 'npmjs.com') && 'allow'",
+            "stringEndsWith(hostname, 'npmjs.org') && 'allow'",
             "stringEndsWith(hostname, 'alpinelinux.org') && 'allow'",
             "'deny'"
           ]),

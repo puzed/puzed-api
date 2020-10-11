@@ -61,6 +61,7 @@ module.exports = function (scope) {
     }, undefined);
 
     if (ruleResult !== 'allow') {
+      hint('puzed.networkProxy', 'network rules did not allow access', info.dstAddr);
       deny();
       return;
     }

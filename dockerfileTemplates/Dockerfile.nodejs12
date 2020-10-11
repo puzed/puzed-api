@@ -1,8 +1,8 @@
 FROM node:12
 
-WORKDIR /app
+{{setupNetwork}}
 
-RUN bash
+WORKDIR /app
 
 COPY package*.json ./
 

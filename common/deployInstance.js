@@ -114,9 +114,11 @@ async function deployRepositoryToServer (scope, instanceId) {
       }, function (response) {
         response.on('error', reject);
         response.on('end', resolve);
-
         feed.on('next', row => {
           log(row.stream);
+          if (row.error) {
+            log(row.error);
+          }
         });
         response.pipe(feed);
       });
@@ -144,6 +146,26 @@ async function deployRepositoryToServer (scope, instanceId) {
     return result;
   }
 
+  async function generateDockerfile (templateName, options) {
+    let template = await fs.readFile(path.resolve(__dirname, `../dockerfileTemplates/Dockerfile.${templateName}`), 'utf8');
+
+    template = template
+      .replace('{{buildCommand}}', options.buildCommand)
+      .replace('{{runCommand}}', options.runCommand);
+
+    template = template.replace(/^RUN (.*)$/gm, (a, b) => {
+      return `RUN /opt/proxychains4/proxychains4 -f /opt/proxychains4/proxychains.conf -q sh -c "${b.replace(/"/g, '\\"')}"`;
+    });
+
+    template = template.replace('{{setupNetwork}}', [
+      'COPY ./__puzedVendor__/proxychains4 /opt/proxychains4',
+      'RUN cd /opt/proxychains4 && tar xvf runtime.tar',
+      `RUN echo "socks5 ${options.socksHost} ${options.socksPort} ${options.socksUser} ${options.socksPass}" >> /opt/proxychains4/proxychains.conf`
+    ].join('\n'));
+
+    return template;
+  }
+
   try {
     log('\n' + chalkCtx.greenBright('Cloning repo from github'));
     await provider.cloneRepository(scope, {
@@ -155,13 +177,18 @@ async function deployRepositoryToServer (scope, instanceId) {
     });
 
     log('\n' + chalkCtx.greenBright('Creating Dockerfile from template'));
-    const dockerfileTemplate = await fs.readFile(path.resolve(__dirname, '../dockerfileTemplates/Dockerfile.nodejs12'), 'utf8');
-
     const runCommand = `sleep 60 || /opt/proxychains/proxychains4 -f /opt/proxychains/proxychains.conf bash -c "${service.runCommand}"`;
 
-    const dockerfileContent = dockerfileTemplate
-      .replace('{{buildCommand}}', service.buildCommand)
-      .replace('{{runCommand}}', runCommand);
+    const dockerfileContent = await generateDockerfile('nodejs12', {
+      socksHost: server.hostname,
+      socksPort: '1080',
+      socksUser: service.id,
+      socksPass: service.networkAccessToken,
+
+      buildCommand: service.buildCommand,
+      runCommand
+    });
+
     await fs.writeFile(`/tmp/${instanceId}/Dockerfile`, dockerfileContent);
 
     log('\n' + chalkCtx.greenBright('Creating .dockerignore'));
@@ -170,6 +197,12 @@ async function deployRepositoryToServer (scope, instanceId) {
 
     log('\n' + chalkCtx.greenBright('Build docker image\n'));
     const imageTagName = `${service.id}:${instanceId}`;
+
+    await fs.mkdir(`/tmp/${instanceId}/__puzedVendor__/proxychains4/`, { recursive: true });
+    await Promise.all([
+      fs.copyFile(path.resolve(__dirname, '../vendor/proxychains4/runtime.tar'), `/tmp/${instanceId}/__puzedVendor__/proxychains4/runtime.tar`),
+      fs.copyFile(path.resolve(__dirname, '../vendor/proxychains4/proxychains.conf'), `/tmp/${instanceId}/__puzedVendor__/proxychains4/proxychains.conf`)
+    ]);
 
     await buildImage(imageTagName, tar.pack(`/tmp/${instanceId}`));
 
@@ -218,11 +251,8 @@ async function deployRepositoryToServer (scope, instanceId) {
 
     log('\n' + chalkCtx.greenBright('Applying networking layer'));
     await executeCommandInContainer(dockerId, 'mkdir -p /opt/proxychains');
-    const proxychains = (await fs.readFile('./vendor/proxychains4/proxychains.conf', 'utf8'))
-      .replace('{{host}}', server.hostname)
-      .replace('{{port}}', '1080')
-      .replace('{{user}}', service.id)
-      .replace('{{pass}}', service.networkAccessToken);
+    const proxychains = (await fs.readFile('./vendor/proxychains4/proxychains.conf', 'utf8')) +
+      `socks5 ${server.hostname} 1080 ${service.id} ${service.networkAccessToken}`;
 
     await createTextFileInContainer(dockerId, '/opt/proxychains/proxychains.conf', proxychains);
     await extractTarIntoContainer(dockerId, './vendor/proxychains4/runtime.tar', '/opt/proxychains');
