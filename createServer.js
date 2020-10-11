@@ -43,7 +43,7 @@ async function createServer (config) {
   );
 
   timers.push(
-    setInterval(() => performUsageCalculations(scope), 15000)
+    setInterval(() => performUsageCalculations(scope), 3000)
   );
 
   function handleApiRoute (scope, request, response, url) {
