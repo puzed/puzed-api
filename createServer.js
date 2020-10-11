@@ -16,6 +16,7 @@ const acmeUtilities = require('./common/acmeUtilities');
 const performHealthchecks = require('./common/performHealthchecks');
 const performAutoSwitches = require('./common/performAutoSwitches');
 const performDomainValidations = require('./common/performDomainValidations');
+const performUsageCalculations = require('./common/performUsageCalculations');
 
 const timers = [];
 
@@ -39,6 +40,10 @@ async function createServer (config) {
 
   timers.push(
     setInterval(() => performDomainValidations(scope), 3000)
+  );
+
+  timers.push(
+    setInterval(() => performUsageCalculations(scope), 15000)
   );
 
   function handleApiRoute (scope, request, response, url) {

@@ -67,6 +67,10 @@ module.exports = {
     GET: require('./services/deployments/instances/log')
   },
 
+  '/services/:serviceId/deployments/:deploymentId/instances/:instanceId/statistics': {
+    GET: require('./services/deployments/instances/statistics')
+  },
+
   '/services/:serviceId/deployments/:deploymentId/instances/:instanceId/buildlog': {
     GET: require('./services/deployments/instances/buildlog')
   },
