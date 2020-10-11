@@ -1,5 +1,6 @@
 const http = require('http');
 const uuid = require('uuid').v4;
+// const tidyRequest = require('tidy-http/tidyRequest');
 
 const hint = require('hinton');
 const buildInsertStatement = require('./buildInsertStatement');
@@ -77,9 +78,11 @@ async function handleStatResponse (scope, instance, stats) {
     cpuPercent = (cpuDelta / systemDelta) * onlineCPUs * 100;
   }
 
+  const bytesRecursive = stats.blkio_stats.io_service_bytes_recursive && stats.blkio_stats.io_service_bytes_recursive.find(serviceByte => serviceByte.op === 'Total');
+
   const statsRaw = {
     cpuTotal: stats.cpu_stats.cpu_usage.total_usage,
-    diskIoTotal: stats.blkio_stats.io_service_bytes_recursive.find(serviceByte => serviceByte.op === 'Total').value,
+    diskIoTotal: bytesRecursive && bytesRecursive.value,
     memory: stats.memory_stats.usage
   };
 
@@ -111,9 +114,7 @@ async function performUsageCalculations (scope, instanceId) {
       return;
     }
 
-    activeWatchers[instance.id] = true;
-
-    http.request({
+    const request = http.request({
       method: 'get',
       socketPath: '/var/run/docker.sock',
       path: `/v1.40/containers/${instance.dockerId}/stats?stream=true`
@@ -122,12 +123,23 @@ async function performUsageCalculations (scope, instanceId) {
         response.on('data', buffer => {
           handleStatResponse(scope, instance, JSON.parse(buffer.toString('utf8')));
         });
+      } else {
+        delete activeWatchers[instance.id];
+        request.end();
       }
 
       response.on('end', () => {
         delete activeWatchers[instance.id];
       });
-    }).end();
+    });
+
+    request.on('error', () => {
+      delete activeWatchers[instance.id];
+    });
+
+    request.end();
+
+    activeWatchers[instance.id] = request;
   });
 }
 
