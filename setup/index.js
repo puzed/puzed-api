@@ -43,6 +43,21 @@ async function main () {
     initial: 'test@example.com'
   }, {
     type: 'confirm',
+    name: 'setupUser',
+    message: 'Would you like to create a user?',
+    initial: true
+  }, {
+    type: (prev, values) => values.setupUser ? 'text' : null,
+    name: 'userEmail',
+    message: 'What email address will the account use?',
+    initial: 'me@markwylde.com'
+  }, {
+    type: (prev, values) => values.setupUser ? 'password' : null,
+    name: 'userPassword',
+    message: 'What password will the account use?',
+    initial: ''
+  }, {
+    type: 'confirm',
     name: 'setupGithub',
     message: 'Would you like to setup a GitHub provider?',
     initial: true

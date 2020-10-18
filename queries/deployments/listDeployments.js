@@ -21,8 +21,8 @@ async function listDeployments ({ db }, userId, serviceId) {
       }
     });
 
-    deployment.totalInstances = instances.length;
-    deployment.healthyInstances = instances.filter(instance => ['healthy', 'destroyed'].includes(instance.status)).length;
+    deployment.totalInstances = instances.filter(instance => !['destroyed'].includes(instance.status)).length;
+    deployment.healthyInstances = instances.filter(instance => ['healthy'].includes(instance.status)).length;
 
     return deployment;
   });

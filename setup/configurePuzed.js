@@ -2,6 +2,7 @@ const fs = require('fs');
 
 const chalk = require('chalk');
 const ip = require('ip');
+const hashText = require('pbkdf2-wrapper/hashText');
 
 const config = require('../config');
 const createScope = require('../createScope');
@@ -9,6 +10,14 @@ const createScope = require('../createScope');
 async function configurePuzed (options) {
   try {
     const scope = await createScope(config);
+
+    const hashConfig = {
+      encoding: 'hex',
+      digest: 'sha256',
+      hashBytes: 32,
+      saltBytes: 16,
+      iterations: 372791
+    };
 
     await Promise.all([
       scope.db.post('settings', {
@@ -21,13 +30,7 @@ async function configurePuzed (options) {
 
       scope.db.post('settings', {
         key: 'hashConfig',
-        value: {
-          encoding: 'hex',
-          digest: 'sha256',
-          hashBytes: 32,
-          saltBytes: 16,
-          iterations: 372791
-        }
+        value: hashConfig
       }),
 
       scope.db.post('settings', {
@@ -85,6 +88,11 @@ async function configurePuzed (options) {
         clientKey: options.githubClientKey.toString(),
         ssoEnabled: true,
         ssoUrl: 'https://github.com/login/oauth/authorize?scope=repo&client_id=' + options.githubClientId
+      }),
+
+      options.setupUser && scope.db.post('users', {
+        email: options.userEmail,
+        password: await hashText(options.userPassword, hashConfig)
       }),
 
       scope.db.post('networkRules', {
