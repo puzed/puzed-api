@@ -65,7 +65,8 @@ const config = {
   forceHttps: false,
   dockerRuntime: 'runc',
   dataDirectory: './canhazdata/test',
-  hideUninstalledWarning: true
+  hideUninstalledWarning: true,
+  createDataNode: true
 };
 
 async function createServerForTest (configOverrides) {
