@@ -28,6 +28,8 @@ async function loadSettingsFromDatabase (config, db) {
 }
 
 async function createScope (config) {
+  process.env.HINT = process.env.HINT || config.hint;
+
   hint('puzed.db', 'connecting');
 
   const dataNode = config.createDataNode ? await canhazdb.server({

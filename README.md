@@ -35,3 +35,12 @@ npm run setup
 ```bash
 pm2 start --name puzed-api index.js
 ```
+
+### After setup
+After running all the steps above you can login to your puzed instance and create an account.
+
+The following repl commands may help you:
+```javascript
+await db.patch('domains', { verificationStatus: 'success' });
+await db.patch('users', { allowedServiceCreate: true });
+```

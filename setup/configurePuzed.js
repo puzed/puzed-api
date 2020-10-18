@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 const chalk = require('chalk');
 const ip = require('ip');
 
@@ -116,6 +118,12 @@ async function configurePuzed (options) {
         dateCreated: Date.now()
       })
     ]);
+
+    const server = await scope.db.getOne('servers');
+
+    const configFile = require('../config');
+    configFile.serverId = server.id;
+    fs.writeFileSync('./config/index.js', 'module.exports = ' + JSON.stringify(configFile, null, 2));
 
     await scope.dataNode.close();
     console.log('  done');
