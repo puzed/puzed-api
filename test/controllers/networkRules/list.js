@@ -25,14 +25,13 @@ test('networkRules > list', async t => {
 
   const { session } = await createUserAndSession(server);
 
-  server.insert('networkRules', {
-    id: 'test',
+  await server.db.post('networkRules', {
     title: 'Test',
     default: true,
     userId: null,
-    rules: JSON.stringify([
-      "'deny'"
-    ]),
+    rules: [
+      'deny'
+    ],
     dateCreated: Date.now()
   });
 
@@ -53,7 +52,7 @@ test('networkRules > list', async t => {
     id: networkRule.id ? networkRule.id : t.fail(),
     title: 'Test',
     rules: [
-      "'deny'"
+      'deny'
     ],
     default: true,
     userId: null,

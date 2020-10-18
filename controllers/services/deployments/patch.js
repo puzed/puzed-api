@@ -2,7 +2,6 @@ const writeResponse = require('write-response');
 const finalStream = require('final-stream');
 
 const getDeploymentById = require('../../../queries/deployments/getDeploymentById');
-const buildUpdateStatement = require('../../../common/buildUpdateStatement');
 const authenticate = require('../../../common/authenticate');
 
 async function patchDeployment ({ db, config }, request, response, tokens) {
@@ -17,10 +16,11 @@ async function patchDeployment ({ db, config }, request, response, tokens) {
     throw Object.assign(new Error('deployment not found'), { statusCode: 404 });
   }
 
-  const statement = buildUpdateStatement('deployments', `
-    WHERE "deployments"."id" = $1
-  `, [tokens.deploymentId, body]);
-  await db.run(statement.sql, statement.parameters);
+  await db.put('deployments', body, {
+    query: {
+      id: tokens.deploymentId
+    }
+  });
 
   const deploymentResult = await getDeploymentById({ db }, user.id, tokens.serviceId, tokens.deploymentId);
 

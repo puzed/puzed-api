@@ -2,15 +2,11 @@ const fs = require('fs');
 
 const chalk = require('chalk');
 const prompts = require('prompts');
-const waitPort = require('wait-port');
 
 const createRandomString = require('../common/createRandomString');
 const multilinePrompt = require('../common/multilinePrompt');
 
-const deployCockroach = require('./actions/deployCockroach');
-const generateCockroachKeys = require('./actions/generateCockroachKeys');
-const pullImages = require('./actions/pullImages');
-const configurePuzed = require('./actions/configurePuzed');
+const configurePuzed = require('./configurePuzed');
 
 if (!fs.existsSync('/var/run/docker.sock')) {
   console.log([
@@ -22,11 +18,6 @@ if (!fs.existsSync('/var/run/docker.sock')) {
 
 async function main () {
   const options = await prompts([{
-    type: 'confirm',
-    name: 'pullImages',
-    message: 'Would you like to pull the latest docker cockroachdb image?',
-    initial: true
-  }, {
     type: 'list',
     name: 'apiDomains',
     message: 'What domains will the API be using? (separate with commas)',
@@ -89,26 +80,7 @@ async function main () {
     options.githubClientKey = await multilinePrompt();
   }
 
-  const jobCount = 5;
-  let currentJob = 1;
-
-  console.log(chalk.green(`[${currentJob++}/${jobCount}]`), 'Pulling Images');
-  if (options.pullImages) {
-    await pullImages(options);
-  } else {
-    console.log('  skipped');
-  }
-
-  console.log(chalk.green(`[${currentJob++}/${jobCount}]`), 'Generating Cockroach Keys');
-  await generateCockroachKeys(options);
-
-  console.log(chalk.green(`[${currentJob++}/${jobCount}]`), 'Deploying Cockroach');
-  await deployCockroach(options);
-
-  console.log(chalk.green(`[${currentJob++}/${jobCount}]`), 'Waiting for Cockroach to come online');
-  await waitPort({ output: 'silent', host: 'localhost', port: 26257 });
-
-  console.log(chalk.green(`[${currentJob++}/${jobCount}]`), 'Configuring Puzed Instance');
+  console.log(chalk.green('Configuring Puzed Instance'));
   await configurePuzed(options);
 }
 

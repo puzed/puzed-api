@@ -3,34 +3,28 @@ const hint = require('hinton');
 async function performAutoSwitches ({ db, notify, config }) {
   hint('puzed.autoSwitches', 'starting autoswitches batch');
 
-  const deployments = await db.getAll(`
-   SELECT *
-     FROM "deployments"
-    WHERE "guardianServerId" = $1
-      AND "autoSwitch" IS NOT NULL
-  `, [config.serverId]);
+  const deployments = await db.getAll('deployments', {
+    query: {
+      guardianServerId: config.serverId,
+      autoSwitch: { $null: false }
+    }
+  });
 
   for (const deployment of deployments) {
     if (deployment.stable) {
-      const targetDeployment = await db.getOne(`
-        SELECT *
-          FROM "deployments"
-        WHERE "serviceId" = $1
-          AND "title" = $2
-      `, [deployment.serviceId, deployment.autoSwitch.targetDeployment]);
+      const targetDeployment = await db.getOne('deployments', {
+        serviceId: deployment.serviceId,
+        title: deployment.autoSwitch.targetDeployment
+      });
 
-      await db.run(`
-        UPDATE "deployments"
-           SET "title" = $2
-         WHERE "id" = $1
-      `, [targetDeployment.id, deployment.autoSwitch.newTitle]);
+      await db.patch('deployments', {
+        title: deployment.autoSwitch.newTitle
+      }, { query: { id: targetDeployment.id } });
 
-      await db.run(`
-        UPDATE "deployments"
-           SET "autoSwitch" = NULL,
-               "title" = $2
-         WHERE "id" = $1
-      `, [deployment.id, deployment.autoSwitch.targetDeployment]);
+      await db.patch('deployments', {
+        title: deployment.autoSwitch.targetDeployment,
+        autoSwitch: null
+      }, { query: { id: deployment.id } });
 
       notify.broadcast(deployment.id);
       notify.broadcast(targetDeployment.id);

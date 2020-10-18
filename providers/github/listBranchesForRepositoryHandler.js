@@ -8,9 +8,12 @@ async function listRepositoriesHandler (scope, request, response, tokens) {
 
   const { user } = await authenticate(scope, request.headers.authorization);
 
-  const link = await db.getOne(`
-    SELECT * FROM "links" WHERE "providerId" = $1 AND "userId" = $2
-  `, ['github', user.id]);
+  const link = await db.getOne('links', {
+    query: {
+      providerId: 'github',
+      userId: user.id
+    }
+  });
 
   const accessToken = await generateAccessToken(scope, link.config.installationId);
 

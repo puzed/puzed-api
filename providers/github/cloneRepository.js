@@ -6,9 +6,12 @@ async function cloneRepository (scope, options) {
   const { db } = scope;
   const { service, instance, target } = options;
 
-  const link = await db.getOne(`
-    SELECT * FROM "links" WHERE "providerId" = $1 AND "userId" = $2
-  `, ['github', service.userId]);
+  const link = await db.getOne('links', {
+    query: {
+      providerId: 'github',
+      userId: service.userId
+    }
+  });
 
   const accessToken = await generateAccessToken(scope, link.config.installationId);
 

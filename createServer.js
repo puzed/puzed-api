@@ -1,16 +1,12 @@
 const http = require('http');
 
 const routemeup = require('routemeup');
-
 const hint = require('hinton');
-
-const createScope = require('./createScope');
 
 const createHttpsServer = require('./createHttpsServer');
 const proxyToInstance = require('./common/proxyToInstance');
 const proxyToClient = require('./common/proxyToClient');
 const networkProxy = require('./common/networkProxy');
-
 const handleError = require('./common/handleError');
 const acmeUtilities = require('./common/acmeUtilities');
 const performHealthchecks = require('./common/performHealthchecks');
@@ -20,10 +16,8 @@ const performUsageCalculations = require('./common/performUsageCalculations');
 
 const timers = [];
 
-async function createServer (config) {
-  const scope = await createScope(config);
-
-  const { settings, notify, db } = scope;
+async function createServer (scope) {
+  const { settings, notify, db, config } = scope;
 
   let networkProxyInstance;
   if (settings.networkMicroManagement) {
@@ -112,7 +106,7 @@ async function createServer (config) {
   });
 
   httpServer.on('close', function () {
-    db.close();
+    scope.close();
     networkProxyInstance && networkProxyInstance.close();
     timers.forEach(timer => clearTimeout(timer));
     timers.forEach(timer => clearInterval(timer));
@@ -123,6 +117,7 @@ async function createServer (config) {
   const httpsServer = createHttpsServer(config, scope, handler);
 
   return {
+    db,
     httpServer,
     httpsServer
   };

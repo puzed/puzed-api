@@ -9,8 +9,7 @@ test('providers > list',
 
     const server = await createServerForTest();
 
-    server.insert('providers', {
-      id: 'test',
+    const provider = await server.db.post('providers', {
       title: 'Test',
       driver: 'test',
       apiUrl: 'https://test',
@@ -22,20 +21,19 @@ test('providers > list',
       ssoEnabled: false
     });
 
-    const session = await axios(`${server.httpsUrl}/providers`, {
+    const providers = await axios(`${server.httpsUrl}/providers`, {
       validateStatus: () => true
     });
 
-    t.equal(session.status, 200);
-    t.deepEqual(session.data, [{
-      id: 'test',
+    t.equal(providers.status, 200);
+    t.deepEqual(providers.data, [{
+      id: provider.id,
       title: 'Test',
       driver: 'test',
       appId: '1',
       installUrl: 'https://install',
       clientId: 'test-client-id',
-      ssoEnabled: false,
-      ssoUrl: null
+      ssoEnabled: false
     }]);
 
     server.close();

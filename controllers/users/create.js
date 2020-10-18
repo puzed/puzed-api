@@ -1,9 +1,7 @@
-const uuid = require('uuid').v4;
 const writeResponse = require('write-response');
 const finalStream = require('final-stream');
 const hashText = require('pbkdf2-wrapper/hashText');
 
-const buildInsertStatement = require('../../common/buildInsertStatement');
 const presentUser = require('../../presenters/user');
 const validateUser = require('../../validators/user');
 
@@ -12,11 +10,11 @@ async function createUser ({ db, settings, config }, request, response, tokens) 
     .then(buffer => buffer.toString('utf8'))
     .then(JSON.parse);
 
-  const existingUser = await db.getOne(`
-    SELECT *
-      FROM "users"
-     WHERE "email" = $1
-  `, [body.email]);
+  const existingUser = await db.getOne('users', {
+    query: {
+      email: body.email
+    }
+  });
 
   if (existingUser) {
     throw Object.assign(new Error('user with email already exists'), { statusCode: 422 });
@@ -33,23 +31,14 @@ async function createUser ({ db, settings, config }, request, response, tokens) 
     });
   }
 
-  const userId = uuid();
-
   const passwordHash = await hashText(body.password, settings.hashConfig);
 
-  const statement = buildInsertStatement('users', {
-    id: userId,
+  const userResult = await db.post('users', {
     email: body.email,
     password: passwordHash,
+    allowedServiceCreate: false,
     dateCreated: Date.now()
   });
-  await db.run(statement.sql, statement.parameters);
-
-  const userResult = await db.getOne(`
-  SELECT *
-    FROM "users"
-   WHERE "id" = $1
-`, [userId]);
 
   writeResponse(201, presentUser(userResult), response);
 }

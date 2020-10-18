@@ -1,30 +1,33 @@
 async function listDeployments ({ db }, userId, serviceId) {
-  const deployments = await db.getAll(`
-      SELECT "deployments".*, 
-      (
-        SELECT count(*) 
-          FROM "instances"
-        WHERE "instances"."deploymentId" = "deployments"."id"
-          AND "instances"."status" NOT IN ('destroyed')
-      ) as "instanceCount"
-    FROM "deployments"
-    LEFT JOIN "services" ON "services"."id" = "deployments"."serviceId"
-    WHERE "services"."userId" = $1
-      AND "services"."id" = $2
-    ORDER BY "deployments"."dateCreated" ASC
-  `, [userId, serviceId]);
+  const service = await db.getOne('services', {
+    id: serviceId,
+    userId
+  });
 
-  if (deployments.length === 0) {
-    return [];
+  if (!service) {
+    throw Object.assign(new Error('service not found'), { statusCode: 404 });
   }
 
-  const production = deployments.find(deployment => deployment.title === 'production');
-  const deploymentsWithoutProduction = deployments.filter(deployment => deployment.title !== 'production');
+  const deployments = await db.getAll('deployments', {
+    query: {
+      serviceId: serviceId
+    }
+  });
 
-  return [
-    production,
-    ...deploymentsWithoutProduction
-  ];
+  const promises = await deployments.map(async deployment => {
+    const instances = await db.getAll('instances', {
+      query: {
+        deploymentId: deployment.id
+      }
+    });
+
+    deployment.totalInstances = instances.length;
+    deployment.healthyInstances = instances.filter(instance => ['healthy', 'destroyed'].includes(instance.status)).length;
+
+    return deployment;
+  });
+
+  return Promise.all(promises);
 }
 
 module.exports = listDeployments;

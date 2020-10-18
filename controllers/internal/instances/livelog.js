@@ -1,11 +1,11 @@
 const http = require('http');
 
 async function livelog ({ db, config }, request, response, tokens) {
-  const instance = await db.getOne(`
-    SELECT "instances".*
-      FROM "instances"
-     WHERE "instances"."id" = $1
-  `, [tokens.instanceId]);
+  const instance = await db.getOne('instances', {
+    query: {
+      id: tokens.instanceId
+    }
+  });
 
   const upstreamRequest = http.request({
     socketPath: '/var/run/docker.sock',

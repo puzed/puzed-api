@@ -1,4 +1,9 @@
+const createScope = require('./createScope');
+const createServer = require('./createServer');
+
 const config = require('./config');
 
-const createServer = require('./createServer');
-createServer(config);
+createScope(config)
+  .then(scope => {
+    createServer(scope);
+  });

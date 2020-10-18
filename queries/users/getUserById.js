@@ -1,7 +1,9 @@
 async function getUserById ({ db }, userId) {
-  const deployment = await db.getOne(`
-    SELECT * FROM "users" WHERE "id" = $1
-  `, [userId]);
+  const deployment = await db.getOne('users', {
+    query: {
+      id: userId
+    }
+  });
 
   return deployment;
 }

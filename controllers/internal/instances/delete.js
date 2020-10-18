@@ -4,11 +4,11 @@ const performUsageCalculations = require('../../.././common/performUsageCalculat
 async function deleteContainer (scope, request, response, tokens) {
   const { db, notify } = scope;
 
-  const instance = await db.getOne(`
-    SELECT "instances".*
-      FROM "instances"
-     WHERE "instances"."id" = $1
-  `, [tokens.instanceId]);
+  const instance = await db.getOne('instances', {
+    query: {
+      id: tokens.instanceId
+    }
+  });
 
   try {
     const upstreamRequest = await axios({
@@ -34,21 +34,25 @@ async function deleteContainer (scope, request, response, tokens) {
         .map(line => line.slice(8))
         .join('\n');
 
-      await db.run(`
-        UPDATE "instances"
-          SET "liveLog" = $1
-        WHERE "id" = $2
-      `, [logsCleaned + '\n\nInstance container was destroyed\n', tokens.instanceId]);
+      await db.patch('instances', {
+        liveLog: logsCleaned + '\n\nInstance container was destroyed\n'
+      }, {
+        query: {
+          id: tokens.instanceId
+        }
+      });
     }
   } catch (error) {
     console.log(error);
   }
 
-  await db.run(`
-    UPDATE "instances"
-      SET "status" = 'destroyed'
-    WHERE "id" = $1
-  `, [tokens.instanceId]);
+  await db.patch('instances', {
+    status: 'destroyed'
+  }, {
+    query: {
+      id: tokens.instanceId
+    }
+  });
 
   notify.broadcast(tokens.instanceId);
 
