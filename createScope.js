@@ -4,9 +4,9 @@ const createNotifyServer = require('notify-over-http');
 const hint = require('hinton');
 
 const tls = {
-  key: fs.readFileSync('certs/localhost.privkey.pem'),
-  cert: fs.readFileSync('certs/localhost.cert.pem'),
-  ca: [fs.readFileSync('certs/ca.cert.pem')],
+  key: fs.readFileSync('./certs/localhost.privkey.pem'),
+  cert: fs.readFileSync('./certs/localhost.cert.pem'),
+  ca: [fs.readFileSync('./certs/ca.cert.pem')],
   requestCert: true
 };
 
