@@ -1,9 +1,7 @@
 const http = require('http');
-const uuid = require('uuid').v4;
 // const tidyRequest = require('tidy-http/tidyRequest');
 
 const hint = require('hinton');
-const buildInsertStatement = require('./buildInsertStatement');
 
 const activeWatchers = {};
 
@@ -30,13 +28,13 @@ async function applyStatistic ({ db }, data) {
   if (data.ticks > 10) {
     delete data.ticks;
 
-    const lastCollectedStat = (await db.getOne(`
-      SELECT *
-        FROM "instanceStatistics"
-      WHERE "instanceId" = $1
-    ORDER BY "dateCreated" DESC
-      LIMIT 1
-    `, [data.instanceId])) || {
+    const lastCollectedStat = (await db.getOne('instanceStatistics', {
+      query: {
+        instanceId: data.instanceId
+      },
+      order: 'desc(dateCreated)',
+      limit: 1
+    })) || {
       cpu: 0,
       cpuTotal: 0,
       diskIo: 0,
@@ -46,13 +44,10 @@ async function applyStatistic ({ db }, data) {
     data.cpu = data.cpuTotal - lastCollectedStat.cpuTotal;
     data.diskIo = data.diskIoTotal - lastCollectedStat.diskIoTotal;
 
-    const statement = buildInsertStatement('instanceStatistics', {
-      id: uuid(),
+    await db.post('instanceStatistics', {
       ...data,
       dateCreated: Date.now()
     });
-
-    await db.run(statement.sql, statement.parameters);
 
     delete statisticAccumulator[data.instanceId];
   }
@@ -100,14 +95,23 @@ async function performUsageCalculations (scope, instanceId) {
 
   const { db, config } = scope;
 
-  const instances = await db.getAll(`
-    SELECT "instances"."id", "serverId", "hostname", "dockerId", "dockerPort", "status", "statusDate"
-      FROM "instances"
-  LEFT JOIN "servers" ON "servers"."id" = "instances"."serverId"
-      WHERE "serverId" = $1
-        AND "status" NOT IN ('failed', 'destroyed')
-        AND ($2 IS NULL OR "instances"."id" = $2)
-  `, [config.serverId, instanceId || null]);
+  let instances;
+  if (instanceId) {
+    instances = await db.getAll('instances', {
+      query: {
+        id: instanceId
+      }
+    });
+  } else {
+    instances = await db.getAll('instances', {
+      query: {
+        serverId: config.serverId,
+        status: {
+          $nin: ['failed', 'destroyed']
+        }
+      }
+    });
+  }
 
   instances.forEach(async instance => {
     if (activeWatchers[instance.id]) {

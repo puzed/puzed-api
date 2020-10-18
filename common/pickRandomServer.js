@@ -1,10 +1,8 @@
+const selectRandomItemFromArray = require('./selectRandomItemFromArray');
+
 async function pickRandomServer ({ db }) {
-  return db.getOne(`
-    SELECT *
-      FROM "servers"
-  ORDER BY random()
-     LIMIT 1
-  `);
+  const servers = await db.getAll('servers');
+  return selectRandomItemFromArray(servers);
 }
 
 module.exports = pickRandomServer;

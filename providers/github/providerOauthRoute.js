@@ -1,24 +1,19 @@
 const writeResponse = require('write-response');
 const axios = require('axios');
-const uuidv4 = require('uuid').v4;
 
-const buildInsertStatement = require('../../common/buildInsertStatement');
 const createSession = require('../../queries/sessions/createSession');
 const getGithubConfig = require('./getGithubConfig');
 
 function createLink ({ db }, user, githubUser, url) {
-  const linkId = uuidv4();
-  const statement = buildInsertStatement('links', {
-    id: linkId,
+  return db.post('links', {
     providerId: 'github',
     userId: user.id,
     externalUserId: githubUser.data.login,
-    config: JSON.stringify({
+    config: {
       installationId: url.searchParams.get('installationId')
-    }),
+    },
     dateCreated: Date.now()
   });
-  return db.run(statement.sql, statement.parameters);
 }
 
 async function providerOauthRoute (scope, request, response) {
@@ -36,9 +31,9 @@ async function providerOauthRoute (scope, request, response) {
       headers: {
         accept: 'application/json'
       },
-      data: JSON.stringify({
+      data: {
         scope: 'repo'
-      })
+      }
     });
 
     if (oauthResponse.data.error) {
@@ -63,30 +58,26 @@ async function providerOauthRoute (scope, request, response) {
 
     const githubPrimaryEmail = githubEmail.data.find(email => email.primary);
 
-    const githubUserLink = await db.getOne(`
-      SELECT *
-        FROM "links"
-      WHERE "externalUserId" = $1
-      LIMIT 1
-    `, [githubUser.data.login]);
+    const githubUserLink = await db.getOne('links', {
+      query: {
+        externalUserId: githubUser.data.login
+      },
+      limit: 1
+    });
 
-    const user = await db.getOne(`
-      SELECT *
-        FROM "users"
-      WHERE "email" = $1
-      LIMIT 1
-    `, [githubPrimaryEmail.email]);
+    const user = await db.getOne('users', {
+      query: {
+        email: githubPrimaryEmail.email
+      }
+    });
 
     if (!user) {
-      const userId = uuidv4();
-      const statement = buildInsertStatement('users', {
-        id: userId,
+      const user = db.post('users', {
         email: githubPrimaryEmail.email,
         dateCreated: Date.now()
       });
-      await db.run(statement.sql, statement.parameters);
 
-      const session = await createSession(scope, userId);
+      const session = await createSession(scope, user.id);
       writeResponse(200, {
         session,
         actionTaken: 'sessionCreated'

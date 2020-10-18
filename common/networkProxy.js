@@ -5,20 +5,20 @@ const socks = require('socksv5');
 const hint = require('hinton');
 
 const getService = async (scope, serviceId, networkAccessToken) => {
-  return scope.db.getOne(`
-    SELECT *
-      FROM "services"
-      WHERE "id" = $1
-        AND "networkAccessToken" = $2
-  `, [serviceId, networkAccessToken]);
+  return scope.db.getOne('services', {
+    query: {
+      id: serviceId,
+      networkAccessToken
+    }
+  });
 };
 
 const getNetworkRules = async (scope, id) => {
-  return scope.db.getOne(`
-    SELECT *
-      FROM "networkRules"
-      WHERE "id" = $1
-  `, [id]);
+  return scope.db.getOne('networkRules', {
+    query: {
+      id
+    }
+  });
 };
 
 module.exports = function (scope) {

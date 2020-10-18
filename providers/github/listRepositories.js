@@ -6,9 +6,12 @@ const memoizee = require('memoizee');
 async function listRepositories (scope, userId, linkId) {
   const { db } = scope;
 
-  const link = await db.getOne(`
-    SELECT * FROM "links" WHERE "userId" = $1 AND "id" = $2
-  `, [userId, linkId]);
+  const link = await db.getOne('links', {
+    query: {
+      id: linkId,
+      userId: userId
+    }
+  });
 
   if (!link) {
     throw Object.assign(new Error('no link'), { statusCode: 404 });

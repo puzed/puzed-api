@@ -1,7 +1,6 @@
 const fs = require('fs');
 const tls = require('tls');
 
-const uuid = require('uuid').v4;
 const Keypairs = require('@root/keypairs');
 const ACME = require('@root/acme');
 const CSR = require('@root/csr');
@@ -9,10 +8,21 @@ const PEM = require('@root/pem');
 const isIp = require('is-ip');
 const memoizee = require('memoizee');
 
-const buildInsertStatement = require('./buildInsertStatement');
 const hint = require('hinton');
 const pkg = require('../package.json');
 const packageAgent = 'test-' + pkg.name + '/' + pkg.version;
+
+function getCertificateFromDb (db, domain, filter) {
+  const options = {
+    query: {
+      domain: { $custom: ["$1 LIKE json_extract(data, '$.domain')", domain] },
+      ...filter
+    },
+    order: 'desc(dateCreated)',
+    limit: 1
+  };
+  return db.getOne('certificates', options);
+}
 
 const getCertificate = async function (scope, options, servername) {
   const { settings, db } = scope;
@@ -102,7 +112,7 @@ async function getCertificateForDomain (scope, domain) {
   const { db } = scope;
 
   // Already in database (success)
-  const existingCertificate = await db.getOne('SELECT * FROM "certificates" WHERE $1 LIKE "domain" AND "status" = \'success\' ORDER BY "dateCreated" DESC LIMIT 1', [domain]);
+  const existingCertificate = await getCertificateFromDb(db, domain, { status: 'success' });
 
   if (existingCertificate) {
     if (existingCertificate.dateRenewal < Date.now()) {
@@ -116,9 +126,13 @@ async function getCertificateForDomain (scope, domain) {
   }
 
   // Already in database (pending)
-  if (await db.getOne('SELECT * FROM "certificates" WHERE $1 LIKE "domain" LIMIT 1', [domain])) {
+  const pendingCertificate = await getCertificateFromDb(db, domain);
+
+  if (pendingCertificate) {
     console.log('acmeUtils: already in database, but not finished');
-    await waitForResult(() => db.getOne('SELECT * FROM "certificates" WHERE $1 LIKE "domain" AND "status" = \'success\' LIMIT 1', [domain]));
+    await waitForResult(() => {
+      return getCertificateFromDb(db, domain, { status: 'success' });
+    }, [domain]);
     return getCertificateForDomain(scope, domain);
   }
 
@@ -130,15 +144,11 @@ async function getCertificateForDomain (scope, domain) {
 async function generateCertificateForDomain (scope, domain) {
   const { db, settings } = scope;
 
-  const temporaryCertificateId = uuid();
-
-  const statement = buildInsertStatement('certificates', {
-    id: temporaryCertificateId,
+  const temporaryRecord = await db.post('certificates', {
     domain,
     status: 'pending',
     dateCreated: Date.now()
   });
-  await db.run(statement.sql, statement.parameters);
 
   const email = settings.acmeEmail;
 
@@ -174,15 +184,24 @@ async function generateCertificateForDomain (scope, domain) {
         return null;
       },
       set: async function (data) {
-        db.run('UPDATE "certificates" SET "challenge" = $1, "token" = $2 WHERE "id" = $3', [
-          JSON.stringify(data.challenge), data.challenge.token, temporaryCertificateId
-        ]);
+        db.put('certificates', {
+          challenge: data.challenge,
+          token: data.challenge.token
+        }, {
+          query: {
+            id: temporaryRecord.id
+          }
+        });
 
         return null;
       },
       get: async function (data) {
-        const result = await db.getOne('SELECT "challenge" FROM "certificates" WHERE "token" = $1', [data.challenge.token]);
-        return JSON.parse(result.challenge);
+        const result = await db.getOne('challenge', {
+          query: {
+            token: data.challenge.token
+          }
+        });
+        return result.challenge;
       },
       remove: async function (data) {
         // Will cleanup at the end
@@ -200,8 +219,7 @@ async function generateCertificateForDomain (scope, domain) {
   });
   const fullchain = pems.cert + '\n' + pems.chain + '\n';
 
-  const successStatement = buildInsertStatement('certificates', {
-    id: uuid(),
+  await db.post('certificates', {
     domain,
     status: 'success',
     fullchain,
@@ -209,10 +227,14 @@ async function generateCertificateForDomain (scope, domain) {
     dateRenewal: Date.now() + ((24 * 40) * 60 * 60 * 1000),
     dateCreated: Date.now()
   });
-  await db.run(successStatement.sql, successStatement.parameters);
+
   getCachedCertificate.clear();
 
-  await db.run('DELETE FROM "certificates" WHERE "id" = $1', [temporaryCertificateId]);
+  await db.delete('certificates', {
+    query: {
+      id: temporaryRecord.id
+    }
+  });
 
   if (errors.length) {
     console.warn();
@@ -237,9 +259,14 @@ function getCertificateHandler (scope, options) {
 async function handleHttpChallenge ({ db, settings }, request, response) {
   const token = request.url.replace('/.well-known/acme-challenge/', '');
 
-  const certificates = await db.getAll('SELECT * FROM "certificates" WHERE "token" = $1', [token]);
+  const certificates = await db.getAll('certificates', {
+    query: {
+      token: token
+    }
+  });
+
   for (const certificate of certificates) {
-    const challenge = JSON.parse(certificate.challenge);
+    const challenge = certificate.challenge;
     if (!challenge) {
       continue;
     }
@@ -280,6 +307,7 @@ function createHttpHandler (settings, scope, handler) {
 }
 
 module.exports = {
+  getCertificateFromDb,
   createHttpHandler,
   getCertificateHandler,
   handleHttpChallenge

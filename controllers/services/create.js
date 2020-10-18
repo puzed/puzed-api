@@ -1,11 +1,9 @@
-const uuidv4 = require('uuid').v4;
 const finalStream = require('final-stream');
 const axios = require('axios');
 const writeResponse = require('write-response');
 
 const createRandomString = require('../../common/createRandomString');
 const authenticate = require('../../common/authenticate');
-const buildInsertStatement = require('../../common/buildInsertStatement');
 const presentService = require('../../presenters/service');
 const listAvailableDomains = require('../../queries/domains/listAvailableDomains');
 
@@ -60,10 +58,7 @@ async function createService (scope, request, response) {
     });
   }
 
-  const serviceId = uuidv4();
-
-  const statement = buildInsertStatement('services', {
-    id: serviceId,
+  const service = await db.post('services', {
     name: body.name,
     linkId: body.linkId,
     providerRepositoryId: body.providerRepositoryId,
@@ -79,9 +74,8 @@ async function createService (scope, request, response) {
     userId: user.id,
     dateCreated: Date.now()
   });
-  await db.run(statement.sql, statement.parameters);
 
-  await axios(`https://localhost:${config.httpsPort}/services/${serviceId}/deployments`, {
+  await axios(`https://localhost:${config.httpsPort}/services/${service.id}/deployments`, {
     method: 'POST',
     headers: {
       host: settings.domains.api[0],
@@ -92,10 +86,6 @@ async function createService (scope, request, response) {
       branch: 'master'
     })
   });
-
-  const service = await db.getOne(`
-    SELECT * FROM services WHERE id = $1
-  `, [serviceId]);
 
   writeResponse(201, JSON.stringify(presentService(service)), response);
 }

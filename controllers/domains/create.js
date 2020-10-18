@@ -1,10 +1,8 @@
-const uuid = require('uuid').v4;
 const writeResponse = require('write-response');
 const finalStream = require('final-stream');
 
 const authenticate = require('../../common/authenticate');
 
-const buildInsertStatement = require('../../common/buildInsertStatement');
 const createRandomString = require('../../common/createRandomString');
 const pickRandomServer = require('../../common/pickRandomServer');
 const presentDomain = require('../../presenters/domain');
@@ -28,26 +26,18 @@ async function createDomain ({ db, settings, config }, request, response, tokens
     });
   }
 
-  const domainId = uuid();
   const guardianServer = await pickRandomServer({ db });
 
-  const statement = buildInsertStatement('domains', {
-    id: domainId,
+  const domain = await db.post('domains', {
     domain: body.domain,
     userId: user.id,
     guardianServerId: guardianServer.id,
+    verificationStatus: 'untested',
     verificationCode: await createRandomString(30),
     dateCreated: Date.now()
   });
-  await db.run(statement.sql, statement.parameters);
 
-  const domainResult = await db.getOne(`
-  SELECT *
-    FROM "domains"
-   WHERE "id" = $1
-`, [domainId]);
-
-  writeResponse(201, presentDomain(domainResult), response);
+  writeResponse(201, presentDomain(domain), response);
 }
 
 module.exports = createDomain;

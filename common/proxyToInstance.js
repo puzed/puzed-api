@@ -1,35 +1,62 @@
 const http = require('http');
 
+const selectRandomItemFromArray = require('./selectRandomItemFromArray');
+
 async function proxyToInstance ({ db }, request, response) {
   let hostname = request.headers.host.split(':')[0];
+  let branch;
 
   if (!hostname.includes('--')) {
-    hostname = 'production--' + hostname;
+    [hostname, branch] = hostname.split('--');
   }
 
-  const record = await db.getOne(`
-  SELECT * FROM (
-    SELECT "hostname", "dockerId", "dockerPort"
-      FROM "instances"
- LEFT JOIN "servers" ON "servers"."id" = "instances"."serverId"
- LEFT JOIN "services" ON "services"."id" = "instances"."serviceId"
- LEFT JOIN "deployments" ON "deployments"."id" = "instances"."deploymentId"
-     WHERE (
-      concat("deployments"."title", '--', "domain") = $1
-      OR "domain" = $1
-     ) AND "status" = 'healthy'
-) a
-  ORDER BY random()
-     LIMIT 1
-  `, [hostname]);
+  branch = branch || 'production';
 
-  if (!record) {
+  const service = await db.getOne('services', {
+    query: {
+      domain: hostname
+    }
+  });
+
+  if (!service) {
+    response.writeHead(404);
+    response.end(`no service for host ${request.headers.host} found`);
+    return;
+  }
+
+  const deployment = await db.getOne('deployments', {
+    query: {
+      serviceId: service.id,
+      title: branch
+    }
+  });
+
+  if (!deployment) {
+    response.writeHead(404);
+    response.end(`no deployment for host ${request.headers.host} found`);
+    return;
+  }
+
+  const instances = await db.getAll('instances', {
+    query: {
+      deploymentId: deployment.id,
+      status: 'healthy'
+    }
+  });
+
+  if (instances.length === 0) {
     response.writeHead(404);
     response.end(`no instances for host ${request.headers.host} found`);
     return;
   }
 
-  const proxyRequest = http.request(`http://${record.hostname}:${record.dockerPort}${request.url}`, {
+  const instance = selectRandomItemFromArray(instances);
+
+  const server = await db.getOne('servers', {
+    id: instance.serverId
+  });
+
+  const proxyRequest = http.request(`http://${server.hostname}:${instance.dockerPort}${request.url}`, {
     method: request.method,
     headers: request.headers
   }, function (proxyResponse) {

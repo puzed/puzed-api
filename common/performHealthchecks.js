@@ -1,39 +1,51 @@
 const axios = require('axios');
-
 const hint = require('hinton');
 
 async function instanceHealthChecks ({ db, notify, config }) {
-  const instances = await db.getAll(`
-    SELECT "instances"."id", "serverId", "hostname", "dockerPort", "status", "statusDate"
-      FROM "instances"
- LEFT JOIN "servers" ON "servers"."id" = "instances"."serverId"
-     WHERE "serverId" = $1
-       AND "status" IN ('starting', 'unhealthy', 'healthy')
-  `, [config.serverId]);
+  const server = await db.getOne('servers', {
+    query: {
+      id: config.serverId
+    }
+  });
+
+  const instances = await db.getAll('instances', {
+    query: {
+      serverId: config.serverId,
+      status: {
+        $in: ['starting', 'unhealthy', 'healthy']
+      }
+    }
+  });
 
   const promises = instances.map(async instance => {
     try {
-      await axios(`http://${instance.hostname}:${instance.dockerPort}/health`, {
+      await axios(`http://${server.hostname}:${instance.dockerPort}/health`, {
         validateStatus: () => true
       });
+
       if (instance.status !== 'healthy') {
         notify.broadcast(instance.id);
-        return db.run(`
-          UPDATE "instances"
-            SET "status" = 'healthy',
-                "statusDate" = $2
-          WHERE "id" = $1
-        `, [instance.id, Date.now()]);
+
+        return db.patch('instances', {
+          status: 'healthy',
+          statusDate: Date.now()
+        }, {
+          query: {
+            id: instance.id
+          }
+        });
       }
     } catch (_) {
       if (instance.status === 'healthy') {
         notify.broadcast(instance.id);
-        return db.run(`
-          UPDATE "instances"
-            SET "status" = 'unhealthy',
-                "statusDate" = $2
-          WHERE "id" = $1
-        `, [instance.id, Date.now()]);
+        return db.patch('instances', {
+          status: 'unhealthy',
+          statusDate: Date.now()
+        }, {
+          query: {
+            id: instance.id
+          }
+        });
       }
     }
   });
@@ -42,34 +54,42 @@ async function instanceHealthChecks ({ db, notify, config }) {
 }
 
 async function deploymentHealthChecks ({ db, notify, config }) {
-  const deployments = await db.getAll(`
-   SELECT
-    "deployments"."id",
-    "deployments"."stable",
-    (SELECT count(*) FROM "instances" WHERE "instances"."deploymentId" = "deployments"."id") as "totalInstances",
-    (SELECT count(*) FROM "instances" WHERE "instances"."deploymentId" = "deployments"."id" AND "instances"."status" IN ('healthy', 'destroyed')) as "healthyInstances"
-     FROM "deployments"
-    WHERE "deployments"."guardianServerId" = $1
-  `, [config.serverId]);
+  const deployments = await db.getAll('deployments', {
+    query: {
+      guardianServerId: config.serverId
+    }
+  });
 
   for (const deployment of deployments) {
-    if (deployment.stable && deployment.totalInstances !== deployment.healthyInstances) {
-      await db.run(`
-        UPDATE "deployments"
-          SET "stable" = false
-        WHERE "id" = $1
-      `, [deployment.id]);
+    const instances = await db.getAll('instances', {
+      query: {
+        deploymentId: deployment.id
+      }
+    });
+    const totalInstances = instances.length;
+    const healthyInstances = instances.filter(instance => ['healthy', 'destroyed'].includes(instance.status)).length;
+
+    if (deployment.stable && totalInstances !== healthyInstances) {
+      await db.patch('deployments', {
+        stable: false
+      }, {
+        query: {
+          id: deployment.id
+        }
+      });
 
       notify.broadcast(deployment.id);
       return;
     }
 
-    if (!deployment.stable && deployment.totalInstances === deployment.healthyInstances) {
-      await db.run(`
-        UPDATE "deployments"
-          SET "stable" = true
-        WHERE "id" = $1
-      `, [deployment.id]);
+    if (!deployment.stable && totalInstances === healthyInstances) {
+      await db.patch('deployments', {
+        stable: true
+      }, {
+        query: {
+          id: deployment.id
+        }
+      });
 
       notify.broadcast(deployment.id);
       return;

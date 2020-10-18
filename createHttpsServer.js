@@ -16,8 +16,12 @@ function createHttpsServer (config, scope, handler) {
     SNICallback: acmeUtilities.getCertificateHandler(scope, {
       defaultCertificates,
       isAllowedDomain: async domain => {
-        const allowedService = await db.getOne('SELECT * FROM services WHERE $1 LIKE domain LIMIT 1', [domain]);
-        const allowedCertificate = await db.getOne('SELECT * FROM certificates WHERE $1 LIKE domain LIMIT 1', [domain]);
+        const allowedService = await db.getOne('services', {
+          query: {
+            domain: { $custom: ["$1 LIKE json_extract(data, '$.domain')", domain] }
+          }
+        });
+        const allowedCertificate = await acmeUtilities.getCertificateFromDb(db, domain);
 
         return settings.domains.api.includes(domain) || settings.domains.client.includes(domain) || allowedService || allowedCertificate;
       }

@@ -1,7 +1,9 @@
 async function listServices ({ db }, userId) {
-  const services = await db.getAll(`
-    SELECT * FROM "services" WHERE "userId" = $1
-  `, [userId]);
+  const services = await db.getAll('services', {
+    query: {
+      userId: userId
+    }
+  });
 
   return services;
 }

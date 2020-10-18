@@ -1,7 +1,10 @@
 async function getLinkById ({ db }, userId, linkId) {
-  const link = await db.getOne(`
-    SELECT * FROM "links" WHERE "userId" = $1 AND "id" = $2
-  `, [userId, linkId]);
+  const link = await db.getOne('links', {
+    query: {
+      userId: userId,
+      id: linkId
+    }
+  });
 
   return link;
 }

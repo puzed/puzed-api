@@ -1,6 +1,6 @@
 const http = require('http');
 
-async function proxyToClient ({ db, config }, request, response) {
+async function proxyToClient ({ db, config, settings }, request, response) {
   const proxyRequest = http.request(`${config.clientUrl}${request.url}`, {
     method: request.method
   }, function (proxyResponse) {

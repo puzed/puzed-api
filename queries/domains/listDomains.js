@@ -1,10 +1,12 @@
 async function listdomains ({ db }, userId) {
-  const links = await db.getAll(`
-       SELECT "domains".*
-         FROM "domains"
-        WHERE "domains"."userId" = $1
-           OR "domains"."userId" IS NULL
-  `, [userId]);
+  const links = await db.getAll('domains', {
+    query: {
+      $or: [
+        { userId: userId },
+        { userId: { $null: true } }
+      ]
+    }
+  });
 
   return links;
 }

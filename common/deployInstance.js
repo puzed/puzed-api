@@ -72,25 +72,42 @@ async function createTextFileInContainer (containerId, destinationPath, content)
 async function deployRepositoryToServer (scope, instanceId) {
   const { db, notify, providers, config } = scope;
 
-  const server = await scope.db.getOne('SELECT * FROM "servers" WHERE "id" = $1', [scope.config.serverId]);
+  const server = await scope.db.getOne('servers', {
+    query: {
+      id: scope.config.serverId
+    }
+  });
 
-  const instance = await db.getOne('SELECT * FROM "instances" WHERE "id" = $1', [instanceId]);
-  const service = await db.getOne(`
-    SELECT "services".*, "providerId"
-      FROM "services"
- LEFT JOIN "links" ON "links"."id" = "services"."linkId"
-     WHERE "services"."id" = $1
-  `, [instance.serviceId]);
+  const instance = await scope.db.getOne('instances', {
+    query: {
+      id: instanceId
+    }
+  });
 
-  const provider = providers[service.providerId];
+  const service = await scope.db.getOne('services', {
+    query: {
+      id: instance.serviceId
+    }
+  });
+
+  const link = await scope.db.getOne('links', {
+    query: {
+      id: service.linkId
+    }
+  });
+
+  const provider = providers[link.providerId];
 
   const secrets = JSON.parse(service.secrets);
 
-  await db.run(`
-    UPDATE "instances"
-      SET "status" = 'building'
-    WHERE "id" = $1
-  `, [instanceId]);
+  await db.patch('instances', {
+    status: 'building'
+  }, {
+    query: {
+      id: instanceId
+    }
+  });
+
   notify.broadcast(instanceId);
 
   function log (...args) {
@@ -206,11 +223,14 @@ async function deployRepositoryToServer (scope, instanceId) {
 
     await buildImage(imageTagName, tar.pack(`/tmp/${instanceId}`));
 
-    await db.run(`
-      UPDATE "instances"
-      SET "status" = 'starting'
-      WHERE "id" = $1
-    `, [instanceId]);
+    await db.patch('instances', {
+      status: 'starting'
+    }, {
+      query: {
+        id: instanceId
+      }
+    });
+
     notify.broadcast(instanceId);
 
     log('\n' + chalkCtx.greenBright('Creating container'));
@@ -282,13 +302,17 @@ async function deployRepositoryToServer (scope, instanceId) {
 
     log('\n' + chalkCtx.cyanBright('🟢 Your website is now live'));
     (instanceLogListeners[instanceId] || []).forEach(output => output(null));
-    await db.run(`
-      UPDATE "instances"
-      SET "buildLog" = $2,
-          "dockerId" = $3,
-          "dockerPort" = $4
-      WHERE "id" = $1
-    `, [instanceId, instanceLogs[instanceId].trim(), dockerId, dockerPort]);
+
+    await db.patch('instances', {
+      buildLog: instanceLogs[instanceId].trim(),
+      dockerId,
+      dockerPort
+    }, {
+      query: {
+        id: instanceId
+      }
+    });
+
     notify.broadcast(instanceId);
   } catch (error) {
     console.log(error);
@@ -301,12 +325,15 @@ async function deployRepositoryToServer (scope, instanceId) {
       console.log(error);
     }
 
-    await db.run(`
-      UPDATE "instances"
-      SET "buildLog" = $2,
-          "status" = 'failed'
-      WHERE "id" = $1
-    `, [instanceId, instanceLogs[instanceId].trim()]);
+    await db.patch('instances', {
+      buildLog: instanceLogs[instanceId].trim(),
+      status: 'failed'
+    }, {
+      query: {
+        id: instanceId
+      }
+    });
+
     notify.broadcast(instanceId);
   }
 }

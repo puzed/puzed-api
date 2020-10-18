@@ -1,23 +1,27 @@
+const fs = require('fs');
+const chalk = require('chalk');
 const createNotifyServer = require('notify-over-http');
-
 const hint = require('hinton');
 
-const database = require('./common/database');
-const migrationDriver = require('./migrations');
-const { getMigrationsFromDirectory, up } = require('node-mini-migrations');
+const tls = {
+  key: fs.readFileSync('./certs/localhost.privkey.pem'),
+  cert: fs.readFileSync('./certs/localhost.cert.pem'),
+  ca: [fs.readFileSync('./certs/ca.cert.pem')],
+  requestCert: true
+};
 
-async function loadSettingsFromDatabase (db) {
-  const settings = await db.getAll('SELECT * FROM "settings"');
+const canhazdb = require('canhazdb');
+
+async function loadSettingsFromDatabase (config, db) {
+  const settings = await db.getAll('settings');
 
   const objectifiedSettings = settings.reduce((result, setting) => {
     result[setting.key] = setting.value;
     return result;
   }, {});
 
-  if (!objectifiedSettings.installed) {
-    console.log('Puzed instance is not installed. Will try again in 2 seconds.');
-    await (() => new Promise(resolve => setTimeout(resolve, 2000)))();
-    return loadSettingsFromDatabase(db);
+  if (!objectifiedSettings.installed && !config.hideUninstalledWarning) {
+    console.log(chalk.yellow('Puzed instance is not installed'));
   }
 
   return objectifiedSettings;
@@ -25,16 +29,18 @@ async function loadSettingsFromDatabase (db) {
 
 async function createScope (config) {
   hint('puzed.db', 'connecting');
-  const db = config.db || await database.connect(config.cockroach);
 
-  hint('puzed.db', 'running migrations');
-  await up(migrationDriver(db), getMigrationsFromDirectory('./migrations'));
+  const dataNode = config.createDataNode ? await canhazdb.server({
+    host: 'localhost', port: 7061, queryPort: 8061, dataDirectory: config.dataDirectory, tls
+  }) : null;
+
+  const db = await canhazdb.client(dataNode ? dataNode.url : 'https://localhost:8061', { tls });
 
   hint('puzed.settings', 'grabbing settings from db');
-  const settings = await loadSettingsFromDatabase(db, 'settings');
+  const settings = await loadSettingsFromDatabase(config, db, 'settings');
 
   hint('puzed.db', 'fetching all servers');
-  const servers = await db.getAll('SELECT * FROM "servers"');
+  const servers = await db.getAll('servers');
 
   hint('puzed.notify', 'creating notify server');
   const notify = createNotifyServer({
@@ -51,7 +57,17 @@ async function createScope (config) {
     config,
     settings,
     notify,
-    db
+    dataNode,
+    db,
+    close: () => {
+      return Promise.all([
+        dataNode && dataNode.close()
+      ]);
+    }
+  };
+
+  scope.reloadSettings = async () => {
+    scope.settings = await loadSettingsFromDatabase(config, db, 'settings');
   };
 
   scope.providers = require('./providers')(scope);
