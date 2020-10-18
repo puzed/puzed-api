@@ -28,6 +28,7 @@ npm install
 
 ### Setup the database
 ```bash
+./makeCerts.sh
 npm run setup
 ```
 
