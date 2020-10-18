@@ -3,6 +3,12 @@ const http = require('http');
 const selectRandomItemFromArray = require('./selectRandomItemFromArray');
 
 async function proxyToInstance ({ db }, request, response) {
+  if (!request.headers.host) {
+    response.writeHead(404);
+    response.end('no host specified found');
+    return;
+  }
+
   let hostname = request.headers.host.split(':')[0];
   let branch;
 

@@ -12,8 +12,6 @@ async function getLatestCommitHash (scope, user, service, branch = 'master') {
     }
   });
 
-  console.log(link);
-
   const accessToken = await generateAccessToken(scope, link.config.installationId);
 
   if (!service.providerRepositoryId) {
