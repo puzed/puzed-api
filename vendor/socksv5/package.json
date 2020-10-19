@@ -10,9 +10,6 @@
   "dependencies": {
     "ip-address": "^7.0.1"
   },
-  "bundledDependencies": [
-    "ipv6"
-  ],
   "engines": {
     "node": ">=0.10.0"
   },
