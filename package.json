@@ -28,7 +28,7 @@
     "is-ip": "^3.1.0",
     "jsonwebtoken": "^8.5.1",
     "memoizee": "^0.4.14",
-    "ndjson-fe": "^1.2.3",
+    "ndjson-fe": "^1.2.5",
     "node-mini-migrations": "^5.0.0",
     "node-rsa": "^1.1.1",
     "notify-over-http": "^2.0.2",
