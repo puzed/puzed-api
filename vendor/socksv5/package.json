@@ -8,7 +8,7 @@
     "test": "node test/test.js"
   },
   "dependencies": {
-    "ipv6": "*"
+    "ip-address": "^7.0.1"
   },
   "bundledDependencies": [
     "ipv6"

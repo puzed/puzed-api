@@ -1,5 +1,5 @@
-var net = require('net'),
-    ipv6 = require('ipv6').v6;
+var net = require('net');
+var Address6 = require('ip-address').Address6;
 
 exports.ipbytes = function(str) {
   var type = net.isIP(str),
@@ -15,11 +15,10 @@ exports.ipbytes = function(str) {
         throw new Error('Error parsing IP: ' + str);
     }
   } else if (type === 6) {
-    var addr = new ipv6.Address(str),
-        b = 0,
-        group;
-    if (!addr.valid)
-      throw new Error('Error parsing IP: ' + str);
+    var b = 0;
+    var group;
+
+    var addr = new Address6(str);
     nums = addr.parsedAddress;
     bytes = new Array(16);
     for (i = 0; i < 8; ++i, b += 2) {
