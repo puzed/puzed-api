@@ -14,7 +14,8 @@ async function instanceHealthChecks ({ db, notify, config }) {
       status: {
         $in: ['starting', 'unhealthy', 'healthy']
       }
-    }
+    },
+    fields: ['dockerPort', 'status']
   });
 
   const promises = instances.map(async instance => {
@@ -57,14 +58,19 @@ async function deploymentHealthChecks ({ db, notify, config }) {
   const deployments = await db.getAll('deployments', {
     query: {
       guardianServerId: config.serverId
-    }
+    },
+    fields: ['stable']
   });
 
   for (const deployment of deployments) {
     const instances = await db.getAll('instances', {
       query: {
-        deploymentId: deployment.id
-      }
+        deploymentId: deployment.id,
+        status: {
+          $nin: ['destroyed']
+        }
+      },
+      fields: ['status']
     });
     const totalInstances = instances.length;
     const healthyInstances = instances.filter(instance => ['healthy', 'destroyed'].includes(instance.status)).length;

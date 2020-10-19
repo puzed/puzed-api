@@ -29,7 +29,7 @@ async function logInstance ({ db, settings, config }, request, response, tokens)
 
   const server = await db.getOne('servers', {
     query: {
-      hostname: instance.hostname
+      id: instance.serverId
     }
   });
 

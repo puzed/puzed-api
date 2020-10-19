@@ -22,7 +22,7 @@ async function deleteInstance ({ db, settings, config }, request, response, toke
 
   const server = await db.getOne('servers', {
     query: {
-      hostname: instance.hostname
+      id: instance.serverId
     }
   });
 
