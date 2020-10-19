@@ -129,7 +129,7 @@ async function configurePuzed (options) {
 
     const server = await scope.db.getOne('servers');
 
-    const configFile = require('../config');
+    const configFile = require('../config/index.template.js');
     configFile.serverId = server.id;
     fs.writeFileSync('./config/index.js', 'module.exports = ' + JSON.stringify(configFile, null, 2));
 
