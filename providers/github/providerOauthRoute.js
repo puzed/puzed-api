@@ -67,12 +67,12 @@ async function providerOauthRoute (scope, request, response) {
 
     const user = await db.getOne('users', {
       query: {
-        email: githubPrimaryEmail.email
+        email: githubPrimaryEmail.email || null
       }
     });
 
     if (!user) {
-      const user = db.post('users', {
+      const user = await db.post('users', {
         email: githubPrimaryEmail.email,
         dateCreated: Date.now()
       });
