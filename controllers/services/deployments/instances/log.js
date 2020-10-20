@@ -23,7 +23,13 @@ async function logInstance ({ db, settings, config }, request, response, tokens)
   });
 
   if (instance.status === 'destroyed') {
-    writeResponse(200, instance.liveLog, response);
+    const liveLog = await db.getOne('instanceLogs', {
+      query: {
+        instanceId: tokens.instanceId
+      }
+    });
+
+    writeResponse(200, liveLog ? liveLog.data : 'No logs stored', response);
     return;
   }
 

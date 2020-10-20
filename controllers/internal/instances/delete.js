@@ -34,12 +34,9 @@ async function deleteContainer (scope, request, response, tokens) {
         .map(line => line.slice(8))
         .join('\n');
 
-      await db.patch('instances', {
-        liveLog: logsCleaned + '\n\nInstance container was destroyed\n'
-      }, {
-        query: {
-          id: tokens.instanceId
-        }
+      await db.post('instanceLogs', {
+        instanceId: instance.id,
+        data: logsCleaned + '\n\nInstance container was destroyed\n'
       });
     }
   } catch (error) {
