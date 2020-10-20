@@ -17,8 +17,8 @@ async function getDeploymentById ({ db }, userId, serviceId, deploymentId) {
     }
   });
 
-  const totalInstances = instances.length;
-  const healthyInstances = instances.filter(instance => ['healthy', 'destroyed'].includes(instance.status)).length;
+  const totalInstances = instances.filter(instance => !['destroyed'].includes(instance.status)).length;
+  const healthyInstances = instances.filter(instance => ['healthy'].includes(instance.status)).length;
 
   return {
     ...deployment,
