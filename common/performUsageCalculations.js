@@ -100,7 +100,8 @@ async function performUsageCalculations (scope, instanceId) {
     instances = await db.getAll('instances', {
       query: {
         id: instanceId
-      }
+      },
+      fields: ['dockerId']
     });
   } else {
     instances = await db.getAll('instances', {
@@ -109,7 +110,8 @@ async function performUsageCalculations (scope, instanceId) {
         status: {
           $nin: ['failed', 'destroyed']
         }
-      }
+      },
+      fields: ['dockerId']
     });
   }
 

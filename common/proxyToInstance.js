@@ -47,7 +47,8 @@ async function proxyToInstance ({ db }, request, response) {
     query: {
       deploymentId: deployment.id,
       status: 'healthy'
-    }
+    },
+    fields: ['dockerPort', 'serverId']
   });
 
   if (instances.length === 0) {

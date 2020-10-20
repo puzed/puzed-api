@@ -14,7 +14,8 @@ async function getDeploymentById ({ db }, userId, serviceId, deploymentId) {
   const instances = await db.getAll('instances', {
     query: {
       deploymentId
-    }
+    },
+    fields: ['status']
   });
 
   const totalInstances = instances.filter(instance => !['destroyed'].includes(instance.status)).length;
