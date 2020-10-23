@@ -92,6 +92,7 @@ async function configurePuzed (options) {
 
       options.setupUser && scope.db.post('users', {
         email: options.userEmail,
+        allowedServiceCreate: true,
         password: await hashText(options.userPassword, hashConfig)
       }),
 
