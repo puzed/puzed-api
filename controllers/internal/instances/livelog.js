@@ -8,7 +8,7 @@ async function livelog ({ db, config }, request, response, tokens) {
   });
 
   const upstreamRequest = http.request({
-    socketPath: '/var/run/docker.sock',
+    socketPath: config.dockerSocketPath,
     path: `/v1.26/containers/${instance.dockerId}/logs?stderr=1&stdout=1&timestamps=1&follow=1&tail=10`
   }, function (upstreamResponse) {
     response.writeHead(upstreamResponse.statusCode);

@@ -2,7 +2,7 @@ const axios = require('axios');
 const performUsageCalculations = require('../../.././common/performUsageCalculations');
 
 async function deleteContainer (scope, request, response, tokens) {
-  const { db, notify } = scope;
+  const { db, config, notify } = scope;
 
   const instance = await db.getOne('instances', {
     query: {
@@ -12,7 +12,7 @@ async function deleteContainer (scope, request, response, tokens) {
 
   try {
     const upstreamRequest = await axios({
-      socketPath: '/var/run/docker.sock',
+      socketPath: config.dockerSocketPath,
       url: `/v1.26/containers/${instance.dockerId}/logs?stderr=1&stdout=1&timestamps=1`,
       validateStatus: statusCode => [200, 404].includes(statusCode),
       responseEncoding: 'ascii'
@@ -22,7 +22,7 @@ async function deleteContainer (scope, request, response, tokens) {
 
     await axios({
       method: 'DELETE',
-      socketPath: '/var/run/docker.sock',
+      socketPath: config.dockerSocketPath,
       url: `/v1.26/containers/${instance.dockerId}?force=true`,
       validateStatus: statusCode => [200, 204, 404].includes(statusCode),
       responseEncoding: 'ascii'

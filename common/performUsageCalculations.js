@@ -122,7 +122,7 @@ async function performUsageCalculations (scope, instanceId) {
 
     const request = http.request({
       method: 'get',
-      socketPath: '/var/run/docker.sock',
+      socketPath: config.dockerSocketPath,
       path: `/v1.40/containers/${instance.dockerId}/stats?stream=true`
     }, function (response) {
       if (response.statusCode === 200) {

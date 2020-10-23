@@ -7,5 +7,6 @@ module.exports = {
   dockerRuntime: 'runc',
   clientUrl: 'http://localhost:8180',
   dataDirectory: './canhazdata/puzed',
-  createDataNode: true
+  createDataNode: true,
+  dockerSocketPath: '/var/run/docker.sock'
 };
