@@ -7,7 +7,7 @@ async function deploymentScaling (scope) {
     query: {
       guardianServerId: config.serverId
     },
-    fields: ['stable']
+    fields: []
   });
 
   for (const deployment of deployments) {
@@ -18,7 +18,7 @@ async function deploymentScaling (scope) {
           $in: ['starting', 'building', 'healthy']
         }
       },
-      fields: ['status', 'scaling', 'serviceId', 'commitHash']
+      fields: ['status']
     });
     const totalHealthyInstances = healthyInstances.length;
     const scaling = deployment.scaling || {};

@@ -5,7 +5,7 @@ module.exports = async function (scope, deploymentId) {
   const { db, settings } = scope;
   const server = await pickRandomServer(scope);
 
-  const deployment = await db.getOne('deployments', { id: deploymentId });
+  const deployment = await db.getOne('deployments', { query: { id: deploymentId } });
 
   const instance = await db.post('instances', {
     serviceId: deployment.serviceId,
