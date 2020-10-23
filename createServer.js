@@ -10,6 +10,7 @@ const networkProxy = require('./common/networkProxy');
 const handleError = require('./common/handleError');
 const acmeUtilities = require('./common/acmeUtilities');
 const performHealthchecks = require('./common/performHealthchecks');
+const performScaling = require('./common/performScaling');
 const performAutoSwitches = require('./common/performAutoSwitches');
 const performDomainValidations = require('./common/performDomainValidations');
 const performUsageCalculations = require('./common/performUsageCalculations');
@@ -26,6 +27,10 @@ async function createServer (scope) {
 
   timers.push(
     setInterval(() => performHealthchecks(scope), 3000)
+  );
+
+  timers.push(
+    setInterval(() => performScaling(scope), 3000)
   );
 
   timers.push(

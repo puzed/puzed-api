@@ -1,14 +1,14 @@
-const axios = require('axios');
 const writeResponse = require('write-response');
 
 const authenticate = require('../../../../common/authenticate');
-const pickRandomServer = require('../../../../common/pickRandomServer');
 const checkRelationalData = require('../../../../common/checkRelationalData');
+const createNewInstance = require('../../../../common/createNewInstance');
 
-async function createInstance ({ db, settings, config }, request, response, tokens) {
+async function createInstance (scope, request, response, tokens) {
+  const { db, config } = scope;
   const { user } = await authenticate({ db, config }, request.headers.authorization);
 
-  const { service, deployment } = await checkRelationalData(db, {
+  const { deployment } = await checkRelationalData(db, {
     service: {
       id: tokens.serviceId,
       userId: user.id
@@ -18,24 +18,7 @@ async function createInstance ({ db, settings, config }, request, response, toke
     }
   });
 
-  const server = await pickRandomServer({ db });
-
-  const instance = await db.post('instances', {
-    serviceId: service.id,
-    deploymentId: deployment.id,
-    serverId: server.id,
-    commitHash: deployment.commitHash,
-    status: 'queued',
-    dateCreated: Date.now()
-  });
-
-  axios(`https://${server.hostname}:${server.apiPort}/internal/instances/${instance.id}`, {
-    method: 'POST',
-    headers: {
-      host: settings.domains.api[0],
-      'x-internal-secret': settings.secret
-    }
-  });
+  const instance = await createNewInstance(scope, deployment.id);
 
   writeResponse(200, instance, response);
 }
