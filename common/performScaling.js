@@ -1,6 +1,6 @@
 const axios = require('axios');
 const hint = require('hinton');
-const createNewInstance = require('./createInstance');
+const createNewInstance = require('./createNewInstance');
 
 async function deploymentScaling (scope) {
   const { db, config } = scope;

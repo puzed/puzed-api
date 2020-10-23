@@ -1,6 +1,6 @@
 const pickRandomServer = require('./pickRandomServer');
 
-module.exports = function(scope, deployment) {
+module.exports = async function (scope, deployment) {
   const { db, settings } = scope;
   const server = await pickRandomServer(scope);
 
