@@ -7,7 +7,9 @@ async function deploymentScaling (scope) {
   const deployments = await db.getAll('deployments', {
     query: {
       guardianServerId: config.serverId,
-      $nin: ['destroyed']
+      status: {
+        $nin: ['destroyed']
+      }
     },
     fields: ['stable']
   });
@@ -27,7 +29,7 @@ async function deploymentScaling (scope) {
     const minInstances = isNaN(scaling.minInstances) ? 1 : scaling.minInstances;
 
     if (minInstances > totalHealthyInstances) {
-      await createNewInstance(scope, deployment)
+      await createNewInstance(scope, deployment);
     }
   }
 }
