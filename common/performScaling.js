@@ -1,15 +1,11 @@
-const axios = require('axios');
 const hint = require('hinton');
 const createNewInstance = require('./createNewInstance');
 
 async function deploymentScaling (scope) {
-  const { db, config } = scope;
+  const { db, notify, config } = scope;
   const deployments = await db.getAll('deployments', {
     query: {
-      guardianServerId: config.serverId,
-      status: {
-        $nin: ['destroyed']
-      }
+      guardianServerId: config.serverId
     },
     fields: ['stable']
   });
@@ -29,7 +25,8 @@ async function deploymentScaling (scope) {
     const minInstances = isNaN(scaling.minInstances) ? 1 : scaling.minInstances;
 
     if (minInstances > totalHealthyInstances) {
-      await createNewInstance(scope, deployment);
+      await createNewInstance(scope, deployment.id);
+      notify.broadcast(deployment.id);
     }
   }
 }

@@ -18,7 +18,7 @@ async function createInstance (scope, request, response, tokens) {
     }
   });
 
-  await createNewInstance(scope, deployment)
+  const instance = await createNewInstance(scope, deployment.id);
 
   writeResponse(200, instance, response);
 }
