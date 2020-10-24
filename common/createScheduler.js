@@ -18,11 +18,7 @@ function createScheduler () {
     jobs.push(job);
   }
 
-  function cancelAll () {
-    jobs.splice(0, jobs.length);
-  }
-
-  setInterval(() => {
+  const interval = setInterval(() => {
     jobs.forEach(job => {
       if (!job.lastFinished || Date.now() - job.lastFinished > job.delay) {
         job.runner();
@@ -30,9 +26,14 @@ function createScheduler () {
     });
   }, 1000);
 
+  function cancelAndStop () {
+    clearInterval(interval);
+    jobs.splice(0, jobs.length);
+  }
+
   return {
     add,
-    cancelAll
+    cancelAndStop
   };
 }
 

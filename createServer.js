@@ -97,7 +97,7 @@ async function createServer (scope) {
   httpServer.on('close', function () {
     scope.close();
     networkProxyInstance && networkProxyInstance.close();
-    scheduler.cancelAll();
+    scheduler.cancelAndStop();
   });
 
   httpServer.listen(config.httpPort);
