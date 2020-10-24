@@ -1,12 +1,18 @@
 const axios = require('axios');
 
-async function createUserAndSession (server) {
+async function createUserAndSession (server, userOverrides = {}) {
   const user = await axios(`${server.httpsUrl}/users`, {
     validateStatus: () => true,
     method: 'post',
     data: {
       email: 'user@example.com',
       password: 'Password@11111'
+    }
+  });
+
+  await server.db.patch('users', userOverrides, {
+    query: {
+      id: user.data.id
     }
   });
 
