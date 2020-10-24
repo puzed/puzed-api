@@ -120,7 +120,7 @@ test('services > create > valid but incorrect foreigns', async t => {
   server.close();
 });
 
-test.skip('services > create > valid', async t => {
+test('services > create > valid', async t => {
   t.plan(2);
 
   const server = await createServerForTest();
@@ -128,9 +128,8 @@ test.skip('services > create > valid', async t => {
   const { session, user } = await createUserAndSession(server, { allowedServiceCreate: true });
 
   const link = await server.db.post('links', {
-    providerId: 'github',
+    providerId: 'rawGit',
     userId: user.id,
-    externalUserId: 'none',
     config: {
       installationId: '0'
     },
@@ -161,7 +160,7 @@ test.skip('services > create > valid', async t => {
     data: {
       name: 'example',
       linkId: link.id,
-      providerRepositoryId: 'noRepo',
+      providerRepositoryId: 'http://localhost:8082/test.git',
       image: 'nodejs12',
       runCommand: 'noCommand',
       networkRulesId: networkRules.id,

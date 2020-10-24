@@ -34,6 +34,10 @@ module.exports = {
     GET: require('./providers/list')
   },
 
+  '/schema/service': {
+    GET: require('./schema/service')
+  },
+
   '/services': {
     GET: require('./services/list'),
     POST: require('./services/create')
