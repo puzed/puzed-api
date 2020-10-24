@@ -2,7 +2,10 @@ async function getNetworkRulesById ({ db }, userId, id) {
   const link = await db.getOne('networkRules', {
     query: {
       id,
-      userId
+      $or: [
+        { userId },
+        { userId: { $null: true } }
+      ]
     }
   });
 
