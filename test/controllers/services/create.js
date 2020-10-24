@@ -3,6 +3,7 @@ const axios = require('axios');
 
 const createServerForTest = require('../../helpers/createServerForTest');
 const createUserAndSession = require('../../helpers/createUserAndSession');
+const prepareGenericSetup = require('../../helpers/prepareGenericSetup');
 
 test('services > create > invalid session', async t => {
   t.plan(2);
@@ -125,32 +126,9 @@ test('services > create > valid', async t => {
 
   const server = await createServerForTest();
 
-  const { session, user } = await createUserAndSession(server, { allowedServiceCreate: true });
+  const { session } = await createUserAndSession(server, { allowedServiceCreate: true });
 
-  const link = await server.db.post('links', {
-    providerId: 'rawGit',
-    userId: user.id,
-    config: {
-      installationId: '0'
-    },
-    dateCreated: Date.now()
-  });
-
-  await server.db.post('domains', {
-    domain: 'example.com',
-    userId: user.id,
-    verificationStatus: 'success',
-    dateCreated: Date.now()
-  });
-
-  const networkRules = await server.db.post('networkRules', {
-    title: 'None',
-    userId: user.id,
-    rules: [
-      "'allow'"
-    ],
-    dateCreated: Date.now()
-  });
+  const { link, networkRules } = await prepareGenericSetup(server);
 
   const service = await axios(`${server.httpsUrl}/services`, {
     method: 'POST',
