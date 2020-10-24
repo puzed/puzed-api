@@ -15,35 +15,19 @@ const performAutoSwitches = require('./common/performAutoSwitches');
 const performDomainValidations = require('./common/performDomainValidations');
 const performUsageCalculations = require('./common/performUsageCalculations');
 
-const timers = [];
-
 async function createServer (scope) {
-  const { settings, notify, db, config } = scope;
+  const { settings, notify, db, scheduler, config } = scope;
 
   let networkProxyInstance;
   if (settings.networkMicroManagement) {
     networkProxyInstance = networkProxy(scope);
   }
 
-  timers.push(
-    setInterval(() => performHealthchecks(scope), 3000)
-  );
-
-  timers.push(
-    setInterval(() => performScaling(scope), 3000)
-  );
-
-  timers.push(
-    setInterval(() => performAutoSwitches(scope), 3000)
-  );
-
-  timers.push(
-    setInterval(() => performDomainValidations(scope), 3000)
-  );
-
-  timers.push(
-    setInterval(() => performUsageCalculations(scope), 3000)
-  );
+  scheduler.add(() => performHealthchecks(scope), 3000);
+  scheduler.add(() => performScaling(scope), 3000);
+  scheduler.add(() => performAutoSwitches(scope), 3000);
+  scheduler.add(() => performDomainValidations(scope), 3000);
+  scheduler.add(() => performUsageCalculations(scope), 3000);
 
   function handleApiRoute (scope, request, response, url) {
     response.setHeader('Access-Control-Allow-Origin', '*');
@@ -113,8 +97,7 @@ async function createServer (scope) {
   httpServer.on('close', function () {
     scope.close();
     networkProxyInstance && networkProxyInstance.close();
-    timers.forEach(timer => clearTimeout(timer));
-    timers.forEach(timer => clearInterval(timer));
+    scheduler.cancelAndStop();
   });
 
   httpServer.listen(config.httpPort);

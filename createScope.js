@@ -1,7 +1,10 @@
 const fs = require('fs');
 const chalk = require('chalk');
+const canhazdb = require('canhazdb');
 const createNotifyServer = require('notify-over-http');
 const hint = require('hinton');
+
+const createScheduler = require('./common/createScheduler');
 
 const tls = {
   key: fs.readFileSync('./certs/localhost.privkey.pem'),
@@ -9,8 +12,6 @@ const tls = {
   ca: [fs.readFileSync('./certs/ca.cert.pem')],
   requestCert: true
 };
-
-const canhazdb = require('canhazdb');
 
 async function loadSettingsFromDatabase (config, db) {
   const settings = await db.getAll('settings');
@@ -60,6 +61,7 @@ async function createScope (config) {
     settings,
     notify,
     dataNode,
+    scheduler: createScheduler(),
     db,
     close: () => {
       return Promise.all([
