@@ -10,7 +10,7 @@ async function createSession ({ db, config }, request, response, tokens) {
     .then(buffer => buffer.toString('utf8'))
     .then(JSON.parse);
 
-  const validationErrors = validateUser(body);
+  const validationErrors = await validateUser(body);
 
   if (validationErrors) {
     throw Object.assign(new Error('invalid user data'), {

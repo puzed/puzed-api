@@ -5,7 +5,6 @@ const writeResponse = require('write-response');
 const createRandomString = require('../../common/createRandomString');
 const authenticate = require('../../common/authenticate');
 const presentService = require('../../presenters/service');
-const listAvailableDomains = require('../../queries/domains/listAvailableDomains');
 
 const validateService = require('../../validators/service');
 
@@ -45,9 +44,7 @@ async function createService (scope, request, response) {
     });
   }
 
-  const validDomains = await listAvailableDomains(scope, user.id);
-
-  const validationErrors = validateService({ validDomains }, body);
+  const validationErrors = await validateService(scope, user.id, body);
 
   if (validationErrors) {
     throw Object.assign(new Error('invalid service data'), {

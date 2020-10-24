@@ -1,31 +1,39 @@
-function validateAgainstSchema (schema, data) {
+async function validateAgainstSchema (schema, data) {
   const result = {
     messages: [],
     fields: {}
   };
 
-  Object
+  const validKeyPromises = Object
     .keys(data)
     .filter(key => !schema[key])
-    .forEach(key => {
+    .map(key => {
       result.fields[key] = result.fields[key] || [];
       result.fields[key].push('is not a valid key');
       result.messages.push(key + ' is not a valid key');
     });
 
-  Object
+  await Promise.all(validKeyPromises);
+
+  const validValues = Object
     .keys(schema)
-    .forEach(key => {
-      schema[key]
+    .map(async key => {
+      const schemaCheckResultPromises = schema[key]
         .map(validator => {
           return validator(data[key], data);
-        })
+        });
+
+      const schemaCheckResults = await Promise.all(schemaCheckResultPromises);
+      schemaCheckResults
         .filter(key => !!key)
         .forEach(message => {
           result.fields[key] = result.fields[key] || [];
           result.fields[key].push(message);
         });
-    });
+    })
+    .flat();
+
+  await Promise.all(validValues);
 
   if (result.messages.length > 0 || Object.keys(result.fields).length > 0) {
     return result;

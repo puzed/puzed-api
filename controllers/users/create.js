@@ -20,7 +20,7 @@ async function createUser ({ db, settings, config }, request, response, tokens) 
     throw Object.assign(new Error('user with email already exists'), { statusCode: 422 });
   }
 
-  const validationErrors = validateUser(body);
+  const validationErrors = await validateUser(body);
 
   if (validationErrors) {
     throw Object.assign(new Error('invalid user data'), {

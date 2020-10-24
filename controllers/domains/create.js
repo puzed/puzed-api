@@ -15,7 +15,7 @@ async function createDomain ({ db, settings, config }, request, response, tokens
     .then(buffer => buffer.toString('utf8'))
     .then(JSON.parse);
 
-  const validationErrors = validateDomain(body);
+  const validationErrors = await validateDomain(body);
 
   if (validationErrors) {
     throw Object.assign(new Error('invalid domain data'), {
