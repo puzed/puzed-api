@@ -1,7 +1,10 @@
 async function getLinkById ({ db }, userId, linkId) {
   const link = await db.getOne('links', {
     query: {
-      userId: userId,
+      $or: [
+        { userId },
+        { userId: { $null: true } }
+      ],
       id: linkId
     }
   });
