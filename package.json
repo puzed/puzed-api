@@ -7,7 +7,7 @@
     "start": "node index",
     "setup": "node setup",
     "repl": "node --experimental-repl-await repl",
-    "test": "node test"
+    "test": "./makeCerts.sh && node test"
   },
   "keywords": [],
   "author": "",
