@@ -1,8 +1,12 @@
 const validateAgainstSchema = require('../common/validateAgainstSchema');
+const listAvailableDomains = require('../queries/domains/listAvailableDomains');
+const getLinkById = require('../queries/links/getLinkById');
+const getNetworkRulesById = require('../queries/networkRules/getNetworkRulesById');
 
 const validSubdomain = new RegExp('^[a-z0-9-]+$');
 
-function validateService ({ validDomains }, data) {
+async function validateService (scope, userId, data) {
+  const validDomains = await listAvailableDomains(scope, userId);
   const validDomain = validDomains.find(domain => data.domain.endsWith(domain.domain));
 
   const subDomain = validDomain && validDomain.domain ? data.domain.slice(0, -validDomain.domain.length) : '';
@@ -14,7 +18,8 @@ function validateService ({ validDomains }, data) {
     ],
 
     linkId: [
-      value => !value && 'is required'
+      value => !value && 'is required',
+      async value => value && !(await getLinkById(scope, userId, value)) && 'does not exist'
     ],
 
     providerRepositoryId: [
@@ -22,7 +27,8 @@ function validateService ({ validDomains }, data) {
     ],
 
     image: [
-      value => !value && 'is required'
+      value => !value && 'is required',
+      value => value && !['nodejs12'].includes(value) && 'does not exist'
     ],
 
     environmentVariables: [],
@@ -40,7 +46,8 @@ function validateService ({ validDomains }, data) {
     ],
 
     networkRulesId: [
-      value => !value && 'is required'
+      value => !value && 'is required',
+      async value => value && !(await getNetworkRulesById(scope, userId, value)) && 'does not exist'
     ],
 
     domain: [
