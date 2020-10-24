@@ -78,3 +78,39 @@ test('services > create > invalid data', async t => {
 
   server.close();
 });
+
+test('services > create > valid but incorrect foreigns', async t => {
+  t.plan(2);
+
+  const server = await createServerForTest();
+
+  const { session } = await createUserAndSession(server, { allowedServiceCreate: true });
+
+  const service = await axios(`${server.httpsUrl}/services`, {
+    method: 'POST',
+    headers: {
+      authorization: session.secret
+    },
+    data: {
+      name: 'example',
+      linkId: 'noLink',
+      providerRepositoryId: 'noRepo',
+      image: 'noImage',
+      runCommand: 'noCommand',
+      networkRulesId: 'noNetwork',
+      domains: 'wrong'
+    },
+    validateStatus: () => true
+  });
+
+  t.equal(service.status, 422);
+
+  t.deepEqual(service.data, {
+    error: {
+      messages: ['domains is not a valid key'],
+      fields: { domains: ['is not a valid key'], domain: ['is required'] }
+    }
+  });
+
+  server.close();
+});
