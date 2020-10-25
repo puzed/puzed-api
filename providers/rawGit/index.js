@@ -9,11 +9,11 @@ function rawGitProvider ({ db, config }) {
     getLatestCommitHash,
 
     controllers: {
-      '/providers/github/repositories/:owner/:repo/branches': {
+      '/providers/rawGit/repositories/:owner/:repo/branches': {
         GET: listBranchesForRepositoryHandler
       },
 
-      '/providers/github/webhookEndpoint': {
+      '/providers/rawGit/webhookEndpoint': {
         POST: webhookEndpointHandler
       }
     }
