@@ -7,4 +7,6 @@ require('./controllers/services/create');
 require('./controllers/services/update');
 require('./controllers/services/patch');
 require('./controllers/services/list');
+require('./controllers/services/deployments/create');
+require('./controllers/services/deployments/delete');
 require('./controllers/schema/service');

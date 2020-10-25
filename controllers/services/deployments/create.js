@@ -9,9 +9,14 @@ const getDeploymentById = require('../../../queries/deployments/getDeploymentByI
 async function createDeployment ({ db, config, providers }, request, response, tokens) {
   const { user } = await authenticate({ db, config }, request.headers.authorization);
 
-  const body = await finalStream(request)
-    .then(buffer => buffer.toString('utf8'))
-    .then(JSON.parse);
+  let body;
+  try {
+    body = await finalStream(request)
+      .then(buffer => buffer.toString('utf8'))
+      .then(JSON.parse);
+  } catch (error) {
+    throw Object.assign(new Error('invalid post body'), { statusCode: 400 });
+  }
 
   body.branch = body.branch || 'master';
 
