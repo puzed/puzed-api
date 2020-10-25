@@ -50,8 +50,6 @@ async function updateService (scope, request, response, tokens) {
     environmentVariables: body.environmentVariables,
     runCommand: body.runCommand,
     buildCommand: body.buildCommand,
-    networkAccessToken: await createRandomString(40),
-    userId: user.id,
     dateUpdated: Date.now()
   }, {
     query: {
