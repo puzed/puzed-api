@@ -88,7 +88,7 @@ async function deploymentHealthChecks ({ db, notify, config }) {
       return;
     }
 
-    if (!deployment.stable && totalInstances === healthyInstances) {
+    if (!deployment.stable && totalInstances === healthyInstances && healthyInstances > 0) {
       await db.patch('deployments', {
         stable: true
       }, {
