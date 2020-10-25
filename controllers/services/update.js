@@ -57,7 +57,12 @@ async function updateService (scope, request, response, tokens) {
     }
   });
 
-  const updatedService = await getServiceById(scope, user.id, tokens.serviceId);
+  const productionDeployment = await db.getOne('deployments', {
+    query: {
+      title: 'production',
+      serviceId: service.id
+    }
+  });
 
   await axios(`https://localhost:${config.httpsPort}/services/${service.id}/deployments`, {
     method: 'POST',
@@ -67,13 +72,15 @@ async function updateService (scope, request, response, tokens) {
     },
     data: JSON.stringify({
       title: 'production-update-' + Date.now(),
-      branch: 'master',
+      branch: productionDeployment.branch || 'master',
       autoSwitch: {
         targetDeployment: 'production',
         newTitle: 'production-backup-' + Date.now()
       }
     })
   });
+
+  const updatedService = await getServiceById(scope, user.id, tokens.serviceId);
 
   writeResponse(200, JSON.stringify(presentService(updatedService)), response);
 }
