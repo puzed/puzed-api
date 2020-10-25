@@ -1,5 +1,4 @@
 function createScheduler () {
-  const jobs = [];
   let destroyed = false;
 
   function add (fn, delay) {
