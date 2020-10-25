@@ -1,5 +1,4 @@
 const finalStream = require('final-stream');
-const axios = require('axios');
 const writeResponse = require('write-response');
 
 const createRandomString = require('../../common/createRandomString');
@@ -7,22 +6,20 @@ const authenticate = require('../../common/authenticate');
 const presentService = require('../../presenters/service');
 
 const validateService = require('../../validators/service');
+const getServiceById = require('../../queries/services/getServiceById');
 
-async function createService (scope, request, response) {
-  const { db, settings, config } = scope;
+async function updateService (scope, request, response, tokens) {
+  const { db, config } = scope;
 
   request.setTimeout(60 * 60 * 1000);
 
   const { user } = await authenticate({ db, config }, request.headers.authorization);
 
-  if (!user.allowedServiceCreate) {
-    throw Object.assign(new Error('Validation error'), {
-      statusCode: 422,
-      message: {
-        error: {
-          messages: ['You do not have permission to create services']
-        }
-      }
+  const service = await getServiceById(scope, user.id, tokens.serviceId);
+
+  if (!service) {
+    throw Object.assign(new Error('resource not be found'), {
+      statusCode: 404
     });
   }
 
@@ -30,7 +27,7 @@ async function createService (scope, request, response) {
     .then(buffer => buffer.toString('utf8'))
     .then(JSON.parse);
 
-  const validationErrors = await validateService(scope, user.id, null, body);
+  const validationErrors = await validateService(scope, user.id, service, body);
 
   if (validationErrors) {
     throw Object.assign(new Error('invalid service data'), {
@@ -41,7 +38,7 @@ async function createService (scope, request, response) {
     });
   }
 
-  const service = await db.post('services', {
+  await db.patch('services', {
     name: body.name,
     linkId: body.linkId,
     providerRepositoryId: body.providerRepositoryId,
@@ -55,22 +52,16 @@ async function createService (scope, request, response) {
     buildCommand: body.buildCommand,
     networkAccessToken: await createRandomString(40),
     userId: user.id,
-    dateCreated: Date.now()
+    dateUpdated: Date.now()
+  }, {
+    query: {
+      id: service.id
+    }
   });
 
-  await axios(`https://localhost:${config.httpsPort}/services/${service.id}/deployments`, {
-    method: 'POST',
-    headers: {
-      host: settings.domains.api[0],
-      authorization: request.headers.authorization
-    },
-    data: JSON.stringify({
-      title: 'production',
-      branch: 'master'
-    })
-  });
+  const updatedService = await getServiceById(scope, user.id, tokens.serviceId);
 
-  writeResponse(201, JSON.stringify(presentService(service)), response);
+  writeResponse(200, JSON.stringify(presentService(updatedService)), response);
 }
 
-module.exports = createService;
+module.exports = updateService;

@@ -5,9 +5,29 @@ const getNetworkRulesById = require('../queries/networkRules/getNetworkRulesById
 
 const validSubdomain = new RegExp('^[a-z0-9-]+$');
 
-async function validateService (scope, userId, data) {
+async function isDomainTaken ({ db, settings }, domain, existingService) {
+  if (settings.domains.api.includes(domain) || settings.domains.client.includes(domain)) {
+    return true;
+  }
+
+  if (existingService && existingService.domain === domain) {
+    return false;
+  }
+
+  const service = await db.getOne('services', {
+    query: {
+      domain
+    }
+  });
+
+  if (service) {
+    return true;
+  }
+}
+
+async function validateService (scope, userId, existingService, data) {
   const validDomains = await listAvailableDomains(scope, userId);
-  const validDomain = validDomains.find(domain => data.domain.endsWith(domain.domain));
+  const validDomain = validDomains.find(domain => data.domain && data.domain.endsWith(domain.domain));
 
   const subDomain = validDomain && validDomain.domain ? data.domain.slice(0, -validDomain.domain.length) : '';
 
@@ -57,7 +77,8 @@ async function validateService (scope, userId, data) {
       value => subDomain && subDomain.includes('--') && 'subdomain can not contain more than one dash (-) in a row',
       value => value && value.startsWith('-') && 'can not start with a dash (-)',
       value => value && value.endsWith('-') && 'can not end with a dash (-)',
-      value => value && !validDomain && 'must be from a verified domain you have access to'
+      value => value && !validDomain && 'must be from a verified domain you have access to',
+      async value => value && (await isDomainTaken(scope, value, existingService)) && 'has already been used for another service'
     ]
   };
 

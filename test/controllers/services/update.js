@@ -4,61 +4,55 @@ const axios = require('axios');
 const createServerForTest = require('../../helpers/createServerForTest');
 const createUserAndSession = require('../../helpers/createUserAndSession');
 const prepareGenericSetup = require('../../helpers/prepareGenericSetup');
+
 const testForValidSession = require('../../helpers/testForValidSession');
+const testForOwnership = require('../../helpers/testForOwnership');
 
-test('controllers/services/create > auth > valid session', testForValidSession({
-  method: 'POST',
-  path: '/services'
-}));
+async function createTestService (server, session) {
+  const { link, networkRules } = await prepareGenericSetup(server);
 
-test('services > create > invalid session', async t => {
-  t.plan(2);
-
-  const server = await createServerForTest();
-
-  const service = await axios(`${server.httpsUrl}/services`, {
-    method: 'POST',
-    validateStatus: () => true
-  });
-
-  t.equal(service.status, 401);
-
-  t.deepEqual(service.data, 'unauthorised');
-
-  server.close();
-});
-
-test('services > create > no allowedServiceCreate permission', async t => {
-  t.plan(2);
-
-  const server = await createServerForTest();
-
-  const { session } = await createUserAndSession(server);
-
-  const service = await axios(`${server.httpsUrl}/services`, {
+  const serviceResponse = await axios(`${server.httpsUrl}/services`, {
     method: 'POST',
     headers: {
       authorization: session.secret
     },
+    data: {
+      name: 'example',
+      linkId: link.id,
+      providerRepositoryId: 'http://localhost:8082/test.git',
+      image: 'nodejs12',
+      runCommand: 'noCommand',
+      networkRulesId: networkRules.id,
+      domain: 'test.example.com'
+    },
     validateStatus: () => true
   });
 
-  t.equal(service.status, 422);
+  return serviceResponse.data;
+}
 
-  t.deepEqual(service.data, { error: { messages: ['You do not have permission to create services'] } });
+test('controllers/services/update > auth > valid session', testForValidSession({
+  method: 'PUT',
+  path: '/services/testId'
+}));
 
-  server.close();
-});
+test('controllers/services/update > auth > only owned', testForOwnership({
+  method: 'PUT',
+  path: '/services/:resourceId',
+  resource: 'services'
+}));
 
-test('services > create > invalid data', async t => {
+test('services > update > invalid data', async t => {
   t.plan(2);
 
   const server = await createServerForTest();
 
   const { session } = await createUserAndSession(server, { allowedServiceCreate: true });
 
-  const service = await axios(`${server.httpsUrl}/services`, {
-    method: 'POST',
+  const service = await createTestService(server, session);
+
+  const updateResponse = await axios(`${server.httpsUrl}/services/${service.id}`, {
+    method: 'PUT',
     headers: {
       authorization: session.secret
     },
@@ -66,9 +60,9 @@ test('services > create > invalid data', async t => {
     validateStatus: () => true
   });
 
-  t.equal(service.status, 422);
+  t.equal(updateResponse.status, 422);
 
-  t.deepEqual(service.data, {
+  t.deepEqual(updateResponse.data, {
     error: {
       messages: [],
       fields: {
@@ -86,15 +80,17 @@ test('services > create > invalid data', async t => {
   server.close();
 });
 
-test('services > create > valid but incorrect foreigns', async t => {
+test('services > update > valid but incorrect foreigns', async t => {
   t.plan(2);
 
   const server = await createServerForTest();
 
   const { session } = await createUserAndSession(server, { allowedServiceCreate: true });
 
-  const service = await axios(`${server.httpsUrl}/services`, {
-    method: 'POST',
+  const service = await createTestService(server, session);
+
+  const updatedService = await axios(`${server.httpsUrl}/services/${service.id}`, {
+    method: 'PUT',
     headers: {
       authorization: session.secret
     },
@@ -110,9 +106,9 @@ test('services > create > valid but incorrect foreigns', async t => {
     validateStatus: () => true
   });
 
-  t.equal(service.status, 422);
+  t.equal(updatedService.status, 422);
 
-  t.deepEqual(service.data, {
+  t.deepEqual(updatedService.data, {
     error: {
       messages: [],
       fields: {
@@ -127,34 +123,34 @@ test('services > create > valid but incorrect foreigns', async t => {
   server.close();
 });
 
-test('services > create > valid', async t => {
+test('services > update > valid', async t => {
   t.plan(2);
 
   const server = await createServerForTest();
 
   const { session } = await createUserAndSession(server, { allowedServiceCreate: true });
 
-  const { link, networkRules } = await prepareGenericSetup(server);
+  const service = await createTestService(server, session);
 
-  const service = await axios(`${server.httpsUrl}/services`, {
-    method: 'POST',
+  const updatedService = await axios(`${server.httpsUrl}/services/${service.id}`, {
+    method: 'PUT',
     headers: {
       authorization: session.secret
     },
     data: {
       name: 'example',
-      linkId: link.id,
+      linkId: service.linkId,
       providerRepositoryId: 'http://localhost:8082/test.git',
       image: 'nodejs12',
       runCommand: 'noCommand',
-      networkRulesId: networkRules.id,
+      networkRulesId: service.networkRulesId,
       domain: 'test.example.com'
     },
     validateStatus: () => true
   });
 
-  t.equal(service.status, 201);
-  t.ok(service.data.id, 'returned service had an id');
+  t.equal(updatedService.status, 200);
+  t.ok(updatedService.data.id, 'returned service had an id');
 
   server.close();
 });

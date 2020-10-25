@@ -3,6 +3,12 @@ const axios = require('axios');
 
 const createServerForTest = require('../../helpers/createServerForTest');
 const createUserAndSession = require('../../helpers/createUserAndSession');
+const testForValidSession = require('../../helpers/testForValidSession');
+
+test('schema/service > auth > valid session', testForValidSession({
+  method: 'GET',
+  path: '/schema/service'
+}));
 
 test('schema > invalid link', async t => {
   t.plan(2);

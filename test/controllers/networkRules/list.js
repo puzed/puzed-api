@@ -3,6 +3,12 @@ const axios = require('axios');
 
 const createServerForTest = require('../../helpers/createServerForTest');
 const createUserAndSession = require('../../helpers/createUserAndSession');
+const testForValidSession = require('../../helpers/testForValidSession');
+
+test('controllers/networkRules/list > auth > valid session', testForValidSession({
+  method: 'GET',
+  path: '/networkRules'
+}));
 
 test('networkRules > unauthorised', async t => {
   t.plan(1);
