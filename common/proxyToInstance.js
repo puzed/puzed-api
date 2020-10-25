@@ -12,8 +12,8 @@ async function proxyToInstance ({ db }, request, response) {
   let hostname = request.headers.host.split(':')[0];
   let branch;
 
-  if (!hostname.includes('--')) {
-    [hostname, branch] = hostname.split('--');
+  if (hostname.includes('--')) {
+    [branch, hostname] = hostname.split('--');
   }
 
   branch = branch || 'production';
