@@ -16,7 +16,7 @@ async function patchDeployment ({ db, config }, request, response, tokens) {
     throw Object.assign(new Error('deployment not found'), { statusCode: 404 });
   }
 
-  await db.put('deployments', body, {
+  await db.patch('deployments', body, {
     query: {
       id: tokens.deploymentId
     }
