@@ -25,7 +25,7 @@ async function isDomainTaken ({ db, settings }, domain, existingService) {
   }
 }
 
-async function validateService (scope, userId, existingService, data) {
+async function validateService (scope, userId, existingService, data, skipRequired) {
   const validDomains = await listAvailableDomains(scope, userId);
   const validDomain = validDomains.find(domain => data.domain && data.domain.endsWith(domain.domain));
 
@@ -33,21 +33,21 @@ async function validateService (scope, userId, existingService, data) {
 
   const schema = {
     name: [
-      value => !value && 'is required',
+      value => !skipRequired && !value && 'is required',
       value => value && value.length < 3 && 'should be greater than 3 characters'
     ],
 
     linkId: [
-      value => !value && 'is required',
+      value => !skipRequired && !value && 'is required',
       async value => value && !(await getLinkById(scope, userId, value)) && 'does not exist'
     ],
 
     providerRepositoryId: [
-      value => !value && 'is required'
+      value => !skipRequired && !value && 'is required'
     ],
 
     image: [
-      value => !value && 'is required',
+      value => !skipRequired && !value && 'is required',
       value => value && !['nodejs12'].includes(value) && 'does not exist'
     ],
 
@@ -58,7 +58,7 @@ async function validateService (scope, userId, existingService, data) {
     buildCommand: [],
 
     runCommand: [
-      value => !value && 'is required'
+      value => !skipRequired && !value && 'is required'
     ],
 
     webPort: [
@@ -66,12 +66,12 @@ async function validateService (scope, userId, existingService, data) {
     ],
 
     networkRulesId: [
-      value => !value && 'is required',
+      value => !skipRequired && !value && 'is required',
       async value => value && !(await getNetworkRulesById(scope, userId, value)) && 'does not exist'
     ],
 
     domain: [
-      value => !value && 'is required',
+      value => !skipRequired && !value && 'is required',
       value => subDomain && !subDomain.slice(0, -1).match(validSubdomain) && 'should be a valid subdomain',
       value => subDomain && subDomain.slice(-1) !== '.' && 'should have a dot between the subdomain and domain',
       value => subDomain && subDomain.includes('--') && 'subdomain can not contain more than one dash (-) in a row',
