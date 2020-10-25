@@ -1,3 +1,4 @@
+const axios = require('axios');
 const finalStream = require('final-stream');
 const writeResponse = require('write-response');
 
@@ -8,7 +9,7 @@ const validateService = require('../../validators/service');
 const getServiceById = require('../../queries/services/getServiceById');
 
 async function updateService (scope, request, response, tokens) {
-  const { db, config } = scope;
+  const { db, settings, config } = scope;
 
   request.setTimeout(60 * 60 * 1000);
 
@@ -57,6 +58,22 @@ async function updateService (scope, request, response, tokens) {
   });
 
   const updatedService = await getServiceById(scope, user.id, tokens.serviceId);
+
+  await axios(`https://localhost:${config.httpsPort}/services/${service.id}/deployments`, {
+    method: 'POST',
+    headers: {
+      host: settings.domains.api[0],
+      authorization: request.headers.authorization
+    },
+    data: JSON.stringify({
+      title: 'production-update-' + Date.now(),
+      branch: 'master',
+      autoSwitch: {
+        targetDeployment: 'production',
+        newTitle: 'production-backup-' + Date.now()
+      }
+    })
+  });
 
   writeResponse(200, JSON.stringify(presentService(updatedService)), response);
 }
