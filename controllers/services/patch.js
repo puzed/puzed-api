@@ -7,7 +7,7 @@ const presentService = require('../../presenters/service');
 const validateService = require('../../validators/service');
 const getServiceById = require('../../queries/services/getServiceById');
 
-async function updateService (scope, request, response, tokens) {
+async function patchService (scope, request, response, tokens) {
   const { db, config } = scope;
 
   request.setTimeout(60 * 60 * 1000);
@@ -26,7 +26,7 @@ async function updateService (scope, request, response, tokens) {
     .then(buffer => buffer.toString('utf8'))
     .then(JSON.parse);
 
-  const validationErrors = await validateService(scope, user.id, service, body);
+  const validationErrors = await validateService(scope, user.id, service, body, true);
 
   if (validationErrors) {
     throw Object.assign(new Error('invalid service data'), {
@@ -38,17 +38,8 @@ async function updateService (scope, request, response, tokens) {
   }
 
   await db.patch('services', {
-    name: body.name,
-    linkId: body.linkId,
-    providerRepositoryId: body.providerRepositoryId,
-    image: body.image,
-    webPort: body.webPort,
-    networkRulesId: body.networkRulesId,
-    domain: body.domain,
-    secrets: JSON.stringify(body.secrets),
-    environmentVariables: body.environmentVariables,
-    runCommand: body.runCommand,
-    buildCommand: body.buildCommand,
+    ...body,
+    secrets: body.secrets ? JSON.stringify(body.secrets) : service.secrets,
     dateUpdated: Date.now()
   }, {
     query: {
@@ -61,4 +52,4 @@ async function updateService (scope, request, response, tokens) {
   writeResponse(200, JSON.stringify(presentService(updatedService)), response);
 }
 
-module.exports = updateService;
+module.exports = patchService;

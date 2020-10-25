@@ -31,18 +31,18 @@ async function createTestService (server, session) {
   return serviceResponse.data;
 }
 
-test('controllers/services/update > auth > valid session', testForValidSession({
+test('controllers/services/patch > auth > valid session', testForValidSession({
   method: 'PUT',
   path: '/services/testId'
 }));
 
-test('controllers/services/update > auth > only owned', testForOwnership({
+test('controllers/services/patch > auth > only owned', testForOwnership({
   method: 'PUT',
   path: '/services/:resourceId',
   resource: 'services'
 }));
 
-test('controllers/services/update > invalid data', async t => {
+test('controllers/services/patch > invalid data', async t => {
   t.plan(2);
 
   const server = await createServerForTest();
@@ -52,11 +52,13 @@ test('controllers/services/update > invalid data', async t => {
   const service = await createTestService(server, session);
 
   const updateResponse = await axios(`${server.httpsUrl}/services/${service.id}`, {
-    method: 'PUT',
+    method: 'PATCH',
     headers: {
       authorization: session.secret
     },
-    data: {},
+    data: {
+      wrongAdditionalField: 1
+    },
     validateStatus: () => true
   });
 
@@ -64,23 +66,15 @@ test('controllers/services/update > invalid data', async t => {
 
   t.deepEqual(updateResponse.data, {
     error: {
-      messages: [],
-      fields: {
-        name: ['is required'],
-        linkId: ['is required'],
-        providerRepositoryId: ['is required'],
-        image: ['is required'],
-        runCommand: ['is required'],
-        networkRulesId: ['is required'],
-        domain: ['is required']
-      }
+      messages: ['wrongAdditionalField is not a valid key'],
+      fields: { wrongAdditionalField: ['is not a valid key'] }
     }
   });
 
   server.close();
 });
 
-test('controllers/services/update > valid but incorrect foreigns', async t => {
+test('controllers/services/patch > valid but incorrect foreigns', async t => {
   t.plan(2);
 
   const server = await createServerForTest();
@@ -90,7 +84,7 @@ test('controllers/services/update > valid but incorrect foreigns', async t => {
   const service = await createTestService(server, session);
 
   const updatedService = await axios(`${server.httpsUrl}/services/${service.id}`, {
-    method: 'PUT',
+    method: 'PATCH',
     headers: {
       authorization: session.secret
     },
@@ -123,7 +117,7 @@ test('controllers/services/update > valid but incorrect foreigns', async t => {
   server.close();
 });
 
-test('controllers/services/update > valid', async t => {
+test('controllers/services/patch > valid partial data', async t => {
   t.plan(2);
 
   const server = await createServerForTest();
@@ -133,7 +127,33 @@ test('controllers/services/update > valid', async t => {
   const service = await createTestService(server, session);
 
   const updatedService = await axios(`${server.httpsUrl}/services/${service.id}`, {
-    method: 'PUT',
+    method: 'PATCH',
+    headers: {
+      authorization: session.secret
+    },
+    data: {
+      name: 'examplecahnged'
+    },
+    validateStatus: () => true
+  });
+
+  t.equal(updatedService.status, 200);
+  t.ok(updatedService.data.id, 'returned service had an id');
+
+  server.close();
+});
+
+test('controllers/services/patch > valid full data', async t => {
+  t.plan(2);
+
+  const server = await createServerForTest();
+
+  const { session } = await createUserAndSession(server, { allowedServiceCreate: true });
+
+  const service = await createTestService(server, session);
+
+  const updatedService = await axios(`${server.httpsUrl}/services/${service.id}`, {
+    method: 'PATCH',
     headers: {
       authorization: session.secret
     },
