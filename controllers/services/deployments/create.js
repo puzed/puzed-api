@@ -39,7 +39,7 @@ async function createDeployment ({ db, config, providers }, request, response, t
 
   const postedDeployment = await db.post('deployments', {
     serviceId: service.id,
-    title: body.title,
+    ...body,
     commitHash,
     guardianServerId: guardian.id,
     dateCreated: Date.now()
