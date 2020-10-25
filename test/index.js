@@ -1,3 +1,5 @@
+require('./common/createScheduler');
+
 require('./controllers/users/create');
 require('./controllers/sessions/create');
 require('./controllers/sessions/read');
