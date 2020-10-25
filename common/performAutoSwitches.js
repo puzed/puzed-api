@@ -13,8 +13,10 @@ async function performAutoSwitches ({ db, notify, config }) {
   for (const deployment of deployments) {
     if (deployment.stable) {
       const targetDeployment = await db.getOne('deployments', {
-        serviceId: deployment.serviceId,
-        title: deployment.autoSwitch.targetDeployment
+        query: {
+          serviceId: deployment.serviceId,
+          title: deployment.autoSwitch.targetDeployment
+        }
       });
 
       await db.patch('deployments', {
