@@ -4,7 +4,7 @@ function createScheduler () {
   function add (fn, delay) {
     let lastRun;
 
-    async function run(){
+    async function run () {
       if (destroyed) {
         return;
       }
@@ -25,7 +25,7 @@ function createScheduler () {
   return {
     add,
     cancelAndStop: () => destroyed = true
-  }
+  };
 }
 
 module.exports = createScheduler;
