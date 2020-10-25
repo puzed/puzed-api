@@ -19,7 +19,7 @@ function createScheduler () {
       setTimeout(run, Math.max(delay - (Date.now() - lastRun), 0));
     }
 
-    run();
+    setTimeout(run, delay);
   }
 
   return {

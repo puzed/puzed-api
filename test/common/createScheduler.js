@@ -16,18 +16,18 @@ test('schedule job', async t => {
     const ellapsed = Date.now() - startTime;
 
     if(runCount === 1) {
-      t.ok(ellapsed >= interval * 0);
-      t.ok(ellapsed <= interval * 0 * 1.01);
-    }
-
-    if(runCount === 2) {
       t.ok(ellapsed >= interval * 1);
       t.ok(ellapsed <= interval * 1 * 1.01);
     }
 
-    if(runCount === 3) {
+    if(runCount === 2) {
       t.ok(ellapsed >= interval * 2);
       t.ok(ellapsed <= interval * 2 * 1.01);
+    }
+
+    if(runCount === 3) {
+      t.ok(ellapsed >= interval * 3);
+      t.ok(ellapsed <= interval * 3 * 1.01);
       scheduler.cancelAndStop();
     }
 
@@ -48,19 +48,19 @@ test('long jobs maintain interval', async t => {
     const ellapsed = Date.now() - startTime;
 
     if(runCount === 1) {
-      t.ok(ellapsed >= interval * 0);
-      t.ok(ellapsed <= interval * 0 * 1.01);
+      t.ok(ellapsed >= interval * 1);
+      t.ok(ellapsed <= interval * 1 * 1.01);
       await new Promise(resolve => setTimeout(resolve, interval / 2));
     }
 
     if(runCount === 2) {
-      t.ok(ellapsed >= interval * 1);
-      t.ok(ellapsed <= interval * 1 * 1.01);
+      t.ok(ellapsed >= interval * 2);
+      t.ok(ellapsed <= interval * 2 * 1.01);
     }
 
     if(runCount === 3) {
-      t.ok(ellapsed >= interval * 2);
-      t.ok(ellapsed <= interval * 2 * 1.01);
+      t.ok(ellapsed >= interval * 3);
+      t.ok(ellapsed <= interval * 3 * 1.01);
       scheduler.cancelAndStop();
     }
 
