@@ -56,7 +56,8 @@ module.exports = {
 
   '/services/:serviceId/deployments/:deploymentId': {
     GET: require('./services/deployments/read'),
-    PATCH: require('./services/deployments/patch')
+    PATCH: require('./services/deployments/patch'),
+    DELETE: require('./services/deployments/delete')
   },
 
   '/services/:serviceId/deployments/:deploymentId/instances': {
