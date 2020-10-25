@@ -44,7 +44,8 @@ module.exports = {
   },
 
   '/services/:serviceId': {
-    GET: require('./services/read')
+    GET: require('./services/read'),
+    PUT: require('./services/update')
   },
 
   '/services/:serviceId/deployments': {

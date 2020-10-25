@@ -4,6 +4,12 @@ const axios = require('axios');
 const createServerForTest = require('../../helpers/createServerForTest');
 const createUserAndSession = require('../../helpers/createUserAndSession');
 const prepareGenericSetup = require('../../helpers/prepareGenericSetup');
+const testForValidSession = require('../../helpers/testForValidSession');
+
+test('controllers/services/list > auth > valid session', testForValidSession({
+  method: 'GET',
+  path: '/services'
+}));
 
 test('services > list > unauthorised', async t => {
   t.plan(1);

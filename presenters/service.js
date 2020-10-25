@@ -6,7 +6,7 @@ function presentService (data) {
     providerRepositoryId: data.repo,
     image: data.image,
     webPort: data.webPort,
-    networkrulesId: data.networkrulesId,
+    networkRulesId: data.networkRulesId,
     domain: data.domain,
     secrets: typeof data.secrets === 'string' ? JSON.parse(data.secrets) : data.secrets,
     environmentVariables: data.environmentVariables,

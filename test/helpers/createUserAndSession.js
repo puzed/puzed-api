@@ -1,11 +1,14 @@
 const axios = require('axios');
+const uuid = require('uuid').v4;
 
 async function createUserAndSession (server, userOverrides = {}) {
+  const email = userOverrides.email || uuid() + '@example.com';
+
   const user = await axios(`${server.httpsUrl}/users`, {
     validateStatus: () => true,
     method: 'post',
     data: {
-      email: 'user@example.com',
+      email,
       password: 'Password@11111'
     }
   });
@@ -20,7 +23,7 @@ async function createUserAndSession (server, userOverrides = {}) {
     validateStatus: () => true,
     method: 'post',
     data: {
-      email: 'user@example.com',
+      email,
       password: 'Password@11111'
     }
   });
