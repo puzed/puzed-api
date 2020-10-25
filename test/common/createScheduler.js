@@ -1,6 +1,8 @@
 const test = require('tape-catch');
 const createScheduler = require('../../common/createScheduler');
+
 const interval = 100;
+const testRunnerTolerance = 1.1;
 
 test('schedule job', async t => {
   t.plan(6);
@@ -17,17 +19,17 @@ test('schedule job', async t => {
 
     if(runCount === 1) {
       t.ok(ellapsed >= interval * 1);
-      t.ok(ellapsed <= interval * 1 * 1.01);
+      t.ok(ellapsed <= interval * 1 * testRunnerTolerance);
     }
 
     if(runCount === 2) {
       t.ok(ellapsed >= interval * 2);
-      t.ok(ellapsed <= interval * 2 * 1.01);
+      t.ok(ellapsed <= interval * 2 * testRunnerTolerance);
     }
 
     if(runCount === 3) {
       t.ok(ellapsed >= interval * 3);
-      t.ok(ellapsed <= interval * 3 * 1.01);
+      t.ok(ellapsed <= interval * 3 * testRunnerTolerance);
       scheduler.cancelAndStop();
     }
 
@@ -49,18 +51,18 @@ test('long jobs maintain interval', async t => {
 
     if(runCount === 1) {
       t.ok(ellapsed >= interval * 1);
-      t.ok(ellapsed <= interval * 1 * 1.01);
+      t.ok(ellapsed <= interval * 1 * testRunnerTolerance);
       await new Promise(resolve => setTimeout(resolve, interval / 2));
     }
 
     if(runCount === 2) {
       t.ok(ellapsed >= interval * 2);
-      t.ok(ellapsed <= interval * 2 * 1.01);
+      t.ok(ellapsed <= interval * 2 * testRunnerTolerance);
     }
 
     if(runCount === 3) {
       t.ok(ellapsed >= interval * 3);
-      t.ok(ellapsed <= interval * 3 * 1.01);
+      t.ok(ellapsed <= interval * 3 * testRunnerTolerance);
       scheduler.cancelAndStop();
     }
 
