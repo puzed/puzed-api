@@ -184,44 +184,55 @@ async function deployRepositoryToServer (scope, instanceId) {
   }
 
   try {
-    log('\n' + chalkCtx.greenBright('Cloning repo from github'));
-    await provider.cloneRepository(scope, {
-      service,
-      instance,
-      providerRepositoryId: service.providerRepositoryId,
-      branch: instance.commitHash,
-      target: `/tmp/${instanceId}`
+    const imageTagName = `${service.id}:${instance.commitHash}`;
+
+    log('\n' + chalkCtx.greenBright('Searching for existing image'));
+    const existingImage = await axios({
+      socketPath: config.dockerSocketPath,
+      url: `/v1.40/images/json?filter=${imageTagName}`,
+      validateStatus: () => true
     });
 
-    log('\n' + chalkCtx.greenBright('Creating Dockerfile from template'));
-    const runCommand = `sleep 60 || /opt/proxychains/proxychains4 -f /opt/proxychains/proxychains.conf bash -c "${service.runCommand}"`;
+    if (existingImage.data.length > 0) {
+      log('\n' + chalkCtx.greenBright('Using existing image'));
+    } else {
+      log('\n' + chalkCtx.greenBright('Cloning repo from github'));
+      await provider.cloneRepository(scope, {
+        service,
+        instance,
+        providerRepositoryId: service.providerRepositoryId,
+        branch: instance.commitHash,
+        target: `/tmp/${instanceId}`
+      });
 
-    const dockerfileContent = await generateDockerfile('nodejs12', {
-      socksHost: server.hostname,
-      socksPort: '1080',
-      socksUser: service.id,
-      socksPass: service.networkAccessToken,
+      log('\n' + chalkCtx.greenBright('Creating Dockerfile from template'));
+      const runCommand = `sleep 60 || /opt/proxychains/proxychains4 -f /opt/proxychains/proxychains.conf bash -c "${service.runCommand}"`;
 
-      buildCommand: service.buildCommand,
-      runCommand
-    });
+      const dockerfileContent = await generateDockerfile('nodejs12', {
+        socksHost: server.hostname,
+        socksPort: '1080',
+        socksUser: service.id,
+        socksPass: service.networkAccessToken,
 
-    await fs.writeFile(`/tmp/${instanceId}/Dockerfile`, dockerfileContent);
+        buildCommand: service.buildCommand,
+        runCommand
+      });
 
-    log('\n' + chalkCtx.greenBright('Creating .dockerignore'));
-    const dockerignoreTemplate = await fs.readFile(path.resolve(__dirname, '../dockerfileTemplates/.dockerignore'), 'utf8');
-    await fs.writeFile(`/tmp/${instanceId}/.dockerignore`, dockerignoreTemplate);
+      await fs.writeFile(`/tmp/${instanceId}/Dockerfile`, dockerfileContent);
 
-    log('\n' + chalkCtx.greenBright('Build docker image\n'));
-    const imageTagName = `${service.id}:${instanceId}`;
+      log('\n' + chalkCtx.greenBright('Creating .dockerignore'));
+      const dockerignoreTemplate = await fs.readFile(path.resolve(__dirname, '../dockerfileTemplates/.dockerignore'), 'utf8');
+      await fs.writeFile(`/tmp/${instanceId}/.dockerignore`, dockerignoreTemplate);
 
-    await fs.mkdir(`/tmp/${instanceId}/__puzedVendor__/proxychains4/`, { recursive: true });
-    await Promise.all([
-      fs.copyFile(path.resolve(__dirname, '../vendor/proxychains4/runtime.tar'), `/tmp/${instanceId}/__puzedVendor__/proxychains4/runtime.tar`),
-      fs.copyFile(path.resolve(__dirname, '../vendor/proxychains4/proxychains.conf'), `/tmp/${instanceId}/__puzedVendor__/proxychains4/proxychains.conf`)
-    ]);
+      log('\n' + chalkCtx.greenBright('Build docker image\n'));
+      await fs.mkdir(`/tmp/${instanceId}/__puzedVendor__/proxychains4/`, { recursive: true });
+      await Promise.all([
+        fs.copyFile(path.resolve(__dirname, '../vendor/proxychains4/runtime.tar'), `/tmp/${instanceId}/__puzedVendor__/proxychains4/runtime.tar`),
+        fs.copyFile(path.resolve(__dirname, '../vendor/proxychains4/proxychains.conf'), `/tmp/${instanceId}/__puzedVendor__/proxychains4/proxychains.conf`)
+      ]);
 
-    await buildImage(imageTagName, tar.pack(`/tmp/${instanceId}`));
+      await buildImage(imageTagName, tar.pack(`/tmp/${instanceId}`));
+    }
 
     await db.patch('instances', {
       status: 'starting'
