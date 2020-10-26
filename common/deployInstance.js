@@ -84,6 +84,12 @@ async function deployRepositoryToServer (scope, instanceId) {
     }
   });
 
+  const deployment = await scope.db.getOne('deployments', {
+    query: {
+      id: instance.deploymentId
+    }
+  });
+
   const service = await scope.db.getOne('services', {
     query: {
       id: instance.serviceId
@@ -171,12 +177,20 @@ async function deployRepositoryToServer (scope, instanceId) {
       .replace('{{runCommand}}', options.runCommand);
 
     template = template.replace(/^RUN (.*)$/gm, (a, b) => {
-      return `RUN /opt/proxychains4/proxychains4 -f /opt/proxychains4/proxychains.conf -q sh -c "${b.replace(/"/g, '\\"')}"`;
+      return `RUN proxychains -q sh -c "${b.replace(/"/g, '\\"')}"`;
     });
 
     template = template.replace('{{setupNetwork}}', [
-      'COPY ./__puzedVendor__/proxychains4 /opt/proxychains4',
-      'RUN cd /opt/proxychains4 && tar xvf runtime.tar',
+      templateName.startsWith('linux.') ? 'COPY  ./__puzedVendor__/proxychains4/runtime.tar /tmp/runtime.tar' : '',
+      templateName.startsWith('linux.') ? 'RUN cd /tmp && tar xvf runtime.tar' : '',
+
+      templateName.startsWith('linux.') ? 'RUN mv /tmp/proxychains /usr/local/bin/proxychains' : '',
+      templateName.startsWith('linux.') ? 'RUN mv /tmp/libproxychains4.so /usr/local/lib/libproxychains4.so' : '',
+
+      templateName.startsWith('alpine.') ? 'RUN apk add proxychains-ng' : '',
+
+      'COPY  ./__puzedVendor__/proxychains4/proxychains.conf /opt/proxychains4/proxychains.conf',
+      'ENV PROXYCHAINS_CONF_FILE=/opt/proxychains4/proxychains.conf',
       `RUN echo "socks5 ${options.socksHost} ${options.socksPort} ${options.socksUser} ${options.socksPass}" >> /opt/proxychains4/proxychains.conf`
     ].join('\n'));
 
@@ -184,7 +198,7 @@ async function deployRepositoryToServer (scope, instanceId) {
   }
 
   try {
-    const imageTagName = `${service.id}:${instance.commitHash}`;
+    const imageTagName = `${deployment.id}:${instance.commitHash}`;
 
     log('\n' + chalkCtx.greenBright('Searching for existing image'));
     const existingImage = await axios({
@@ -206,9 +220,9 @@ async function deployRepositoryToServer (scope, instanceId) {
       });
 
       log('\n' + chalkCtx.greenBright('Creating Dockerfile from template'));
-      const runCommand = `sleep 60 || /opt/proxychains/proxychains4 -f /opt/proxychains/proxychains.conf bash -c "${service.runCommand}"`;
+      const runCommand = `sleep 60 || proxychains sh -c "${service.runCommand}"`;
 
-      const dockerfileContent = await generateDockerfile('nodejs12', {
+      const dockerfileContent = await generateDockerfile(service.image, {
         socksHost: server.hostname,
         socksPort: '1080',
         socksUser: service.id,
