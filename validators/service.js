@@ -48,7 +48,7 @@ async function validateService (scope, userId, existingService, data, skipRequir
 
     image: [
       value => !skipRequired && !value && 'is required',
-      value => value && !['nodejs12'].includes(value) && 'does not exist'
+      value => value && !['linux.nodejs12', 'alpine.nodejs12'].includes(value) && 'does not exist'
     ],
 
     memory: [

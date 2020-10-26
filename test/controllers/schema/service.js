@@ -86,11 +86,15 @@ test('schema > service', async t => {
       component: 'select',
       options: [
         {
-          value: 'nodejs12',
-          label: 'NodeJS (version 12)'
+          value: 'linux.nodejs12',
+          label: 'Linux NodeJS (version 12)'
+        },
+        {
+          value: 'alpine.nodejs12',
+          label: 'Alpine NodeJS (version 12)'
         }
       ],
-      initialValue: 'nodejs12'
+      initialValue: 'alpine.nodejs12'
     },
     {
       name: 'memory',
