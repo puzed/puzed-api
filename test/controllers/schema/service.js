@@ -93,6 +93,42 @@ test('schema > service', async t => {
       initialValue: 'nodejs12'
     },
     {
+      name: 'memory',
+      label: 'Memory Limit',
+      component: 'select',
+      options: [
+        {
+          value: 100,
+          label: '100mb'
+        },
+        {
+          value: 250,
+          label: '250mb'
+        },
+        {
+          value: 500,
+          label: '500mb'
+        },
+        {
+          value: 750,
+          label: '750mb'
+        },
+        {
+          value: 1000,
+          label: '1gb'
+        },
+        {
+          value: 2000,
+          label: '2gb'
+        },
+        {
+          value: 4000,
+          label: '4gb'
+        }
+      ],
+      initialValue: 500
+    },
+    {
       name: 'environmentVariables',
       label: 'Environment Variables',
       component: 'multilineInput'
