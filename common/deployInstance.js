@@ -238,7 +238,7 @@ async function deployRepositoryToServer (scope, instanceId) {
     const containerCreationResult = await axios({
       method: 'post',
       socketPath: config.dockerSocketPath,
-      url: '/v1.24/containers/create',
+      url: '/v1.40/containers/create',
       headers: {
         'content-type': 'application/json'
       },
@@ -249,6 +249,8 @@ async function deployRepositoryToServer (scope, instanceId) {
           [`${service.webPort}/tcp`]: {}
         },
         HostConfig: {
+          Memory: (service.memory || 500) * 1000000,
+          MemorySwap: 0,
           PortBindings: {
             [`${service.webPort}/tcp`]: [{
               HostPort: (await getPort()).toString()

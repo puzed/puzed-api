@@ -15,6 +15,7 @@ async function createTestService (server, session) {
       linkId: link.id,
       providerRepositoryId: 'http://localhost:8082/test.git',
       image: 'nodejs12',
+      memory: 500,
       runCommand: 'noCommand',
       networkRulesId: networkRules.id,
       domain: 'test.example.com'

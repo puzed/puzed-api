@@ -5,6 +5,7 @@ function presentService (data) {
     linkId: data.linkId,
     providerRepositoryId: data.repo,
     image: data.image,
+    memory: data.memory,
     webPort: data.webPort,
     networkRulesId: data.networkRulesId,
     domain: data.domain,

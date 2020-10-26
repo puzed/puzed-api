@@ -51,6 +51,11 @@ async function validateService (scope, userId, existingService, data, skipRequir
       value => value && !['nodejs12'].includes(value) && 'does not exist'
     ],
 
+    memory: [
+      value => !skipRequired && !value && 'is required',
+      value => value && isNaN(value) && 'must be a number'
+    ],
+
     environmentVariables: [],
 
     secrets: [],

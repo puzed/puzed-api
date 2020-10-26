@@ -18,7 +18,7 @@ async function patchService (scope, request, response, tokens) {
   const service = await getServiceById(scope, user.id, tokens.serviceId);
 
   if (!service) {
-    throw Object.assign(new Error('resource not be found'), {
+    throw Object.assign(new Error('resource could not be found'), {
       statusCode: 404
     });
   }

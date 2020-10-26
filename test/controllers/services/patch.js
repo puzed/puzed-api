@@ -70,6 +70,7 @@ test('controllers/services/patch > valid but incorrect foreigns', async t => {
       linkId: 'noLink',
       providerRepositoryId: 'noRepo',
       image: 'noImage',
+      memory: 500,
       runCommand: 'noCommand',
       networkRulesId: 'noNetwork',
       domain: 'wrong'

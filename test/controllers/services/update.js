@@ -21,6 +21,7 @@ async function createTestService (server, session) {
       linkId: link.id,
       providerRepositoryId: 'http://localhost:8082/test.git',
       image: 'nodejs12',
+      memory: 500,
       runCommand: 'noCommand',
       networkRulesId: networkRules.id,
       domain: 'test.example.com'
@@ -70,6 +71,7 @@ test('controllers/services/update > invalid data', async t => {
         linkId: ['is required'],
         providerRepositoryId: ['is required'],
         image: ['is required'],
+        memory: ['is required'],
         runCommand: ['is required'],
         networkRulesId: ['is required'],
         domain: ['is required']
@@ -99,6 +101,7 @@ test('controllers/services/update > valid but incorrect foreigns', async t => {
       linkId: 'noLink',
       providerRepositoryId: 'noRepo',
       image: 'noImage',
+      memory: 500,
       runCommand: 'noCommand',
       networkRulesId: 'noNetwork',
       domain: 'wrong'
@@ -142,6 +145,7 @@ test('controllers/services/update > valid', async t => {
       linkId: service.linkId,
       providerRepositoryId: 'http://localhost:8082/test.git',
       image: 'nodejs12',
+      memory: 500,
       runCommand: 'noCommand',
       networkRulesId: service.networkRulesId,
       domain: 'test.example.com'
