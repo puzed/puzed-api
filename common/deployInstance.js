@@ -333,7 +333,8 @@ async function deployRepositoryToServer (scope, instanceId) {
     await db.patch('instances', {
       buildLog: instanceLogs[instanceId].trim(),
       dockerId,
-      dockerPort
+      dockerPort,
+      statusDate: Date.now()
     }, {
       query: {
         id: instanceId

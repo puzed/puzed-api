@@ -1,5 +1,6 @@
 const axios = require('axios');
 const hint = require('hinton');
+const MAX_START_TIME = 10*1000;
 
 async function instanceHealthChecks ({ db, notify, config }) {
   const server = await db.getOne('servers', {
@@ -37,6 +38,23 @@ async function instanceHealthChecks ({ db, notify, config }) {
         });
       }
     } catch (_) {
+      if (instance.status === 'starting') {
+        if(instance.statusDate && Date.now() - instance.statusDate > MAX_START_TIME){
+          await db.patch('instances', {
+            buildLog: instanceLogs[instanceId].trim(),
+            status: 'failed'
+          }, {
+            query: {
+              id: instanceId
+            }
+          });
+
+          return
+        }
+
+        return;
+      }
+
       if (instance.status === 'healthy') {
         notify.broadcast(instance.id);
         return db.patch('instances', {
