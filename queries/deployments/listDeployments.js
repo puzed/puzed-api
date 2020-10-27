@@ -1,7 +1,9 @@
 async function listDeployments ({ db }, userId, serviceId) {
   const service = await db.getOne('services', {
-    id: serviceId,
-    userId
+    query: {
+      id: serviceId,
+      userId
+    }
   });
 
   if (!service) {
