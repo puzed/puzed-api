@@ -70,6 +70,7 @@ test('controllers/services/patch > valid but incorrect foreigns', async t => {
       linkId: 'noLink',
       providerRepositoryId: 'noRepo',
       image: 'noImage',
+      memory: 500,
       runCommand: 'noCommand',
       networkRulesId: 'noNetwork',
       domain: 'wrong'
@@ -138,7 +139,7 @@ test('controllers/services/patch > valid full data', async t => {
       name: 'example',
       linkId: service.linkId,
       providerRepositoryId: 'http://localhost:8082/test.git',
-      image: 'nodejs12',
+      image: 'alpine.nodejs12',
       runCommand: 'noCommand',
       networkRulesId: service.networkRulesId,
       domain: 'test.example.com'

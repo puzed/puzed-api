@@ -26,7 +26,7 @@ test('services > list > unauthorised', async t => {
 });
 
 test('services > list', async t => {
-  t.plan(10);
+  t.plan(11);
 
   const server = await createServerForTest();
 
@@ -43,7 +43,8 @@ test('services > list', async t => {
       name: 'example',
       linkId: link.id,
       providerRepositoryId: 'http://localhost:8082/test.git',
-      image: 'nodejs12',
+      image: 'alpine.nodejs12',
+      memory: 500,
       runCommand: 'noCommand',
       networkRulesId: networkRules.id,
       domain: 'test.example.com'
@@ -63,7 +64,8 @@ test('services > list', async t => {
   t.equal(services.data[0].id, service.id);
   t.equal(services.data[0].name, 'example');
   t.equal(services.data[0].linkId, link.id);
-  t.equal(services.data[0].image, 'nodejs12');
+  t.equal(services.data[0].image, 'alpine.nodejs12');
+  t.equal(services.data[0].memory, 500);
   t.equal(services.data[0].domain, 'test.example.com');
   t.equal(services.data[0].runCommand, 'noCommand');
   t.equal(services.data[0].userId, user.id);

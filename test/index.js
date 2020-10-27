@@ -1,3 +1,8 @@
+require('tape').onFailure(() => {
+  process.exit(1);
+});
+
+require('./common/createScheduler');
 require('./controllers/users/create');
 require('./controllers/sessions/create');
 require('./controllers/sessions/read');

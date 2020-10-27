@@ -20,7 +20,7 @@ async function createInstance (scope, request, response, tokens) {
 
   const instance = await createNewInstance(scope, deployment.id);
 
-  writeResponse(200, instance, response);
+  writeResponse(200, instance.data, response);
 }
 
 module.exports = createInstance;
