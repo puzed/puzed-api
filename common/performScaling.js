@@ -10,7 +10,7 @@ async function deploymentScaling (scope) {
         $ne: true
       }
     },
-    fields: []
+    fields: ['scaling']
   });
 
   for (const deployment of deployments) {
