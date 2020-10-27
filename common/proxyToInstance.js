@@ -60,7 +60,9 @@ async function proxyToInstance ({ db }, request, response) {
   const instance = selectRandomItemFromArray(instances);
 
   const server = await db.getOne('servers', {
-    id: instance.serverId
+    query: {
+      id: instance.serverId
+    }
   });
 
   const proxyRequest = http.request(`http://${server.hostname}:${instance.dockerPort}${request.url}`, {
