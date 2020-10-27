@@ -5,9 +5,12 @@ async function deploymentScaling (scope) {
   const { db, notify, config } = scope;
   const deployments = await db.getAll('deployments', {
     query: {
-      guardianServerId: config.serverId
+      guardianServerId: config.serverId,
+      destroyed: {
+        $ne: true
+      }
     },
-    fields: []
+    fields: ['scaling']
   });
 
   for (const deployment of deployments) {

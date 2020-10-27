@@ -29,6 +29,14 @@ async function deleteDeployment ({ db, settings, config }, request, response, to
     }
   });
 
+  await db.patch('deployments', {
+    destroyed: true
+  }, {
+    query: {
+      id: deployment.id
+    }
+  });
+
   const removeInstancesPromises = instances.map(instance => {
     return axios(`https://${server.hostname}:${server.apiPort}/internal/instances/${instance.id}`, {
       method: 'DELETE',
