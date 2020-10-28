@@ -54,7 +54,7 @@ async function instanceHealthChecks ({ db, notify, config }) {
         $in: ['starting', 'unhealthy', 'healthy']
       }
     },
-    fields: ['dockerPort', 'status']
+    fields: ['dockerPort', 'status', 'statusDate']
   });
 
   const promises = instances.map(async instance => {
@@ -77,7 +77,7 @@ async function instanceHealthChecks ({ db, notify, config }) {
       }
     } catch (_) {
       if (instance.status === 'starting') {
-        if (instance.statusDate && Date.now() - instance.statusDate > MAX_START_TIME) {
+        if (!instance.statusDate || Date.now() - instance.statusDate > MAX_START_TIME) {
           await db.patch('instances', {
             status: 'failed'
           }, {
