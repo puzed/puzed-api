@@ -308,6 +308,10 @@ async function deployRepositoryToServer (scope, instanceId) {
     if (secrets.length > 0) {
       log('\n' + chalkCtx.greenBright('Creating secrets'));
       const secretsWriteScript = secrets.map(secret => {
+        if (!secret || !secret.data) {
+          log('\n' + chalkCtx.redBright('Secret was missing' + JSON.stringify(secret)));
+          return
+        }
         const data = secret.data.split(',').slice(-1);
         return `(echo "${data}" | base64 -d > ${secret.name})`;
       }).join(' && ');
