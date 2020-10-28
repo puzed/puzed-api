@@ -6,36 +6,37 @@ async function instanceDestroyChecks ({ db, notify, config }) {
   const instances = await db.getAll('instances', {
     query: {
       serverId: config.serverId,
-      dockerId: {
-        $null: false
-      },
       status: {
         $ne: ['queued', 'destroyed', 'healthy']
       }
     },
-    fields: []
+    fields: ['dockerId']
   });
 
-  const promises = instances.map(async instance => {
-    const container = await axios({
-      socketPath: config.dockerSocketPath,
-      url: `/v1.26/containers/${instance.dockerId}/json`,
-      validateStatus: () => true
-    });
-
-    if (container.status !== 200) {
-      notify.broadcast(instance.id);
-
-      return db.patch('instances', {
-        status: 'destroyed',
-        statusDate: Date.now()
-      }, {
-        query: {
-          id: instance.id
-        }
+  const promises = instances
+    .filter(instance => {
+      return !!instance.dockerId
+    })
+    .map(async instance => {
+      const container = await axios({
+        socketPath: config.dockerSocketPath,
+        url: `/v1.26/containers/${instance.dockerId}/json`,
+        validateStatus: () => true
       });
-    }
-  });
+
+      if (container.status !== 200) {
+        notify.broadcast(instance.id);
+
+        return db.patch('instances', {
+          status: 'destroyed',
+          statusDate: Date.now()
+        }, {
+          query: {
+            id: instance.id
+          }
+        });
+      }
+    });
 
   return Promise.all(promises);
 }
@@ -79,7 +80,7 @@ async function instanceHealthChecks ({ db, notify, config }) {
       }
     } catch (_) {
       if (instance.status === 'starting') {
-        if (!instance.statusDate || Date.now() - instance.statusDate > MAX_START_TIME) {
+        if (instance.statusDate && Date.now() - instance.statusDate > MAX_START_TIME) {
           await db.patch('instances', {
             status: 'failed'
           }, {
