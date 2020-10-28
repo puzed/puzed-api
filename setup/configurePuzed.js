@@ -135,7 +135,7 @@ async function configurePuzed (options) {
       "  ...require('./index.defaults.js'),",
       `  serverId: '${server.id}'`,
       '}'
-    ]).join('\n');
+    ].join('\n'));
 
     await scope.dataNode.close();
     console.log('  done');

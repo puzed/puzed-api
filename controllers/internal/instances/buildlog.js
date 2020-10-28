@@ -17,9 +17,9 @@ async function buildlog ({ db, config }, request, response, tokens) {
       if (data === null) {
         response.end();
       } else {
-        try {
+        if (!response.writableEnded) {
           response.write(data);
-        } catch (_) {}
+        }
       }
     }
     instanceLogListeners[tokens.instanceId] = instanceLogListeners[tokens.instanceId] || [];
