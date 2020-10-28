@@ -4,6 +4,8 @@ const performUsageCalculations = require('../../.././common/performUsageCalculat
 async function deleteContainer (scope, request, response, tokens) {
   const { db, config, notify } = scope;
 
+  const url = new URL(request.url, 'http://localhost');
+
   const instance = await db.getOne('instances', {
     query: {
       id: tokens.instanceId
@@ -43,13 +45,21 @@ async function deleteContainer (scope, request, response, tokens) {
     console.log(error);
   }
 
-  await db.patch('instances', {
-    status: 'destroyed'
-  }, {
-    query: {
-      id: tokens.instanceId
-    }
-  });
+  if (url.searchParams.get('hard')) {
+    await db.delete('instances', {
+      query: {
+        id: tokens.instanceId
+      }
+    });
+  } else {
+    await db.patch('instances', {
+      status: 'destroyed'
+    }, {
+      query: {
+        id: tokens.instanceId
+      }
+    });
+  }
 
   notify.broadcast(tokens.instanceId);
 
