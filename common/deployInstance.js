@@ -275,7 +275,8 @@ async function deployRepositoryToServer (scope, instanceId) {
         },
         HostConfig: {
           Memory: (service.memory || 500) * 1000000,
-          MemorySwap: 0,
+          MemorySwap: (service.memory || 500) * 1000000,
+          MemorySwappiness: 0,
           PortBindings: {
             [`${service.webPort}/tcp`]: [{
               HostPort: (await getPort()).toString()
