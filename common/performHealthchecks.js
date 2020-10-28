@@ -64,9 +64,7 @@ async function instanceHealthChecks ({ db, notify, config }) {
       });
 
       if (instance.status !== 'healthy') {
-        notify.broadcast(instance.id);
-
-        return db.patch('instances', {
+        await db.patch('instances', {
           status: 'healthy',
           statusDate: Date.now()
         }, {
@@ -74,6 +72,10 @@ async function instanceHealthChecks ({ db, notify, config }) {
             id: instance.id
           }
         });
+
+        notify.broadcast(instance.id);
+
+        return;
       }
     } catch (_) {
       if (instance.status === 'starting') {
@@ -86,6 +88,8 @@ async function instanceHealthChecks ({ db, notify, config }) {
             }
           });
 
+          notify.broadcast(instance.id);
+
           return;
         }
 
@@ -93,8 +97,7 @@ async function instanceHealthChecks ({ db, notify, config }) {
       }
 
       if (instance.status === 'healthy') {
-        notify.broadcast(instance.id);
-        return db.patch('instances', {
+        await db.patch('instances', {
           status: 'unhealthy',
           statusDate: Date.now()
         }, {
@@ -102,6 +105,8 @@ async function instanceHealthChecks ({ db, notify, config }) {
             id: instance.id
           }
         });
+
+        notify.broadcast(instance.id);
       }
     }
   });
@@ -130,8 +135,9 @@ async function deploymentHealthChecks ({ db, notify, config }) {
       },
       fields: ['status']
     });
-    const totalInstances = instances.length;
-    const healthyInstances = instances.filter(instance => ['healthy', 'destroyed'].includes(instance.status)).length;
+
+    const totalInstances = instances.filter(instance => !['destroyed', 'failed'].includes(instance.status)).length;
+    const healthyInstances = instances.filter(instance => ['healthy'].includes(instance.status)).length;
 
     if (deployment.stable && totalInstances !== healthyInstances) {
       await db.patch('deployments', {

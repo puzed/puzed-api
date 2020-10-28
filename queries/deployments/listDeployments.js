@@ -24,7 +24,7 @@ async function listDeployments ({ db }, userId, serviceId) {
       fields: ['status']
     });
 
-    deployment.totalInstances = instances.filter(instance => !['destroyed'].includes(instance.status)).length;
+    deployment.totalInstances = instances.filter(instance => !['destroyed', 'failed'].includes(instance.status)).length;
     deployment.healthyInstances = instances.filter(instance => ['healthy'].includes(instance.status)).length;
 
     return deployment;
