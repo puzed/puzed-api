@@ -18,7 +18,7 @@ async function deploymentScaling (scope) {
       query: {
         deploymentId: deployment.id,
         status: {
-          $in: ['starting', 'building', 'healthy']
+          $in: ['queued', 'starting', 'building', 'healthy']
         }
       },
       fields: ['status']
