@@ -34,7 +34,11 @@ const getCertificate = async function (scope, options, servername) {
   let certificates = options.defaultCertificates;
   if (await options.isAllowedDomain(servername)) {
     if (settings.acmeDirectoryUrl && settings.acmeDirectoryUrl !== 'none') {
-      certificates = await getCertificateForDomain({ settings, db }, servername);
+      try {
+        certificates = await getCertificateForDomain({ settings, db }, servername);
+      } catch (error) {
+        console.log(error);
+      }
     }
   } else {
     console.log('domain', servername, 'is not allowed a certificate');
@@ -116,7 +120,9 @@ async function getCertificateForDomain (scope, domain) {
 
   if (existingCertificate) {
     if (existingCertificate.dateRenewal < Date.now()) {
-      generateCertificateForDomain(scope, domain);
+      generateCertificateForDomain(scope, domain).catch(error => {
+        console.log(error);
+      });
     }
 
     return {
@@ -184,7 +190,7 @@ async function generateCertificateForDomain (scope, domain) {
         return null;
       },
       set: async function (data) {
-        db.put('certificates', {
+        await db.patch('certificates', {
           challenge: data.challenge,
           token: data.challenge.token
         }, {
@@ -201,6 +207,7 @@ async function generateCertificateForDomain (scope, domain) {
             token: data.challenge.token
           }
         });
+
         return result.challenge;
       },
       remove: async function (data) {

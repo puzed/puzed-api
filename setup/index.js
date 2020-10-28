@@ -6,7 +6,11 @@ const prompts = require('prompts');
 const createRandomString = require('../common/createRandomString');
 const multilinePrompt = require('../common/multilinePrompt');
 
-const configurePuzed = require('./configurePuzed');
+if (fs.existsSync('./config/index.js')) {
+  console.log('The ./config/index.js file already exists. Have you already installed puzed?');
+
+  process.exit(1);
+}
 
 if (!fs.existsSync('/var/run/docker.sock')) {
   console.log([
@@ -94,6 +98,14 @@ async function main () {
     console.log(chalk.cyan('?'), chalk.bold('What is your GitHub Client Key'));
     options.githubClientKey = await multilinePrompt();
   }
+
+  fs.writeFileSync('./config/index.js', [
+    'module.exports = {',
+    "  ...require('./index.defaults.js')",
+    '}'
+  ].join('\n'));
+
+  const configurePuzed = require('./configurePuzed');
 
   console.log(chalk.green('Configuring Puzed Instance'));
   await configurePuzed(options);
