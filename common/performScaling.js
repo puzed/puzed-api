@@ -13,12 +13,12 @@ async function deploymentScaling (scope) {
     fields: ['scaling']
   });
 
-  for (const deployment of deployments) {
+  const promises = deployments.map(async deployment => {
     const healthyInstances = await db.getAll('instances', {
       query: {
         deploymentId: deployment.id,
         status: {
-          $in: ['queued', 'starting', 'building', 'healthy']
+          $in: ['queued', 'building', 'starting', 'healthy']
         }
       },
       fields: ['status']
@@ -31,10 +31,12 @@ async function deploymentScaling (scope) {
       await createNewInstance(scope, deployment.id);
       notify.broadcast(deployment.id);
     }
-  }
+  });
+
+  return Promise.all(promises);
 }
 
 module.exports = async function (scope) {
   hint('puzed.scaling', 'starting scaling batch');
-  deploymentScaling(scope);
+  return deploymentScaling(scope);
 };

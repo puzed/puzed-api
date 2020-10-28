@@ -10,7 +10,7 @@ async function instanceDestroyChecks ({ db, notify, config }) {
         $null: false
       },
       status: {
-        $ne: ['destroyed', 'healthy']
+        $ne: ['queued', 'destroyed', 'healthy']
       }
     },
     fields: []
