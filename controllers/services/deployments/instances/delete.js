@@ -26,7 +26,10 @@ async function deleteInstance ({ db, settings, config }, request, response, toke
     }
   });
 
-  await axios(`https://${server.hostname}:${server.apiPort}/internal/instances/${instance.id}`, {
+  const url = new URL(request.url, 'http://localhost');
+
+  const hard = url.searchParams.get('hard') ? '?hard=true' : '';
+  await axios(`https://${server.hostname}:${server.apiPort}/internal/instances/${instance.id}${hard}`, {
     method: 'DELETE',
     headers: {
       host: settings.domains.api[0],

@@ -2,6 +2,44 @@ const axios = require('axios');
 const hint = require('hinton');
 const MAX_START_TIME = 10 * 1000;
 
+async function instanceDestroyChecks ({ db, notify, config }) {
+  const instances = await db.getAll('instances', {
+    query: {
+      serverId: config.serverId,
+      dockerId: {
+        $null: false
+      },
+      status: {
+        $ne: ['destroyed', 'healthy']
+      }
+    },
+    fields: []
+  });
+
+  const promises = instances.map(async instance => {
+    const container = await axios({
+      socketPath: config.dockerSocketPath,
+      url: `/v1.26/containers/${instance.dockerId}/json`,
+      validateStatus: () => true
+    });
+
+    if (container.status !== 200) {
+      notify.broadcast(instance.id);
+
+      return db.patch('instances', {
+        status: 'destroyed',
+        statusDate: Date.now()
+      }, {
+        query: {
+          id: instance.id
+        }
+      });
+    }
+  });
+
+  return Promise.all(promises);
+}
+
 async function instanceHealthChecks ({ db, notify, config }) {
   const server = await db.getOne('servers', {
     query: {
@@ -68,7 +106,7 @@ async function instanceHealthChecks ({ db, notify, config }) {
     }
   });
 
-  await Promise.all(promises);
+  return Promise.all(promises);
 }
 
 async function deploymentHealthChecks ({ db, notify, config }) {
@@ -123,8 +161,12 @@ async function deploymentHealthChecks ({ db, notify, config }) {
   }
 }
 
-module.exports = async function ({ db, notify, config }) {
+module.exports = function ({ db, notify, config }) {
   hint('puzed.healthchecks', 'starting healthcheck batch');
-  instanceHealthChecks({ db, notify, config });
-  deploymentHealthChecks({ db, notify, config });
+
+  return Promise.all([
+    instanceHealthChecks({ db, notify, config }),
+    instanceDestroyChecks({ db, notify, config }),
+    deploymentHealthChecks({ db, notify, config })
+  ]);
 };
