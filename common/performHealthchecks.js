@@ -61,7 +61,9 @@ async function instanceHealthChecks ({ db, notify, settings, config }) {
 
   const promises = instances.map(async instance => {
     try {
-      await axios(`http://${server.hostname}:${instance.dockerPort}/health`);
+      await axios(`http://${server.hostname}:${instance.dockerPort}/health`, {
+        validateStatus: statusCode => statusCode < 500
+      });
 
       if (instance.status !== 'healthy') {
         await db.patch('instances', {
