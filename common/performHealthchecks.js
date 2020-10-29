@@ -1,6 +1,7 @@
 const axios = require('axios');
 const hint = require('hinton');
 const MAX_START_TIME = 10 * 1000;
+const MAX_UNHEALTHY_TIME = 60 * 1000;
 
 async function instanceDestroyChecks ({ db, notify, config }) {
   const instances = await db.getAll('instances', {
@@ -15,7 +16,7 @@ async function instanceDestroyChecks ({ db, notify, config }) {
 
   const promises = instances
     .filter(instance => {
-      return !!instance.dockerId
+      return !!instance.dockerId;
     })
     .map(async instance => {
       const container = await axios({
@@ -41,7 +42,7 @@ async function instanceDestroyChecks ({ db, notify, config }) {
   return Promise.all(promises);
 }
 
-async function instanceHealthChecks ({ db, notify, config }) {
+async function instanceHealthChecks ({ db, notify, settings, config }) {
   const server = await db.getOne('servers', {
     query: {
       id: config.serverId
@@ -55,14 +56,12 @@ async function instanceHealthChecks ({ db, notify, config }) {
         $in: ['starting', 'unhealthy', 'healthy']
       }
     },
-    fields: ['dockerPort', 'status', 'statusDate']
+    fields: ['dockerPort', 'status', 'statusDate', 'dateCreated']
   });
 
   const promises = instances.map(async instance => {
     try {
-      await axios(`http://${server.hostname}:${instance.dockerPort}/health`, {
-        validateStatus: () => true
-      });
+      await axios(`http://${server.hostname}:${instance.dockerPort}/health`);
 
       if (instance.status !== 'healthy') {
         await db.patch('instances', {
@@ -80,7 +79,8 @@ async function instanceHealthChecks ({ db, notify, config }) {
       }
     } catch (_) {
       if (instance.status === 'starting') {
-        if (instance.statusDate && Date.now() - instance.statusDate > MAX_START_TIME) {
+        const tooLongSinceStarted = instance.statusDate && Date.now() - instance.statusDate > MAX_START_TIME;
+        if (tooLongSinceStarted) {
           await db.patch('instances', {
             status: 'failed'
           }, {
@@ -92,6 +92,21 @@ async function instanceHealthChecks ({ db, notify, config }) {
           notify.broadcast(instance.id);
 
           return;
+        }
+
+        return;
+      }
+
+      if (instance.status === 'unhealthy') {
+        const tooLongSinceUnhealthy = instance.statusDate && Date.now() - instance.statusDate > MAX_UNHEALTHY_TIME;
+        if (tooLongSinceUnhealthy) {
+          await axios(`https://${server.hostname}:${server.apiPort}/internal/instances/${instance.id}`, {
+            method: 'DELETE',
+            headers: {
+              host: settings.domains.api[0],
+              'x-internal-secret': settings.secret
+            }
+          });
         }
 
         return;
@@ -168,12 +183,12 @@ async function deploymentHealthChecks ({ db, notify, config }) {
   }
 }
 
-module.exports = function ({ db, notify, config }) {
+module.exports = function (scope) {
   hint('puzed.healthchecks', 'starting healthcheck batch');
 
   return Promise.all([
-    instanceHealthChecks({ db, notify, config }),
-    instanceDestroyChecks({ db, notify, config }),
-    deploymentHealthChecks({ db, notify, config })
+    instanceHealthChecks(scope),
+    instanceDestroyChecks(scope),
+    deploymentHealthChecks(scope)
   ]);
 };
