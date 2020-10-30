@@ -50,36 +50,36 @@ module.exports = {
   },
 
   '/services/:serviceId/deployments': {
-    GET: require('./services/deployments/list'),
-    POST: require('./services/deployments/create')
+    GET: require('./deployments/list'),
+    POST: require('./deployments/create')
   },
 
   '/services/:serviceId/deployments/:deploymentId': {
-    GET: require('./services/deployments/read'),
-    PATCH: require('./services/deployments/patch'),
-    DELETE: require('./services/deployments/delete')
+    GET: require('./deployments/read'),
+    PATCH: require('./deployments/patch'),
+    DELETE: require('./deployments/delete')
   },
 
   '/services/:serviceId/deployments/:deploymentId/instances': {
-    POST: require('./services/deployments/instances/create'),
-    GET: require('./services/deployments/instances/list')
+    POST: require('./instances/create'),
+    GET: require('./instances/list')
   },
 
   '/services/:serviceId/deployments/:deploymentId/instances/:instanceId': {
-    GET: require('./services/deployments/instances/read'),
-    DELETE: require('./services/deployments/instances/delete')
+    GET: require('./instances/read'),
+    DELETE: require('./instances/delete')
   },
 
   '/services/:serviceId/deployments/:deploymentId/instances/:instanceId/log': {
-    GET: require('./services/deployments/instances/log')
+    GET: require('./instances/log')
   },
 
   '/services/:serviceId/deployments/:deploymentId/instances/:instanceId/statistics': {
-    GET: require('./services/deployments/instances/statistics')
+    GET: require('./instances/statistics')
   },
 
   '/services/:serviceId/deployments/:deploymentId/instances/:instanceId/buildlog': {
-    GET: require('./services/deployments/instances/buildlog')
+    GET: require('./instances/buildlog')
   },
 
   '/auth': {

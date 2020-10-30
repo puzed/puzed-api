@@ -1,10 +1,10 @@
 const test = require('tape-catch');
 const axios = require('axios');
 
-const createServerForTest = require('../../../helpers/createServerForTest');
-const createUserAndSession = require('../../../helpers/createUserAndSession');
-const testForValidSession = require('../../../helpers/testForValidSession');
-const createTestService = require('../../../helpers/createTestService');
+const createServerForTest = require('../../helpers/createServerForTest');
+const createUserAndSession = require('../../helpers/createUserAndSession');
+const testForValidSession = require('../../helpers/testForValidSession');
+const createTestService = require('../../helpers/createTestService');
 
 test('controllers/services/deployments/create > auth > valid session', testForValidSession({
   method: 'POST',
@@ -35,7 +35,7 @@ test('controllers/services/deployments/create > success', async t => {
   t.ok(deployment.data.dateCreated, 'deployment had dateCreated');
   t.equal(deployment.data.branch, 'master');
   t.equal(deployment.data.commitHash, '');
-  t.equal(deployment.data.guardianServerId, 'first');
+  t.equal(deployment.data.guardianServerId, server.scope.config.serverId);
   t.equal(deployment.data.totalInstances, 0);
   t.equal(deployment.data.healthyInstances, 0);
 

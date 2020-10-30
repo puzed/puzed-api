@@ -1,5 +1,5 @@
 const hint = require('hinton');
-const createNewInstance = require('./createNewInstance');
+const createNewInstance = require('../common/createNewInstance');
 
 async function deploymentScaling (scope) {
   const { db, notify, config } = scope;

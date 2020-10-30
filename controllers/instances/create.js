@@ -1,8 +1,8 @@
 const writeResponse = require('write-response');
 
-const authenticate = require('../../../../common/authenticate');
-const checkRelationalData = require('../../../../common/checkRelationalData');
-const createNewInstance = require('../../../../common/createNewInstance');
+const authenticate = require('../../common/authenticate');
+const checkRelationalData = require('../../common/checkRelationalData');
+const createNewInstance = require('../../common/createNewInstance');
 
 async function createInstance (scope, request, response, tokens) {
   const { db, config } = scope;
@@ -20,7 +20,7 @@ async function createInstance (scope, request, response, tokens) {
 
   const instance = await createNewInstance(scope, deployment.id);
 
-  writeResponse(200, instance.data, response);
+  writeResponse(200, instance, response);
 }
 
 module.exports = createInstance;
