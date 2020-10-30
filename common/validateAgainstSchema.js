@@ -4,16 +4,14 @@ async function validateAgainstSchema (schema, data) {
     fields: {}
   };
 
-  const validKeyPromises = Object
+  Object
     .keys(data)
     .filter(key => !schema[key])
-    .map(key => {
+    .forEach(key => {
       result.fields[key] = result.fields[key] || [];
       result.fields[key].push('is not a valid key');
       result.messages.push(key + ' is not a valid key');
     });
-
-  await Promise.all(validKeyPromises);
 
   const validValues = Object
     .keys(schema)
