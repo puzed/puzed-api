@@ -3,7 +3,7 @@ const listAvailableDomains = require('../queries/domains/listAvailableDomains');
 const getLinkById = require('../queries/links/getLinkById');
 const getNetworkRulesById = require('../queries/networkRules/getNetworkRulesById');
 
-const validSubdomain = new RegExp('^[a-z0-9-]+$');
+const validSubdomain = new /^[a-z0-9-]+$/();
 
 async function isDomainTaken ({ db, settings }, domain, existingService) {
   if (settings.domains.api.includes(domain) || settings.domains.client.includes(domain)) {
