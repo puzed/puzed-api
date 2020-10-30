@@ -44,7 +44,7 @@ async function createService (scope, request, response) {
   const service = await db.post('services', {
     ...body,
     providerRepositoryId: body.providerRepositoryId,
-    secrets: JSON.stringify(body.secrets),
+    secrets: JSON.stringify(body.secrets || []),
     networkAccessToken: await createRandomString(40),
     userId: user.id,
     dateCreated: Date.now()
