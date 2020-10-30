@@ -9,11 +9,12 @@ const proxyToClient = require('./common/proxyToClient');
 const networkProxy = require('./common/networkProxy');
 const handleError = require('./common/handleError');
 const acmeUtilities = require('./common/acmeUtilities');
-const performHealthchecks = require('./common/performHealthchecks');
-const performScaling = require('./common/performScaling');
-const performAutoSwitches = require('./common/performAutoSwitches');
-const performDomainValidations = require('./common/performDomainValidations');
-const performUsageCalculations = require('./common/performUsageCalculations');
+
+const performHealthchecks = require('./jobs/healthchecks');
+const performScaling = require('./jobs/scaling');
+const performAutoSwitches = require('./jobs/autoSwitches');
+const performDomainValidations = require('./jobs/domainValidations');
+const performUsageCalculations = require('./jobs/usageCalculations');
 
 async function createServer (scope) {
   const { settings, notify, db, scheduler, config } = scope;
