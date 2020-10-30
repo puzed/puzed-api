@@ -1,7 +1,7 @@
 const axios = require('axios');
 const pickRandomServer = require('./pickRandomServer');
 
-module.exports = async function (scope, deploymentId) {
+async function createNewInstance (scope, deploymentId) {
   const { db, settings } = scope;
   const server = await pickRandomServer(scope);
 
@@ -16,11 +16,15 @@ module.exports = async function (scope, deploymentId) {
     dateCreated: Date.now()
   });
 
-  return axios(`https://${server.hostname}:${server.apiPort}/internal/instances/${instance.id}`, {
+  await axios(`https://${server.hostname}:${server.apiPort}/internal/instances/${instance.id}`, {
     method: 'POST',
     headers: {
       host: settings.domains.api[0],
       'x-internal-secret': settings.secret
     }
   });
-};
+
+  return instance;
+}
+
+module.exports = createNewInstance;
