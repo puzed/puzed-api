@@ -72,15 +72,11 @@ test('very long jobs run as fast as they can', async t => {
 
   const scheduler = createScheduler();
 
-  const startTime = Date.now();
-
   let runCount = 0;
   let lastRunEnd;
 
   scheduler.add(async function () {
     runCount++;
-    const ellapsed = Date.now() - startTime;
-
     if (runCount === 1) {
       await new Promise(resolve => setTimeout(resolve, interval * 2));
       lastRunEnd = Date.now();
