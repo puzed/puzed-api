@@ -6,7 +6,7 @@ const authenticate = require('../../common/authenticate');
 
 const getDeploymentById = require('../../queries/deployments/getDeploymentById');
 
-async function createDeployment ({ db, config, providers }, request, response, tokens) {
+async function createDeployment ({ db, config, notify, providers }, request, response, tokens) {
   const { user } = await authenticate({ db, config }, request.headers.authorization);
 
   let body;
@@ -51,6 +51,8 @@ async function createDeployment ({ db, config, providers }, request, response, t
   });
 
   const deployment = await getDeploymentById({ db }, user.id, tokens.serviceId, postedDeployment.id);
+
+  notify.broadcast(service.id);
 
   writeResponse(200, deployment, response);
 }
