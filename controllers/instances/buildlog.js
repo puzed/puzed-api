@@ -2,8 +2,8 @@ const https = require('https');
 
 const writeResponse = require('write-response');
 
-const authenticate = require('../../../../common/authenticate');
-const checkRelationalData = require('../../../../common/checkRelationalData');
+const authenticate = require('../../common/authenticate');
+const checkRelationalData = require('../../common/checkRelationalData');
 
 async function logInstance ({ db, settings, config }, request, response, tokens) {
   const { user } = await authenticate({ db, config }, request.headers.authorization);

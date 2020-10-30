@@ -1,5 +1,5 @@
 const axios = require('axios');
-const performUsageCalculations = require('../../.././common/performUsageCalculations');
+const performUsageCalculations = require('../../.././jobs/usageCalculations');
 
 async function deleteContainer (scope, request, response, tokens) {
   const { db, config, notify } = scope;

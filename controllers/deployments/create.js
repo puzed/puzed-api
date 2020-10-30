@@ -1,10 +1,10 @@
 const writeResponse = require('write-response');
 const finalStream = require('final-stream');
 
-const pickRandomServer = require('../../../common/pickRandomServer');
-const authenticate = require('../../../common/authenticate');
+const pickRandomServer = require('../../common/pickRandomServer');
+const authenticate = require('../../common/authenticate');
 
-const getDeploymentById = require('../../../queries/deployments/getDeploymentById');
+const getDeploymentById = require('../../queries/deployments/getDeploymentById');
 
 async function createDeployment ({ db, config, providers }, request, response, tokens) {
   const { user } = await authenticate({ db, config }, request.headers.authorization);

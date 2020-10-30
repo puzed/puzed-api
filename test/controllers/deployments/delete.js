@@ -1,10 +1,10 @@
 const test = require('tape-catch');
 const axios = require('axios');
 
-const createServerForTest = require('../../../helpers/createServerForTest');
-const createUserAndSession = require('../../../helpers/createUserAndSession');
-const testForValidSession = require('../../../helpers/testForValidSession');
-const createTestService = require('../../../helpers/createTestService');
+const createServerForTest = require('../../helpers/createServerForTest');
+const createUserAndSession = require('../../helpers/createUserAndSession');
+const testForValidSession = require('../../helpers/testForValidSession');
+const createTestService = require('../../helpers/createTestService');
 
 test('controllers/services/deployments/delete > auth > valid session', testForValidSession({
   method: 'DELETE',

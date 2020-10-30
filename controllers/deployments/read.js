@@ -1,8 +1,8 @@
 const writeResponse = require('write-response');
 
-const authenticate = require('../../../common/authenticate');
+const authenticate = require('../../common/authenticate');
 
-const getDeploymentById = require('../../../queries/deployments/getDeploymentById');
+const getDeploymentById = require('../../queries/deployments/getDeploymentById');
 
 async function readDeployment ({ db, config }, request, response, tokens) {
   const { user } = await authenticate({ db, config }, request.headers.authorization);
