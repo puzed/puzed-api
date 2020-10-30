@@ -3,6 +3,7 @@ require('tape').onFailure(() => {
 });
 
 require('./common/createScheduler');
+require('./jobs/healthchecks');
 require('./controllers/users/create');
 require('./controllers/sessions/create');
 require('./controllers/sessions/read');
@@ -12,6 +13,6 @@ require('./controllers/services/create');
 require('./controllers/services/update');
 require('./controllers/services/patch');
 require('./controllers/services/list');
-require('./controllers/services/deployments/create');
-require('./controllers/services/deployments/delete');
+require('./controllers/deployments/create');
+require('./controllers/deployments/delete');
 require('./controllers/schema/service');

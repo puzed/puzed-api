@@ -50,29 +50,31 @@ async function prepareDefaultData (db) {
     }),
 
     db.post('servers', {
-      id: 'first',
       hostname: '0.0.0.0',
-      apiPort: '443',
+      apiPort: '8443',
       dateCreated: Date.now()
     })
   ]);
 }
 
-const config = {
-  httpPort: 8080,
-  httpsPort: 8443,
-  serverId: 'manual-local',
-  forceHttps: false,
-  dockerRuntime: 'runc',
-  dataDirectory: './canhazdata/test',
-  hideUninstalledWarning: true,
-  createDataNode: true
-};
-
 async function createServerForTest (configOverrides) {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-  await fs.rmdir('./canhazdata/test', { recursive: true });
+  const config = {
+    httpPort: 8080,
+    httpsPort: 8443,
+    forceHttps: false,
+    dockerRuntime: 'runc',
+    dataDirectory: './canhazdata/test',
+    hideUninstalledWarning: true,
+    createDataNode: true,
+    dockerSocketPath: '/tmp/docker.mock.sock'
+  };
+
+  await Promise.all([
+    fs.rmdir('./canhazdata/test', { recursive: true }),
+    fs.unlink(config.dockerSocketPath).catch(_ => {})
+  ]);
 
   const scope = await createScope({
     ...config,
@@ -81,10 +83,14 @@ async function createServerForTest (configOverrides) {
   await prepareDefaultData(scope.db);
   await scope.reloadSettings();
 
+  const serverRecord = await scope.db.getOne('servers');
+  scope.config.serverId = serverRecord.id;
+
   const server = await createServer(scope);
 
   return {
     config,
+    scope,
     httpUrl: 'http://localhost:8080',
     httpsUrl: 'https://localhost:8443',
     db: () => server.db,
