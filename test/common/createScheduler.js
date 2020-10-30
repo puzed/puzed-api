@@ -2,7 +2,7 @@ const test = require('tape-catch');
 const createScheduler = require('../../common/createScheduler');
 
 const interval = 100;
-const testRunnerTolerance = 1.1;
+const testRunnerTolerance = 1.3;
 
 test('schedule job', async t => {
   t.plan(6);
