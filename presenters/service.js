@@ -13,6 +13,7 @@ function presentService (data) {
     environmentVariables: data.environmentVariables,
     runCommand: data.runCommand,
     buildCommand: data.buildCommand,
+    deployments: data.deployments,
     userId: data.userId,
     dateCreated: data.dateCreated
   };

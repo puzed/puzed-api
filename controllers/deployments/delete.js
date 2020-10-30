@@ -4,10 +4,10 @@ const writeResponse = require('write-response');
 const authenticate = require('../../common/authenticate');
 const checkRelationalData = require('../../common/checkRelationalData');
 
-async function deleteDeployment ({ db, settings, config }, request, response, tokens) {
+async function deleteDeployment ({ db, settings, notify, config }, request, response, tokens) {
   const { user } = await authenticate({ db, config }, request.headers.authorization);
 
-  const { deployment } = await checkRelationalData(db, {
+  const { service, deployment } = await checkRelationalData(db, {
     service: {
       id: tokens.serviceId,
       userId: user.id
@@ -54,6 +54,9 @@ async function deleteDeployment ({ db, settings, config }, request, response, to
       id: deployment.id
     }
   });
+
+  notify.broadcast(service.id);
+  notify.broadcast(deployment.id);
 
   writeResponse(200, '', response);
 }

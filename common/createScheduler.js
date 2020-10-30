@@ -24,7 +24,9 @@ function createScheduler () {
 
   return {
     add,
-    cancelAndStop: () => destroyed = true
+    cancelAndStop: () => {
+      destroyed = true;
+    }
   };
 }
 

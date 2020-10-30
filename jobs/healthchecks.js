@@ -1,7 +1,7 @@
 const axios = require('axios');
 const hint = require('hinton');
 const MAX_START_TIME = 10 * 1000;
-const MAX_UNHEALTHY_TIME = 60 * 1000;
+const MAX_UNHEALTHY_TIME = 10 * 1000;
 
 async function instanceDestroyChecks ({ db, notify, config }) {
   const instances = await db.getAll('instances', {
@@ -61,6 +61,10 @@ async function instanceHealthChecks ({ db, notify, settings, config }) {
 
   const promises = instances.map(async instance => {
     try {
+      if (!instance.dockerPort) {
+        throw new Error('Instance does not have a dockerPort');
+      }
+
       await axios(`http://${server.hostname}:${instance.dockerPort}/health`, {
         validateStatus: statusCode => statusCode < 500
       });

@@ -5,6 +5,7 @@ const createServerForTest = require('../../helpers/createServerForTest');
 const createUserAndSession = require('../../helpers/createUserAndSession');
 const prepareGenericSetup = require('../../helpers/prepareGenericSetup');
 const testForValidSession = require('../../helpers/testForValidSession');
+const createTestService = require('../../helpers/createTestService');
 
 test('controllers/services/list > auth > valid session', testForValidSession({
   method: 'GET',
@@ -70,6 +71,28 @@ test('services > list', async t => {
   t.equal(services.data[0].runCommand, 'noCommand');
   t.equal(services.data[0].userId, user.id);
   t.ok(services.data[0].dateCreated, 'service had dateCreated');
+
+  server.close();
+});
+
+test('services > list with deployments', async t => {
+  t.plan(3);
+
+  const server = await createServerForTest();
+
+  const { session } = await createUserAndSession(server, { allowedServiceCreate: true });
+
+  await createTestService(server, session);
+
+  const services = await axios(`${server.httpsUrl}/services?join[deployments]=true`, {
+    headers: {
+      authorization: session.secret
+    }
+  });
+
+  t.equal(services.status, 200);
+  t.equal(services.data.length, 1);
+  t.deepEqual(services.data[0].deployments[0].title, 'production');
 
   server.close();
 });

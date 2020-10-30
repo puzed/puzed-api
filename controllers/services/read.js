@@ -6,7 +6,9 @@ const authenticate = require('../../common/authenticate');
 async function readService (scope, request, response, tokens) {
   const { user } = await authenticate(scope, request.headers.authorization);
 
-  const service = await getServiceById(scope, user.id, tokens.serviceId);
+  const url = new URL(request.url, 'http://localhost');
+
+  const service = await getServiceById(scope, user.id, tokens.serviceId, url.searchParams.get('join[deployments]'));
 
   if (!service) {
     throw Object.assign(new Error('service not found'), { statusCode: 404 });

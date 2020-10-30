@@ -7,7 +7,9 @@ const presentService = require('../../presenters/service');
 async function listServicesRoute (scope, request, response) {
   const { user } = await authenticate(scope, request.headers.authorization);
 
-  const services = await listServices(scope, user.id);
+  const url = new URL(request.url, 'http://localhost');
+
+  const services = await listServices(scope, user.id, url.searchParams.get('join[deployments]'));
 
   writeResponse(200, services.map(presentService), response);
 }
