@@ -1,0 +1,15 @@
+FROM node:10-alpine
+
+{{setupNetwork}}
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm set progress=false
+
+COPY . .
+
+RUN {{buildCommand}}
+
+CMD {{runCommand}}
