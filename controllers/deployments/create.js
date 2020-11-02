@@ -45,7 +45,7 @@ async function createDeployment ({ db, config, notify, providers }, request, res
   const postedDeployment = await db.post('deployments', {
     serviceId: service.id,
     ...body,
-    subdomain: (body.domain || body.title).toLowerCase(),
+    subdomain: (body.subdomain || body.title || '').toLowerCase(),
     commitHash,
     guardianServerId: guardian.id,
     dateCreated: Date.now()
