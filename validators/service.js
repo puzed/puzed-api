@@ -16,7 +16,7 @@ async function isDomainTaken ({ db, settings }, domain, existingService) {
 
   const service = await db.getOne('services', {
     query: {
-      domain
+      domain: domain.toLowerCase()
     }
   });
 

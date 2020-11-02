@@ -3,13 +3,15 @@ const http = require('http');
 const selectRandomItemFromArray = require('./selectRandomItemFromArray');
 
 async function proxyToInstance ({ db }, request, response) {
-  if (!request.headers.host) {
+  const hostnameAndMaybePort = request.headers.host && request.headers.host.toLowerCase();
+
+  if (!hostnameAndMaybePort) {
     response.writeHead(404);
     response.end('no host specified found');
     return;
   }
 
-  let hostname = request.headers.host.split(':')[0];
+  let hostname = hostnameAndMaybePort.split(':')[0];
   let branch;
 
   if (hostname.includes('--')) {
@@ -26,20 +28,20 @@ async function proxyToInstance ({ db }, request, response) {
 
   if (!service) {
     response.writeHead(404);
-    response.end(`no service for host ${request.headers.host} found`);
+    response.end(`no service for host ${hostnameAndMaybePort} found`);
     return;
   }
 
   const deployment = await db.getOne('deployments', {
     query: {
       serviceId: service.id,
-      title: branch
+      subdomain: branch
     }
   });
 
   if (!deployment) {
     response.writeHead(404);
-    response.end(`no deployment for host ${request.headers.host} found`);
+    response.end(`no deployment for host ${hostnameAndMaybePort} found`);
     return;
   }
 
@@ -53,7 +55,7 @@ async function proxyToInstance ({ db }, request, response) {
 
   if (instances.length === 0) {
     response.writeHead(404);
-    response.end(`no instances for host ${request.headers.host} found`);
+    response.end(`no instances for host ${hostnameAndMaybePort} found`);
     return;
   }
 
