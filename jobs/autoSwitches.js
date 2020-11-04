@@ -20,11 +20,13 @@ async function performAutoSwitches ({ db, notify, config }) {
       });
 
       await db.patch('deployments', {
-        title: deployment.autoSwitch.newTitle
+        title: deployment.autoSwitch.newTitle,
+        subdomain: deployment.subdomain
       }, { query: { id: targetDeployment.id } });
 
       await db.patch('deployments', {
         title: deployment.autoSwitch.targetDeployment,
+        subdomain: targetDeployment.subdomain,
         autoSwitch: null
       }, { query: { id: deployment.id } });
 

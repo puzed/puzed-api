@@ -1,4 +1,4 @@
-const axios = require('axios');
+const httpRequest = require('../common/httpRequest');
 const hint = require('hinton');
 const MAX_START_TIME = 10 * 1000;
 const MAX_UNHEALTHY_TIME = 10 * 1000;
@@ -19,16 +19,17 @@ async function instanceDestroyChecks ({ db, notify, config }) {
       return !!instance.dockerId;
     })
     .map(async instance => {
-      const container = await axios({
+      const container = await httpRequest({
+        timeout: 3000,
         socketPath: config.dockerSocketPath,
-        url: `/v1.26/containers/${instance.dockerId}/json`,
+        path: `/v1.26/containers/${instance.dockerId}/json`,
         validateStatus: () => true
       });
 
-      if (container.status !== 200) {
+      if (container.request.statusCode !== 200) {
         notify.broadcast(instance.id);
 
-        return db.patch('instances', {
+        const instanceTwo = await db.patch('instances', {
           status: 'destroyed',
           statusDate: Date.now()
         }, {
@@ -36,6 +37,8 @@ async function instanceDestroyChecks ({ db, notify, config }) {
             id: instance.id
           }
         });
+
+        return instanceTwo;
       }
     });
 
@@ -65,9 +68,13 @@ async function instanceHealthChecks ({ db, notify, settings, config }) {
         throw new Error('Instance does not have a dockerPort');
       }
 
-      await axios(`http://${server.hostname}:${instance.dockerPort}/health`, {
-        validateStatus: statusCode => statusCode < 500
+      const healthRequest = await httpRequest(`http://${server.hostname}:${instance.dockerPort}/health`, {
+        timeout: 3000
       });
+
+      if (healthRequest.response.statusCode > 500) {
+        throw new Error('health check returned ' + healthRequest.response.statusCode);
+      }
 
       if (instance.status !== 'healthy') {
         await db.patch('instances', {
@@ -106,7 +113,8 @@ async function instanceHealthChecks ({ db, notify, settings, config }) {
       if (instance.status === 'unhealthy') {
         const tooLongSinceUnhealthy = instance.statusDate && Date.now() - instance.statusDate > MAX_UNHEALTHY_TIME;
         if (tooLongSinceUnhealthy) {
-          await axios(`https://${server.hostname}:${server.apiPort}/internal/instances/${instance.id}`, {
+          await httpRequest(`https://${server.hostname}:${server.apiPort}/internal/instances/${instance.id}`, {
+            timeout: 3000,
             method: 'DELETE',
             headers: {
               host: settings.domains.api[0],
