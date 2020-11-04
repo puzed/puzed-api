@@ -68,12 +68,12 @@ async function instanceHealthChecks ({ db, notify, settings, config }) {
         throw new Error('Instance does not have a dockerPort');
       }
 
-      const healthReqeust = await httpRequest(`http://${server.hostname}:${instance.dockerPort}/health`, {
+      const healthRequest = await httpRequest(`http://${server.hostname}:${instance.dockerPort}/health`, {
         timeout: 3000
       });
 
-      if (healthReqeust.response.statusCode > 500) {
-        throw new Error('health check returned ' + healthReqeust.response.statusCode);
+      if (healthRequest.response.statusCode > 500) {
+        throw new Error('health check returned ' + healthRequest.response.statusCode);
       }
 
       if (instance.status !== 'healthy') {
