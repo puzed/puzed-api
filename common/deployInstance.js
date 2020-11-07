@@ -169,12 +169,23 @@ async function deployRepositoryToServer (scope, instanceId) {
     return result;
   }
 
+  function createLabels(options) {
+    return [
+      'serviceName',
+      'deploymentTitle',
+      'commitHash'
+    ]
+    .map(labelName => `LABEL ${labelName}=${options[labelName]}`)
+    .join('\n')
+  }
+
   async function generateDockerfile (templateName, options) {
     let template = await fs.readFile(path.resolve(__dirname, `../dockerfileTemplates/Dockerfile.${templateName}`), 'utf8');
 
     template = template
       .replace('{{buildCommand}}', options.buildCommand)
-      .replace('{{runCommand}}', options.runCommand);
+      .replace('{{runCommand}}', options.runCommand)
+      .replace('{{labels}}', createLabels(options));
 
     template = template.replace(/^RUN (.*)$/gm, (a, b) => {
       return `RUN proxychains -q sh -c "${b.replace(/"/g, '\\"')}"`;
@@ -227,6 +238,10 @@ async function deployRepositoryToServer (scope, instanceId) {
         socksPort: '1080',
         socksUser: service.id,
         socksPass: service.networkAccessToken,
+
+        serviceName: service.name,
+        deploymentTitle: deployment.title,
+        commitHash: deployment.commitHash,
 
         buildCommand: service.buildCommand,
         runCommand
