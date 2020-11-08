@@ -175,7 +175,7 @@ async function deployRepositoryToServer (scope, instanceId) {
       'deploymentTitle',
       'commitHash'
     ]
-    .map(labelName => `LABEL ${labelName}=${options[labelName]}`)
+    .map(labelName => `LABEL ${labelName}="${options[labelName]}"`)
     .join('\n')
   }
 
