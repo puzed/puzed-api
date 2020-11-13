@@ -1,18 +1,15 @@
-const {
-  instanceLogs,
-  instanceLogListeners
-} = require('../../../common/instanceLogger');
+const { isLoggerActive, streamLogData } = require('../../../common/liveLogger');
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 async function buildlog ({ db, config }, request, response, tokens) {
   function outputLogs () {
-    if (!instanceLogs[tokens.instanceId]) {
+    if (!isLoggerActive(tokens.deploymentId)) {
       return false;
     }
 
     response.writeHead(200);
-    response.write(instanceLogs[tokens.instanceId]);
+
     function write (data) {
       if (data === null) {
         response.end();
@@ -22,17 +19,16 @@ async function buildlog ({ db, config }, request, response, tokens) {
         }
       }
     }
-    instanceLogListeners[tokens.instanceId] = instanceLogListeners[tokens.instanceId] || [];
-    instanceLogListeners[tokens.instanceId].push(write);
+    streamLogData(tokens.deploymentId, write);
 
     return true;
   }
 
-  for (let attempt = 0; attempt < 5; attempt++) {
+  for (let attempt = 0; attempt < 20; attempt++) {
     if (outputLogs()) {
       return;
     }
-    await sleep(2500);
+    await sleep(500);
   }
 
   response.writeHead(404);

@@ -1,7 +1,5 @@
 FROM node:12
 
-{{labels}}
-
 {{setupNetwork}}
 
 WORKDIR /app

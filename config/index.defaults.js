@@ -1,5 +1,5 @@
 module.exports = {
-  hint: '*,-puzed.scaling*,-puzed.usageCalculations*,-puzed.healthchecks*,-puzed.autoSwitches*,-puzed.domainValidations*,-puzed.router.proxy*,-puzed.router.request*',
+  hint: '*,-puzed.scaling*,-puzed.usageCalculations*,-puzed.deployInstances*,-puzed.healthchecks*,-puzed.autoSwitches*,-puzed.domainValidations*,-puzed.router.proxy*,-puzed.router.request*',
   httpPort: 80,
   httpsPort: 443,
   serverId: 'server-uuid-here',
@@ -8,5 +8,6 @@ module.exports = {
   clientUrl: 'http://localhost:8180',
   dataDirectory: './canhazdata/puzed',
   createDataNode: true,
-  dockerSocketPath: '/var/run/docker.sock'
+  dockerSocketPath: '/var/run/docker.sock',
+  automaticallyBuildDeployments: true
 };

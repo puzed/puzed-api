@@ -8,7 +8,6 @@ function httpRequest (options) {
 
     if (options.url) {
       const parsedUrl = new URL(options.url);
-
       agent = parsedUrl.protocol === 'https:' ? https : http;
     }
 

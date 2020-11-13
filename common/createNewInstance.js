@@ -1,8 +1,7 @@
-const axios = require('axios');
 const pickRandomServer = require('./pickRandomServer');
 
 async function createNewInstance (scope, deploymentId) {
-  const { db, settings } = scope;
+  const { db } = scope;
   const server = await pickRandomServer(scope);
 
   const deployment = await db.getOne('deployments', { query: { id: deploymentId } });
@@ -14,14 +13,6 @@ async function createNewInstance (scope, deploymentId) {
     commitHash: deployment.commitHash,
     status: 'queued',
     dateCreated: Date.now()
-  });
-
-  await axios(`https://${server.hostname}:${server.apiPort}/internal/instances/${instance.id}`, {
-    method: 'POST',
-    headers: {
-      host: settings.domains.api[0],
-      'x-internal-secret': settings.secret
-    }
   });
 
   return instance;

@@ -4,7 +4,7 @@ const generateAccessToken = require('./generateAccessToken');
 
 async function cloneRepository (scope, options) {
   const { db } = scope;
-  const { service, instance, target } = options;
+  const { service, deployment, target } = options;
 
   const link = await db.getOne('links', {
     query: {
@@ -56,7 +56,7 @@ async function cloneRepository (scope, options) {
 
   try {
     await execCommand(`${ignoreSshHostFileCheck} git clone https://x-access-token:${accessToken}@github.com/${owner}/${repo}.git ${target}`);
-    await execCommand(`${ignoreSshHostFileCheck} git checkout ${instance.commitHash}`, { cwd: target });
+    await execCommand(`${ignoreSshHostFileCheck} git checkout ${deployment.commitHash}`, { cwd: target });
   } catch (error) {
     console.log(error);
     throw new Error('could not get latest commit hash', { statusCode: 500 });

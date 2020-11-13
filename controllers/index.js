@@ -78,8 +78,8 @@ module.exports = {
     GET: require('./instances/statistics')
   },
 
-  '/services/:serviceId/deployments/:deploymentId/instances/:instanceId/buildlog': {
-    GET: require('./instances/buildlog')
+  '/services/:serviceId/deployments/:deploymentId/buildlog': {
+    GET: require('./deployments/buildlog')
   },
 
   '/auth': {
@@ -88,12 +88,11 @@ module.exports = {
 
   // Internal Routes
   '/internal/instances/:instanceId': {
-    POST: verifyInternalSecret(require('./internal/instances/create')),
     DELETE: verifyInternalSecret(require('./internal/instances/delete'))
   },
 
-  '/internal/instances/:instanceId/buildlog': {
-    GET: verifyInternalSecret(require('./internal/instances/buildlog'))
+  '/internal/deployments/:deploymentId/buildlog': {
+    GET: verifyInternalSecret(require('./internal/deployments/buildlog'))
   },
 
   '/internal/instances/:instanceId/livelog': {

@@ -23,6 +23,8 @@ async function createTestService (server, session) {
     validateStatus: () => true
   });
 
+  await server.db.patch('deployments', { buildStatus: 'success' });
+
   return serviceResponse.data;
 }
 

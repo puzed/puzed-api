@@ -1,4 +1,4 @@
-const test = require('tape-catch');
+const test = require('tape');
 const axios = require('axios');
 
 const createServerForTest = require('../../helpers/createServerForTest');
@@ -156,8 +156,8 @@ test('services > create > valid', async t => {
     validateStatus: () => true
   });
 
+  await server.close();
+
   t.equal(service.status, 201);
   t.ok(service.data.id, 'returned service had an id');
-
-  server.close();
 });

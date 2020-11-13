@@ -90,9 +90,9 @@ test('services > list with deployments', async t => {
     }
   });
 
+  server.close();
+
   t.equal(services.status, 200);
   t.equal(services.data.length, 1);
   t.deepEqual(services.data[0].deployments[0].title, 'production');
-
-  server.close();
 });

@@ -19,7 +19,7 @@ async function cloneRepository (scope, options) {
     await executeShellCommand(`${ignoreSshHostFileCheck} git clone ${gitUrl.href} ${target}`);
     await executeShellCommand(`${ignoreSshHostFileCheck} git checkout ${instance.commitHash}`, { cwd: target });
   } catch (error) {
-    console.log(error);
+    // console.log(error);
     throw new Error('could not clone git repository', { statusCode: 500 });
   }
 }
