@@ -12,6 +12,7 @@ const acmeUtilities = require('./common/acmeUtilities');
 
 const performHealthchecks = require('./jobs/healthchecks');
 const performScaling = require('./jobs/scaling');
+const performDeployInstances = require('./jobs/deployInstances');
 const performAutoSwitches = require('./jobs/autoSwitches');
 const performDomainValidations = require('./jobs/domainValidations');
 const performUsageCalculations = require('./jobs/usageCalculations');
@@ -26,6 +27,7 @@ async function createServer (scope) {
 
   scheduler.add(() => performHealthchecks(scope), 3000);
   scheduler.add(() => performScaling(scope), 3000);
+  scheduler.add(() => performDeployInstances(scope), 3000);
   scheduler.add(() => performAutoSwitches(scope), 3000);
   scheduler.add(() => performDomainValidations(scope), 3000);
   scheduler.add(() => performUsageCalculations(scope), 3000);

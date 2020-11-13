@@ -8,7 +8,7 @@ async function instanceDestroyChecks ({ db, notify, config }) {
     query: {
       serverId: config.serverId,
       status: {
-        $ne: ['queued', 'destroyed', 'healthy']
+        $ne: ['queued', 'failed', 'destroyed', 'healthy']
       }
     },
     fields: ['dockerId']
@@ -26,17 +26,20 @@ async function instanceDestroyChecks ({ db, notify, config }) {
         validateStatus: () => true
       });
 
-      if (container.request.statusCode !== 200) {
+      if (container.response.statusCode !== 200) {
         notify.broadcast(instance.id);
 
         const instanceTwo = await db.patch('instances', {
-          status: 'destroyed',
+          status: 'failed',
+          statusDetail: 'container disappeared',
           statusDate: Date.now()
         }, {
           query: {
             id: instance.id
           }
         });
+
+        notify.broadcast(instance.id);
 
         return instanceTwo;
       }
@@ -68,7 +71,8 @@ async function instanceHealthChecks ({ db, notify, settings, config }) {
         throw new Error('Instance does not have a dockerPort');
       }
 
-      const healthRequest = await httpRequest(`http://${server.hostname}:${instance.dockerPort}/health`, {
+      const healthRequest = await httpRequest({
+        url: `http://${server.hostname}:${instance.dockerPort}/health`,
         timeout: 3000
       });
 
@@ -79,6 +83,7 @@ async function instanceHealthChecks ({ db, notify, settings, config }) {
       if (instance.status !== 'healthy') {
         await db.patch('instances', {
           status: 'healthy',
+          statusDetail: '',
           statusDate: Date.now()
         }, {
           query: {
@@ -113,12 +118,22 @@ async function instanceHealthChecks ({ db, notify, settings, config }) {
       if (instance.status === 'unhealthy') {
         const tooLongSinceUnhealthy = instance.statusDate && Date.now() - instance.statusDate > MAX_UNHEALTHY_TIME;
         if (tooLongSinceUnhealthy) {
-          await httpRequest(`https://${server.hostname}:${server.apiPort}/internal/instances/${instance.id}`, {
+          await httpRequest({
+            url: `https://${server.hostname}:${server.apiPort}/internal/instances/${instance.id}`,
             timeout: 3000,
             method: 'DELETE',
             headers: {
               host: settings.domains.api[0],
               'x-internal-secret': settings.secret
+            }
+          });
+          await db.patch('instances', {
+            status: 'failed',
+            statusDate: Date.now(),
+            statusDetail: 'unhealthy too long'
+          }, {
+            query: {
+              id: instance.id
             }
           });
         }

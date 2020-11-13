@@ -14,20 +14,24 @@ async function deploymentScaling (scope) {
   });
 
   const promises = deployments.map(async deployment => {
-    const healthyInstances = await db.getAll('instances', {
+    const instances = await db.getAll('instances', {
       query: {
-        deploymentId: deployment.id,
-        status: {
-          $in: ['queued', 'building', 'starting', 'healthy']
-        }
+        deploymentId: deployment.id
       },
-      fields: ['status']
+      order: 'desc(dateCreated)',
+      fields: ['status', 'dateCreated']
     });
-    const totalHealthyInstances = healthyInstances.length;
+    const totalHealthyInstances = instances
+      .filter(instance => ['queued', 'building', 'starting', 'healthy'].includes(instance.status)).length;
+
     const scaling = deployment.scaling || {};
     const minInstances = isNaN(scaling.minInstances) ? 1 : scaling.minInstances;
 
-    if (minInstances > totalHealthyInstances) {
+    const failedInstancesCreatedLastMinute = instances.filter(instance => {
+      return instance.status === 'failed' && Date.now() - instance.dateCreated < 60000;
+    });
+
+    if (failedInstancesCreatedLastMinute.length < 3 && minInstances > totalHealthyInstances) {
       await createNewInstance(scope, deployment.id);
       notify.broadcast(deployment.id);
     }

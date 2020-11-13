@@ -1,13 +1,14 @@
 const writeResponse = require('write-response');
 const finalStream = require('final-stream');
 
-const pickRandomServer = require('../../common/pickRandomServer');
 const authenticate = require('../../common/authenticate');
+const buildImage = require('../../common/buildImage');
 
 const getDeploymentById = require('../../queries/deployments/getDeploymentById');
 
-async function createDeployment ({ db, config, notify, providers }, request, response, tokens) {
-  const { user } = await authenticate({ db, config }, request.headers.authorization);
+async function createDeployment (scope, request, response, tokens) {
+  const { db, notify, providers } = scope;
+  const { user } = await authenticate(scope, request.headers.authorization);
 
   let body;
   try {
@@ -38,21 +39,21 @@ async function createDeployment ({ db, config, notify, providers }, request, res
   }
 
   const provider = providers[link.providerId];
-  const commitHash = await provider.getLatestCommitHash({ db, config }, user, service, body.branch);
-
-  const guardian = await pickRandomServer({ db });
+  const commitHash = await provider.getLatestCommitHash(scope, user, service, body.branch);
 
   const postedDeployment = await db.post('deployments', {
     serviceId: service.id,
+    service,
     ...body,
     subdomain: (body.subdomain || body.title || '').toLowerCase(),
     commitHash,
-    guardianServerId: guardian.id,
+    guardianServerId: scope.config.serverId,
     dateCreated: Date.now()
   });
 
-  const deployment = await getDeploymentById({ db }, user.id, tokens.serviceId, postedDeployment.id);
+  const deployment = await getDeploymentById(scope, user.id, tokens.serviceId, postedDeployment.id);
 
+  buildImage(scope, postedDeployment.id);
   notify.broadcast(service.id);
 
   writeResponse(200, deployment, response);
