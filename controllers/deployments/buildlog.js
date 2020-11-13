@@ -24,7 +24,7 @@ async function buildlog ({ db, settings, config }, request, response, tokens) {
     }
   });
 
-  if (['building'].includes(deployment.buildStatus)) {
+  if (!['failed', 'success'].includes(deployment.buildStatus)) {
     https.request(`https://${server.hostname}:${server.apiPort}/internal/deployments/${deployment.id}/buildlog`, {
       headers: {
         host: settings.domains.api[0],
