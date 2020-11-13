@@ -8,12 +8,10 @@ const createDockerMockServer = require('../helpers/createDockerMockServer');
 const createGenericMockServer = require('../helpers/createGenericMockServer');
 const healthchecks = require('../../jobs/healthchecks');
 
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-
 async function createInstanceFullJourney (server, session) {
   const service = await createTestService(server, session);
   const deployment = await server.db.getOne('deployments');
-  const instance = await axios(`${server.httpsUrl}/services/${service.id}/deployments/${deployment.id}/instances`, {
+  const createdInstance = await axios(`${server.httpsUrl}/services/${service.id}/deployments/${deployment.id}/instances`, {
     method: 'POST',
     headers: {
       authorization: session.secret
@@ -22,10 +20,13 @@ async function createInstanceFullJourney (server, session) {
     validateStatus: () => true
   });
 
+  await server.db.patch('instances', { status: 'unhealthy', dockerPort: 8082 });
+  const instance = await server.db.getOne('instances', { query: { id: createdInstance.data.id } });
+
   return {
     service,
     deployment,
-    instance: instance.data,
+    instance,
     session
   };
 }
@@ -39,8 +40,6 @@ test('instance turns healthy', async t => {
   const instanceMock = await createGenericMockServer(8082);
 
   const { service, deployment, instance } = await createInstanceFullJourney(server, session);
-
-  await sleep(500);
 
   await healthchecks(server.scope);
 

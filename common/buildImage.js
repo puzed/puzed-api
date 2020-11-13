@@ -122,8 +122,6 @@ async function buildImage (scope, deploymentId) {
 
     notify.broadcast(deploymentId);
   } catch (error) {
-    console.log(error);
-
     log('\n' + chalkCtx.redBright(error.message));
     log('\n' + chalkCtx.greenBright('Cleaning up build directory'));
     const logData = log.end();

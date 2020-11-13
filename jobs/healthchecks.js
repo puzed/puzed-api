@@ -70,7 +70,6 @@ async function instanceHealthChecks ({ db, notify, settings, config }) {
       if (!instance.dockerPort) {
         throw new Error('Instance does not have a dockerPort');
       }
-
       const healthRequest = await httpRequest({
         url: `http://${server.hostname}:${instance.dockerPort}/health`,
         timeout: 3000

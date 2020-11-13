@@ -68,7 +68,8 @@ async function createServerForTest (configOverrides) {
     dataDirectory: './canhazdata/test',
     hideUninstalledWarning: true,
     createDataNode: true,
-    dockerSocketPath: '/tmp/docker.mock.sock'
+    dockerSocketPath: '/tmp/docker.mock.sock',
+    automaticallyBuildDeployments: false
   };
 
   await Promise.all([

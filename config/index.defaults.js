@@ -8,5 +8,6 @@ module.exports = {
   clientUrl: 'http://localhost:8180',
   dataDirectory: './canhazdata/puzed',
   createDataNode: true,
-  dockerSocketPath: '/var/run/docker.sock'
+  dockerSocketPath: '/var/run/docker.sock',
+  automaticallyBuildDeployments: true
 };

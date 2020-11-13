@@ -53,7 +53,10 @@ async function createDeployment (scope, request, response, tokens) {
 
   const deployment = await getDeploymentById(scope, user.id, tokens.serviceId, postedDeployment.id);
 
-  buildImage(scope, postedDeployment.id);
+  if (scope.config.automaticallyBuildDeployments) {
+    buildImage(scope, postedDeployment.id);
+  }
+
   notify.broadcast(service.id);
 
   writeResponse(200, deployment, response);
