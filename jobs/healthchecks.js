@@ -98,8 +98,19 @@ async function instanceHealthChecks ({ db, notify, settings, config }) {
       if (instance.status === 'starting') {
         const tooLongSinceStarted = instance.statusDate && Date.now() - instance.statusDate > MAX_START_TIME;
         if (tooLongSinceStarted) {
+          await httpRequest({
+            url: `https://${server.hostname}:${server.apiPort}/internal/instances/${instance.id}`,
+            timeout: 3000,
+            method: 'DELETE',
+            headers: {
+              host: settings.domains.api[0],
+              'x-internal-secret': settings.secret
+            }
+          });
+
           await db.patch('instances', {
-            status: 'failed'
+            status: 'failed',
+            statusDetail: 'too long to start'
           }, {
             query: {
               id: instance.id

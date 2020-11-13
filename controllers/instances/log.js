@@ -22,7 +22,7 @@ async function logInstance ({ db, settings, config }, request, response, tokens)
     }
   });
 
-  if (instance.status === 'destroyed') {
+  if (['destroyed', 'failed'].includes(instance.status)) {
     const liveLog = await db.getOne('instanceLogs', {
       query: {
         instanceId: tokens.instanceId

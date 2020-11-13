@@ -28,7 +28,7 @@ async function deploymentScaling (scope) {
     const minInstances = isNaN(scaling.minInstances) ? 1 : scaling.minInstances;
 
     const failedInstancesCreatedLastMinute = instances.filter(instance => {
-      return instance.status === 'failed' && Date.now() - instance.dateCreated < 60000;
+      return instance.status === 'failed' && Date.now() - instance.dateCreated < 120000;
     });
 
     if (failedInstancesCreatedLastMinute.length < 3 && minInstances > totalHealthyInstances) {
