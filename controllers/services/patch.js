@@ -55,21 +55,23 @@ async function patchService (scope, request, response, tokens) {
     }
   });
 
-  await axios(`https://localhost:${config.httpsPort}/services/${service.id}/deployments`, {
-    method: 'POST',
-    headers: {
-      host: settings.domains.api[0],
-      authorization: request.headers.authorization
-    },
-    data: JSON.stringify({
-      title: 'production-update-' + Date.now(),
-      branch: productionDeployment.branch || 'master',
-      autoSwitch: {
-        targetDeployment: 'production',
-        newTitle: 'production-backup-' + Date.now()
-      }
-    })
-  });
+  if(productionDeployment){
+    await axios(`https://localhost:${config.httpsPort}/services/${service.id}/deployments`, {
+      method: 'POST',
+      headers: {
+        host: settings.domains.api[0],
+        authorization: request.headers.authorization
+      },
+      data: JSON.stringify({
+        title: 'production-update-' + Date.now(),
+        branch: productionDeployment.branch || 'master',
+        autoSwitch: {
+          targetDeployment: 'production',
+          newTitle: 'production-backup-' + Date.now()
+        }
+      })
+    });
+  }
 
   const updatedService = await getServiceById(scope, user.id, tokens.serviceId);
 
