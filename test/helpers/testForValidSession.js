@@ -32,14 +32,14 @@ function testForValidSession (options) {
       validateStatus: () => true
     });
 
+    await server.close();
+
     t.equal(serviceMissingSession.status, 401, 'missing session errors');
     t.equal(serviceInvalidSession.status, 401, 'invalid session errors');
     t.notEqual(serviceValidSession.status, 401, 'valid session works');
 
     t.deepEqual(serviceMissingSession.data, 'unauthorised', 'missing session returns unauthorised message');
     t.deepEqual(serviceInvalidSession.data, 'unauthorised', 'invalid session returns unauthorised message');
-
-    server.close();
   };
 }
 

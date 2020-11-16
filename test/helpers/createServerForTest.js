@@ -96,8 +96,12 @@ async function createServerForTest (configOverrides) {
     httpsUrl: 'https://localhost:8443',
     db: () => server.db,
     close: () => {
-      server.httpsServer.close();
-      server.httpServer.close();
+      return Promise.all([
+        server.httpsServer.close(),
+        server.httpServer.close(),
+        server.db.close(),
+        scope.close()
+      ]);
     },
     ...server
   };

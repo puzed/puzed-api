@@ -35,7 +35,7 @@ async function createScope (config) {
 
   const dataNode = config.createDataNode
     ? await canhazdb.server({
-        host: 'localhost', port: 7061, queryPort: 8061, dataDirectory: config.dataDirectory, tls
+        host: 'localhost', port: 7061, queryPort: 8061, dataDirectory: config.dataDirectory, single: true, tls
       })
     : null;
 
@@ -67,6 +67,8 @@ async function createScope (config) {
     db,
     close: () => {
       return Promise.all([
+        db.close(),
+        scope.scheduler.cancelAndStop(),
         dataNode && dataNode.close()
       ]);
     }

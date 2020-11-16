@@ -55,7 +55,7 @@ async function patchService (scope, request, response, tokens) {
     }
   });
 
-  if(productionDeployment){
+  if (productionDeployment) {
     await axios(`https://localhost:${config.httpsPort}/services/${service.id}/deployments`, {
       method: 'POST',
       headers: {
