@@ -15,7 +15,7 @@
   "dependencies": {
     "@root/acme": "^3.1.0",
     "axios": "^0.21.0",
-    "canhazdb": "=1.10.3",
+    "canhazdb": "^1.11.2",
     "chalk": "^4.1.0",
     "crypto-random-string": "^3.3.0",
     "dockerode": "^3.2.1",
@@ -45,7 +45,8 @@
     "uuid": "^8.3.1",
     "wait-on": "^5.2.0",
     "wait-port": "^0.2.9",
-    "write-response": "^1.2.3"
+    "write-response": "^1.2.3",
+    "wtfnode": "^0.8.3"
   },
   "devDependencies": {
     "semistandard": "^14.2.3",
