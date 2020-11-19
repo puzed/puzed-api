@@ -18,7 +18,7 @@ function getCertificateFromDb (db, domain, filter) {
       domain: { $custom: ["$1 LIKE json_extract(data, '$.domain')", domain] },
       ...filter
     },
-    order: 'desc(dateCreated)',
+    order: ['desc(dateCreated)'],
     limit: 1
   };
   return db.getOne('certificates', options);

@@ -8,7 +8,7 @@ async function instanceDestroyChecks ({ db, notify, config }) {
     query: {
       serverId: config.serverId,
       status: {
-        $ne: ['queued', 'failed', 'destroyed', 'healthy']
+        $nin: ['queued', 'failed', 'destroyed', 'healthy']
       }
     },
     fields: ['dockerId']

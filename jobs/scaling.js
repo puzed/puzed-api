@@ -18,7 +18,7 @@ async function deploymentScaling (scope) {
       query: {
         deploymentId: deployment.id
       },
-      order: 'desc(dateCreated)',
+      order: ['desc(dateCreated)'],
       fields: ['status', 'dateCreated']
     });
     const totalHealthyInstances = instances

@@ -15,7 +15,7 @@
   "dependencies": {
     "@root/acme": "^3.1.0",
     "axios": "^0.21.0",
-    "canhazdb": "^1.11.2",
+    "canhazdb": "^2.0.3",
     "chalk": "^4.1.0",
     "crypto-random-string": "^3.3.0",
     "dockerode": "^3.2.1",
@@ -28,6 +28,7 @@
     "is-ip": "^3.1.0",
     "jsonwebtoken": "^8.5.1",
     "memoizee": "^0.4.14",
+    "mql-to-jql": "^1.1.5",
     "ndjson-fe": "^1.2.5",
     "node-mini-migrations": "^5.0.0",
     "node-rsa": "^1.1.1",

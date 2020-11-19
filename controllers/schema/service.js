@@ -11,8 +11,9 @@ async function serviceSchemaController (scope, request, response) {
 
   const networkRules = await listNetworkRules(scope, user.id);
   const defaultNetworkRule = networkRules.find(networkRule => networkRule.default);
+  const linkId = url.searchParams.get('linkId');
 
-  const link = await getLinkById(scope, user.id, url.searchParams.get('linkId'));
+  const link = linkId && await getLinkById(scope, user.id, linkId);
 
   if (!link) {
     throw Object.assign(new Error('invalid linkId specified'), {

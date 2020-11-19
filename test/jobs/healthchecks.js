@@ -11,6 +11,7 @@ const healthchecks = require('../../jobs/healthchecks');
 async function createInstanceFullJourney (server, session) {
   const service = await createTestService(server, session);
   const deployment = await server.db.getOne('deployments');
+
   const createdInstance = await axios(`${server.httpsUrl}/services/${service.id}/deployments/${deployment.id}/instances`, {
     method: 'POST',
     headers: {
@@ -50,9 +51,9 @@ test('instance turns healthy', async t => {
     validateStatus: () => true
   });
 
-  t.equal(instanceRefresh.data.status, 'healthy');
-
   server.close();
   dockerMock.close();
   instanceMock.close();
+
+  t.equal(instanceRefresh.data.status, 'healthy');
 });
