@@ -5,6 +5,6 @@
 [![GitHub](https://img.shields.io/github/license/puzed/puzed-api)](https://github.com/puzed/puzed-api/blob/master/LICENSE)
 
 ## Installation
-Detailed information on install puzed can be found at:
+Detailed information on installing puzed can be found at:
 
 http://docs.puzed.com/guides/installing/
