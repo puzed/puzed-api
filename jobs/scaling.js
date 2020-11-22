@@ -6,9 +6,7 @@ async function deploymentScaling (scope) {
   const deployments = await db.getAll('deployments', {
     query: {
       guardianServerId: config.serverId,
-      destroyed: {
-        $ne: true
-      }
+      destroyed: false
     },
     fields: ['scaling']
   });

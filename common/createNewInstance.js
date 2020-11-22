@@ -12,6 +12,7 @@ async function createNewInstance (scope, deploymentId) {
     serverId: server.id,
     commitHash: deployment.commitHash,
     status: 'queued',
+    destroyed: false,
     dateCreated: Date.now()
   });
 

@@ -48,6 +48,7 @@ async function createDeployment (scope, request, response, tokens) {
     subdomain: (body.subdomain || body.title || '').toLowerCase(),
     commitHash,
     guardianServerId: scope.config.serverId,
+    destroyed: false,
     dateCreated: Date.now()
   });
 

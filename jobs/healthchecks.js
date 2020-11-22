@@ -173,9 +173,7 @@ async function deploymentHealthChecks ({ db, notify, config }) {
   const deployments = await db.getAll('deployments', {
     query: {
       guardianServerId: config.serverId,
-      destroyed: {
-        $ne: true
-      }
+      destroyed: false
     },
     fields: ['stable']
   });
@@ -184,9 +182,7 @@ async function deploymentHealthChecks ({ db, notify, config }) {
     const instances = await db.getAll('instances', {
       query: {
         deploymentId: deployment.id,
-        destroyed: {
-          $ne: true
-        }
+        destroyed: false
       },
       fields: ['status']
     });
