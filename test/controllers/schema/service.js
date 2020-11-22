@@ -1,4 +1,4 @@
-const test = require('tape-catch');
+const test = require('tape');
 const axios = require('axios');
 
 const createServerForTest = require('../../helpers/createServerForTest');

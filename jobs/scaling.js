@@ -6,9 +6,7 @@ async function deploymentScaling (scope) {
   const deployments = await db.getAll('deployments', {
     query: {
       guardianServerId: config.serverId,
-      destroyed: {
-        $ne: true
-      }
+      destroyed: false
     },
     fields: ['scaling']
   });
@@ -18,7 +16,7 @@ async function deploymentScaling (scope) {
       query: {
         deploymentId: deployment.id
       },
-      order: 'desc(dateCreated)',
+      order: ['desc(dateCreated)'],
       fields: ['status', 'dateCreated']
     });
     const totalHealthyInstances = instances

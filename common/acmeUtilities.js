@@ -15,10 +15,12 @@ const packageAgent = 'test-' + pkg.name + '/' + pkg.version;
 function getCertificateFromDb (db, domain, filter) {
   const options = {
     query: {
-      domain: { $custom: ["$1 LIKE json_extract(data, '$.domain')", domain] },
+      domain: {
+        $in: [domain, `.*${domain}`]
+      },
       ...filter
     },
-    order: 'desc(dateCreated)',
+    order: ['desc(dateCreated)'],
     limit: 1
   };
   return db.getOne('certificates', options);

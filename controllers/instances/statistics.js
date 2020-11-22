@@ -28,7 +28,7 @@ async function statisticsRoute ({ db, config }, request, response, tokens) {
       },
       instanceId: tokens.instanceId
     },
-    order: 'asc(dateCreated)'
+    order: ['asc(dateCreated)']
   });
 
   writeResponse(200, statistics, response);

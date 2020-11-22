@@ -20,7 +20,7 @@ async function listInstances ({ db, config }, request, response, tokens) {
     query: {
       deploymentId: tokens.deploymentId
     },
-    order: 'desc(dateCreated)',
+    order: ['desc(dateCreated)'],
     fields: ['serviceId', 'deploymentId', 'serverId', 'commitHash', 'status', 'statusDetail', 'dateCreated']
   });
 

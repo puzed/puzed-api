@@ -3,7 +3,7 @@ async function listServices ({ db }, userId, withDeployments) {
     query: {
       userId: userId
     },
-    order: 'desc(dateCreated)'
+    order: ['desc(dateCreated)']
   });
 
   if (withDeployments) {
