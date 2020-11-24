@@ -29,10 +29,11 @@ async function performContainerLoggers (scope) {
 
     const lastLog = await db.getOne(`instanceLogs-${instance.id}`, {
       fields: ['dateCreated'],
+      limit: 1,
       order: ['desc(dateCreated)']
     });
 
-    const since = lastLog ? Math.floor(lastLog.dateCreated / 1000) : 0;
+    const since = lastLog ? parseInt(lastLog.dateCreated / 1000) : 0;
 
     const request = http.request({
       method: 'get',
