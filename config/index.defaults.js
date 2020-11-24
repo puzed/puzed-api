@@ -1,5 +1,5 @@
 module.exports = {
-  hint: '*,-puzed.scaling*,-puzed.usageCalculations*,-puzed.deployInstances*,-puzed.healthchecks*,-puzed.autoSwitches*,-puzed.domainValidations*,-puzed.router.proxy*,-puzed.router.request*',
+  hint: '*,-puzed.scaling*,-puzed.usageCalculations*,-puzed.containerLoggers*,-puzed.deployInstances*,-puzed.healthchecks*,-puzed.autoSwitches*,-puzed.domainValidations*,-puzed.router.proxy*,-puzed.router.request*',
   httpPort: 80,
   httpsPort: 443,
   serverId: 'server-uuid-here',
