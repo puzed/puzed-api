@@ -2,7 +2,6 @@ require('tape').onFailure(() => {
   process.exit(1);
 });
 
-require('./common/createScheduler');
 require('./jobs/healthchecks');
 require('./controllers/users/create');
 require('./controllers/sessions/create');
