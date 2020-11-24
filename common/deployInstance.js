@@ -92,14 +92,6 @@ async function deployRepositoryToServer (scope, instanceId) {
       url: `/v1.26/containers/${dockerId}/start`
     });
 
-    await updateStatusAndDetail('starting', 'creating network');
-    await executeCommandInContainer(scope, dockerId, 'mkdir -p /opt/proxychains');
-    const proxychains = (await fs.readFile('./vendor/proxychains4/proxychains.conf', 'utf8')) +
-      `socks5 ${server.hostname} 1080 ${service.id} ${service.networkAccessToken}`;
-
-    await createTextFileInContainer(scope, dockerId, '/opt/proxychains/proxychains.conf', proxychains);
-    await extractTarIntoContainer(scope, dockerId, './vendor/proxychains4/runtime.tar', '/opt/proxychains');
-
     if (secrets.length > 0) {
       await updateStatusAndDetail('starting', 'creating secrets');
       const secretsWriteScript = secrets.map(secret => {
