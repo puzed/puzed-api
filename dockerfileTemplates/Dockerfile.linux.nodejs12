@@ -1,7 +1,5 @@
 FROM node:12
 
-{{setupNetwork}}
-
 WORKDIR /app
 
 COPY package*.json ./

@@ -93,9 +93,5 @@ module.exports = {
 
   '/internal/deployments/:deploymentId/buildlog': {
     GET: verifyInternalSecret(require('./internal/deployments/buildlog'))
-  },
-
-  '/internal/instances/:instanceId/livelog': {
-    GET: verifyInternalSecret(require('./internal/instances/livelog'))
   }
 };

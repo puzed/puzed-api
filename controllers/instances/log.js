@@ -1,12 +1,18 @@
-const https = require('https');
-
-const writeResponse = require('write-response');
-
 const authenticate = require('../../common/authenticate');
 const checkRelationalData = require('../../common/checkRelationalData');
 
+const { format } = require('date-fns');
+
+function formatLogItem (data) {
+  const date = new Date(data.slice(0, 30));
+  const message = data.slice(31);
+
+  return format(date, 'dd/MM/yyyy HH:mm:ss') + ' ' + message;
+}
+
 async function logInstance ({ db, settings, config }, request, response, tokens) {
   request.setTimeout(60 * 60 * 1000);
+
   const { user } = await authenticate({ db, config }, request.headers.authorization);
 
   const { instance } = await checkRelationalData(db, {
@@ -22,31 +28,31 @@ async function logInstance ({ db, settings, config }, request, response, tokens)
     }
   });
 
-  if (['destroyed', 'failed'].includes(instance.status)) {
-    const liveLog = await db.getOne('instanceLogs', {
-      query: {
-        instanceId: tokens.instanceId
-      }
-    });
+  const liveLog = await db.getAll(`instanceLogs-${instance.id}`, {
+    limit: 50,
+    order: ['desc(dateCreated)']
+  });
+  liveLog.sort((a, b) => a.dateCreated < b.dateCreated ? -1 : 1);
 
-    writeResponse(200, liveLog ? liveLog.data : 'No logs stored', response);
+  liveLog.forEach(entry => {
+    response.write(formatLogItem(entry.data.toString()));
+  });
+
+  if (['destroyed', 'failed'].includes(instance.status)) {
+    response.end();
     return;
   }
 
-  const server = await db.getOne('servers', {
-    query: {
-      id: instance.serverId
-    }
-  });
+  async function handleNotify (path, collectionId, documentId) {
+    const item = await db.getOne(`instanceLogs-${instance.id}`, { query: { id: documentId } });
+    response.write(formatLogItem(item.data.toString()));
+  }
 
-  https.request(`https://${server.hostname}:${server.apiPort}/internal/instances/${instance.id}/livelog`, {
-    headers: {
-      host: settings.domains.api[0],
-      'x-internal-secret': settings.secret
-    }
-  }, function (liveLogResponse) {
-    liveLogResponse.pipe(response);
-  }).end();
+  db.on(`instanceLogs-${instance.id}`, handleNotify);
+
+  request.on('close', () => {
+    db.off(`instanceLogs-${instance.id}`, handleNotify);
+  });
 }
 
 module.exports = logInstance;

@@ -15,25 +15,7 @@ async function generateDockerfile (templateName, options) {
 
   template = template
     .replace('{{buildCommand}}', options.buildCommand)
-    .replace('{{runCommand}}', `sleep 60 || proxychains sh -c "${options.runCommand}"`);
-
-  template = template.replace(/^RUN (.*)$/gm, (a, b) => {
-    return `RUN proxychains -q sh -c "${b.replace(/"/g, '\\"')}"`;
-  });
-
-  template = template.replace('{{setupNetwork}}', [
-    templateName.startsWith('linux.') ? 'COPY  ./__puzedVendor__/proxychains4/runtime.tar /tmp/runtime.tar' : '',
-    templateName.startsWith('linux.') ? 'RUN cd /tmp && tar xvf runtime.tar' : '',
-
-    templateName.startsWith('linux.') ? 'RUN mv /tmp/proxychains /usr/local/bin/proxychains' : '',
-    templateName.startsWith('linux.') ? 'RUN mv /tmp/libproxychains4.so /usr/local/lib/libproxychains4.so' : '',
-
-    templateName.startsWith('alpine.') ? 'RUN apk add proxychains-ng' : '',
-
-    'COPY  ./__puzedVendor__/proxychains4/proxychains.conf /opt/proxychains4/proxychains.conf',
-    'ENV PROXYCHAINS_CONF_FILE=/opt/proxychains4/proxychains.conf',
-    `RUN echo "socks5 ${options.socksHost} ${options.socksPort} ${options.socksUser} ${options.socksPass}" >> /opt/proxychains4/proxychains.conf`
-  ].join('\n'));
+    .replace('{{runCommand}}', options.runCommand);
 
   return template;
 }
@@ -102,12 +84,6 @@ async function buildImage (scope, deploymentId) {
     await fs.writeFile(path.join(repositoryPath, '.dockerignore'), dockerignoreTemplate);
 
     log('\n' + chalkCtx.greenBright('Build docker image\n'));
-    await fs.mkdir(path.join(repositoryPath, './__puzedVendor__/proxychains4/'), { recursive: true });
-    await Promise.all([
-      fs.copyFile(path.resolve(__dirname, '../vendor/proxychains4/runtime.tar'), path.join(repositoryPath, './__puzedVendor__/proxychains4/runtime.tar')),
-      fs.copyFile(path.resolve(__dirname, '../vendor/proxychains4/proxychains.conf'), path.join(repositoryPath, './__puzedVendor__/proxychains4/proxychains.conf'))
-    ]);
-
     const imageId = await buildDockerImage(scope, log, tar.pack(repositoryPath));
 
     await db.patch('deployments', {
