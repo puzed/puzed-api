@@ -1,22 +1,13 @@
-const fs = require('fs').promises;
 const axios = require('axios');
 const getPort = require('get-port');
 
-const extractTarIntoContainer = require('./dockerCommands/extractTarIntoContainer');
-const createTextFileInContainer = require('./dockerCommands/createTextFileInContainer');
 const executeCommandInContainer = require('./dockerCommands/executeCommandInContainer');
 const getInstanceAndRelated = require('../queries/instances/getInstanceAndRelated');
 
 async function deployRepositoryToServer (scope, instanceId) {
   const { db, notify, config } = scope;
 
-  const server = await scope.db.getOne('servers', {
-    query: {
-      id: scope.config.serverId
-    }
-  });
   const {
-    service,
     deployment
   } = await getInstanceAndRelated(scope, instanceId);
 
@@ -47,7 +38,7 @@ async function deployRepositoryToServer (scope, instanceId) {
 
     if (existingImage.data.length === 0) {
       throw new Error('NOT IMPLEMENTED: Pull image from guardian server');
-      await updateStatusAndDetail('starting', 'pulling image');
+      // await updateStatusAndDetail('starting', 'pulling image');
     }
 
     await updateStatusAndDetail('starting', 'creating container');
