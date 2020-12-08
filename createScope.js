@@ -35,8 +35,8 @@ async function createScope (config) {
 
   const dataNode = config.createDataNode
     ? await canhazdb.server({
-      host: 'localhost', port: 7061, queryPort: 8061, dataDirectory: config.dataDirectory, single: true, tls
-    })
+        host: 'localhost', port: 7061, queryPort: 8061, dataDirectory: config.dataDirectory, single: true, tls
+      })
     : null;
 
   const db = await canhazdb.client(dataNode ? dataNode.url : 'https://localhost:8061', { tls });

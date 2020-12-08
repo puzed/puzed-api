@@ -91,7 +91,7 @@ async function createServer (scope) {
     }
 
     hint('puzed.router.proxy', `proxying host "${request.headers.host}" to a instance`);
-    proxyToInstance(scope, request, response);
+    proxyToInstance.http(scope, request, response);
   }
   const httpServer = http.createServer(acmeUtilities.createHttpHandler(settings, scope, handler));
 
@@ -108,6 +108,8 @@ async function createServer (scope) {
   httpServer.listen(config.httpPort);
 
   const httpsServer = createHttpsServer(config, scope, handler);
+
+  httpsServer.on('upgrade', proxyToInstance.websocket(scope));
 
   return {
     db,

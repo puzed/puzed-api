@@ -2,7 +2,9 @@ const http = require('http');
 
 const selectRandomItemFromArray = require('./selectRandomItemFromArray');
 
-async function proxyToInstance ({ db }, request, response) {
+const httpProxy = require('http-proxy');
+
+async function proxyHttpToInstance ({ db }, request, response) {
   const hostnameAndMaybePort = request.headers.host && request.headers.host.toLowerCase();
 
   if (!hostnameAndMaybePort) {
@@ -94,4 +96,17 @@ async function proxyToInstance ({ db }, request, response) {
   proxyRequest.end();
 }
 
-module.exports = proxyToInstance;
+function proxyWebsocketToInstance ({ db, config, settings }) {
+  return function (request, socket, head) {
+    const proxy = httpProxy.createProxyServer({
+      target: `${config.clientUrl}${request.url}`.replace('http', 'ws'),
+      ws: true
+    });
+    proxy.ws(request, socket, head);
+  };
+}
+
+module.exports = {
+  http: proxyHttpToInstance,
+  websocket: proxyWebsocketToInstance
+};
