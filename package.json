@@ -46,7 +46,7 @@
     "string-to-color": "^2.2.2",
     "tar-fs": "^2.1.0",
     "tidy-http": "^1.0.1",
-    "uuid": "^8.3.1",
+    "uuid": "^8.3.2",
     "wait-on": "^5.2.0",
     "wait-port": "^0.2.9",
     "write-response": "^1.2.3",
