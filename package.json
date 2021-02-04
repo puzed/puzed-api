@@ -31,7 +31,7 @@
     "jsonwebtoken": "^8.5.1",
     "memoizee": "^0.4.15",
     "mql-to-jql": "^1.1.8",
-    "ndjson-fe": "^1.2.6",
+    "ndjson-fe": "^1.2.7",
     "node-mini-migrations": "^5.0.0",
     "node-rsa": "^1.1.1",
     "notify-over-http": "^2.0.2",
