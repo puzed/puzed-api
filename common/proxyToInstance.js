@@ -93,7 +93,7 @@ async function proxyHttpToInstance ({ db }, request, response) {
     response.end();
   });
 
-  proxyRequest.end();
+  request.pipe(proxyRequest);
 }
 
 function proxyWebsocketToInstance ({ db, config, settings }) {
