@@ -39,7 +39,7 @@
     "pg-promise": "^10.9.2",
     "presh": "^2.1.1",
     "promise-retry": "^2.0.1",
-    "prompts": "^2.3.2",
+    "prompts": "^2.4.1",
     "routemeup": "^1.5.0",
     "skeddy": "^1.0.1",
     "socksv5": "file:vendor/socksv5",
