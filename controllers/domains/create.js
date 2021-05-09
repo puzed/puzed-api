@@ -33,7 +33,7 @@ async function createDomain ({ db, settings, config }, request, response, tokens
     userId: user.id,
     guardianServerId: guardianServer.id,
     verificationStatus: 'untested',
-    verificationCode: await createRandomString(30),
+    verificationCode: await createRandomString({ length: 30 }),
     dateCreated: Date.now()
   });
 

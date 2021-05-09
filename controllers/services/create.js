@@ -45,7 +45,7 @@ async function createService (scope, request, response) {
     ...body,
     providerRepositoryId: body.providerRepositoryId,
     secrets: JSON.stringify(body.secrets || []),
-    networkAccessToken: await createRandomString(40),
+    networkAccessToken: await createRandomString({ length: 40 }),
     userId: user.id,
     dateCreated: Date.now()
   });
