@@ -1,4 +1,4 @@
-const test = require('tape-catch');
+const test = require('basictap');
 const createScheduler = require('../../common/createScheduler');
 
 const interval = 100;

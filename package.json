@@ -55,6 +55,7 @@
     "wtfnode": "^0.8.4"
   },
   "devDependencies": {
+    "basictap": "^1.1.12",
     "semistandard": "^16.0.0",
     "tape": "^5.2.2",
     "tape-catch": "^1.0.6"
