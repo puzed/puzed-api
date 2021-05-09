@@ -1,7 +1,10 @@
-const cryptoRandomString = require('crypto-random-string');
+const { promisify } = require('util');
+const crypto = require('crypto');
+const randomBytes = promisify(crypto.randomBytes);
 
-function createRandomString (length) {
-  return cryptoRandomString({ length, type: 'alphanumeric' });
-}
+const createSecureRandomString = async ({ length, type = 'hex' }) => {
+  const result = await randomBytes(length);
+  return result.toString(type);
+};
 
-module.exports = createRandomString;
+module.exports = createSecureRandomString;

@@ -92,7 +92,7 @@ async function main () {
     }
   });
 
-  options.secret = await createRandomString(40);
+  options.secret = await createRandomString({ length: 40 });
 
   if (options.setupGithub) {
     console.log(chalk.cyan('?'), chalk.bold('What is your GitHub Client Key'));

@@ -41,7 +41,7 @@ async function createSession ({ db, config }, request, response, tokens) {
 
   const session = await db.post('sessions', {
     userId: user.id,
-    secret: await createRandomString(42),
+    secret: await createRandomString({ length: 42 }),
     dateCreated: Date.now()
   });
 

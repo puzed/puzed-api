@@ -1,6 +1,8 @@
 const fs = require('fs');
 const chalk = require('chalk');
-const canhazdb = require('canhazdb');
+const canhazdbClient = require('canhazdb-client');
+const canhazdbServer = require('canhazdb-server');
+
 const createNotifyServer = require('notify-over-http');
 const hint = require('hinton');
 
@@ -34,12 +36,12 @@ async function createScope (config) {
   hint('puzed.db', 'connecting');
 
   const dataNode = config.createDataNode
-    ? await canhazdb.server({
+    ? await canhazdbServer({
         host: 'localhost', port: 7061, queryPort: 8061, dataDirectory: config.dataDirectory, single: true, tls
       })
     : null;
 
-  const db = await canhazdb.client(dataNode ? dataNode.url : 'https://localhost:8061', { tls });
+  const db = await canhazdbClient(dataNode ? dataNode.url : 'https://localhost:8061', { tls });
 
   hint('puzed.settings', 'grabbing settings from db');
   const settings = await loadSettingsFromDatabase(config, db, 'settings');
