@@ -20,7 +20,7 @@ function createHttpsServer (config, scope, handler) {
         const allowedService = await db.getOne('services', {
           query: {
             domain: {
-              $in: [domain, `.*${mainDomain}`]
+              $in: [domain, mainDomain]
             }
           }
         });
