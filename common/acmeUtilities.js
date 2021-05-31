@@ -20,8 +20,7 @@ function getCertificateFromDb (db, domain, filter) {
       },
       ...filter
     },
-    order: ['desc(dateCreated)'],
-    limit: 1
+    order: ['desc(dateCreated)']
   };
   return db.getOne('certificates', options);
 }

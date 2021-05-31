@@ -32,8 +32,7 @@ async function applyStatistic ({ db }, data) {
       query: {
         instanceId: data.instanceId
       },
-      order: ['desc(dateCreated)'],
-      limit: 1
+      order: ['desc(dateCreated)']
     })) || {
       cpu: 0,
       cpuTotal: 0,
