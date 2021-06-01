@@ -61,8 +61,7 @@ async function providerOauthRoute (scope, request, response) {
     const githubUserLink = await db.getOne('links', {
       query: {
         externalUserId: githubUser.data.login
-      },
-      limit: 1
+      }
     });
 
     const user = await db.getOne('users', {

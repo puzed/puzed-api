@@ -29,7 +29,6 @@ async function performContainerLoggers (scope) {
 
     const lastLog = await db.getOne(`instanceLogs-${instance.id}`, {
       fields: ['dateCreated'],
-      limit: 1,
       order: ['desc(dateCreated)']
     });
 
