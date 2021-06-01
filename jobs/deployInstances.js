@@ -19,7 +19,7 @@ async function deployInstances (scope) {
       fields: ['status', 'buildStatus']
     });
 
-    if (deployment.buildStatus === 'success') {
+    if (deployment && deployment.buildStatus === 'success') {
       deployInstance(scope, instance.id);
     }
   });
