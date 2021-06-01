@@ -125,9 +125,11 @@ async function performUsageCalculations (scope, instanceId) {
       path: `/v1.40/containers/${instance.dockerId}/stats?stream=true`
     }, function (response) {
       if (response.statusCode === 200) {
-        response.on('data', buffer => {
-          handleStatResponse(scope, instance, JSON.parse(buffer.toString('utf8')));
+        const feed = ndJsonFe();
+        feed.on('next', row => {
+          handleStatResponse(scope, instance, row);
         });
+        response.pipe(feed);
       } else {
         delete activeWatchers[instance.id];
         request.end();
