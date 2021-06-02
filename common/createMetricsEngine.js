@@ -7,8 +7,13 @@ function randomIntFromInterval(min, max) {
 
 function createMetricsEngine (context) {
   const data = [];
+  let stopping = false;
 
   async function save () {
+    if (stopping) {
+      return;
+    }
+
     if (Object.keys(data).length > 1) {
       const key = Object.keys(data).sort()[0];
       await fs.promises.appendFile('./stats.txt', '\n' + JSON.stringify([key, data[key]]));
@@ -29,7 +34,10 @@ function createMetricsEngine (context) {
   }
 
   return {
-    inc
+    inc,
+    stop: () => {
+      stopping = true;
+    }
   }
 }
 

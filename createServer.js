@@ -95,6 +95,7 @@ async function createServer (scope) {
 
   httpServer.on('close', function () {
     scope.close();
+    scope.metrics.stop();
     scheduler.cancelAndStop();
   });
 
