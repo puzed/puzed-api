@@ -21,11 +21,6 @@ const performUsageCalculations = require('./jobs/usageCalculations');
 async function createServer (scope) {
   const { settings, notify, db, scheduler, config } = scope;
 
-  let networkProxyInstance;
-  if (settings.networkMicroManagement) {
-    networkProxyInstance = networkProxy(scope);
-  }
-
   scheduler.add(() => performHealthchecks(scope), 3000);
   scheduler.add(() => performScaling(scope), 3000);
   scheduler.add(() => performContainerLoggers(scope), 3000);
