@@ -3,7 +3,7 @@ const hint = require('hinton');
 const MAX_START_TIME = 10 * 1000;
 const MAX_UNHEALTHY_TIME = 10 * 1000;
 
-async function instanceDestroyChecks ({ db, notify, config }) {
+async function instanceDestroyChecks ({ db, notify, metrics, config }) {
   const instances = await db.getAll('instances', {
     query: {
       serverId: config.serverId,
@@ -19,6 +19,8 @@ async function instanceDestroyChecks ({ db, notify, config }) {
       return !!instance.dockerId;
     })
     .map(async instance => {
+      metrics.inc('jobs/healthchecks.js:22');
+
       const container = await httpRequest({
         timeout: 3000,
         socketPath: config.dockerSocketPath,
@@ -29,6 +31,7 @@ async function instanceDestroyChecks ({ db, notify, config }) {
       if (container.response.statusCode !== 200) {
         notify.broadcast(instance.id);
 
+        metrics.inc('jobs/healthchecks.js:34');
         const instanceTwo = await db.patch('instances', {
           status: 'failed',
           statusDetail: 'container disappeared',
@@ -48,7 +51,8 @@ async function instanceDestroyChecks ({ db, notify, config }) {
   return Promise.all(promises);
 }
 
-async function instanceHealthChecks ({ db, notify, settings, config }) {
+async function instanceHealthChecks ({ db, notify, metrics, settings, config }) {
+  metrics.inc('jobs/healthchecks.js:55');
   const server = await db.getOne('servers', {
     query: {
       id: config.serverId
@@ -70,6 +74,7 @@ async function instanceHealthChecks ({ db, notify, settings, config }) {
       if (!instance.dockerPort) {
         throw new Error('Instance does not have a dockerPort');
       }
+      metrics.inc('jobs/healthchecks.js:77');
       const healthRequest = await httpRequest({
         url: `http://${server.hostname}:${instance.dockerPort}/health`,
         timeout: 3000
@@ -80,6 +85,7 @@ async function instanceHealthChecks ({ db, notify, settings, config }) {
       }
 
       if (instance.status !== 'healthy') {
+        metrics.inc('jobs/healthchecks.js:88');
         await db.patch('instances', {
           status: 'healthy',
           statusDetail: '',
@@ -96,6 +102,7 @@ async function instanceHealthChecks ({ db, notify, settings, config }) {
       }
     } catch (_) {
       if (instance.status === 'starting') {
+        metrics.inc('jobs/healthchecks.js:105');
         const tooLongSinceStarted = instance.statusDate && Date.now() - instance.statusDate > MAX_START_TIME;
         if (tooLongSinceStarted) {
           await httpRequest({
@@ -128,6 +135,7 @@ async function instanceHealthChecks ({ db, notify, settings, config }) {
       if (instance.status === 'unhealthy') {
         const tooLongSinceUnhealthy = instance.statusDate && Date.now() - instance.statusDate > MAX_UNHEALTHY_TIME;
         if (tooLongSinceUnhealthy) {
+          metrics.inc('jobs/healthchecks.js:138');
           await httpRequest({
             url: `https://${server.hostname}:${server.apiPort}/internal/instances/${instance.id}`,
             timeout: 3000,
@@ -152,6 +160,7 @@ async function instanceHealthChecks ({ db, notify, settings, config }) {
       }
 
       if (instance.status === 'healthy') {
+        metrics.inc('jobs/healthchecks.js:163');
         await db.patch('instances', {
           status: 'unhealthy',
           statusDate: Date.now()
@@ -169,7 +178,8 @@ async function instanceHealthChecks ({ db, notify, settings, config }) {
   return Promise.all(promises);
 }
 
-async function deploymentHealthChecks ({ db, notify, config }) {
+async function deploymentHealthChecks ({ db, notify, metrics, config }) {
+  metrics.inc('jobs/healthchecks.js:182');
   const deployments = await db.getAll('deployments', {
     query: {
       guardianServerId: config.serverId,

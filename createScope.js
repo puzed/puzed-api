@@ -4,6 +4,7 @@ const canhazdbClient = require('canhazdb-client');
 const canhazdbServer = require('canhazdb-server');
 
 const createNotifyServer = require('notify-over-http');
+const createMetricsEngine = require('./common/createMetricsEngine');
 const hint = require('hinton');
 
 const createScheduler = require('skeddy');
@@ -75,6 +76,9 @@ async function createScope (config) {
       ]);
     }
   };
+
+  hint('puzed.metrics', 'starting metrics engine');
+  scope.metrics = createMetricsEngine(scope);
 
   scope.reloadSettings = async () => {
     scope.settings = await loadSettingsFromDatabase(config, db, 'settings');

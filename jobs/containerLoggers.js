@@ -10,7 +10,7 @@ const BUFFER_1 = Buffer.from([1]);
 async function performContainerLoggers (scope) {
   hint('puzed.containerLoggers', 'starting containerLoggers batch');
 
-  const { db, config } = scope;
+  const { db, config, metrics } = scope;
 
   const instances = await db.getAll('instances', {
     query: {
@@ -34,6 +34,7 @@ async function performContainerLoggers (scope) {
 
     const since = lastLog ? parseInt(lastLog.dateCreated / 1000) : 0;
 
+    metrics.inc('jobs/containerLoggers.js:37');
     const request = http.request({
       method: 'get',
       socketPath: config.dockerSocketPath,
@@ -41,6 +42,7 @@ async function performContainerLoggers (scope) {
     }, function (response) {
       if (response.statusCode === 200) {
         response.on('data', buffer => {
+          metrics.inc('jobs/containerLoggers.js:45');
           scope.db.post(`instanceLogs-${instance.id}`, {
             instanceId: instance.id,
             type: buffer.slice(1).equals(BUFFER_1) ? 'stdout' : 'stderr',
@@ -49,17 +51,20 @@ async function performContainerLoggers (scope) {
           });
         });
       } else {
+        metrics.inc('jobs/containerLoggers.js:54');
         finalStream(response).then(data => console.log(data.toString()));
         delete activeWatchers[instance.id];
         request.end();
       }
 
       response.on('end', () => {
+        metrics.inc('jobs/containerLoggers.js:61');
         delete activeWatchers[instance.id];
       });
     });
 
     request.on('error', () => {
+      metrics.inc('jobs/containerLoggers.js:67');
       delete activeWatchers[instance.id];
     });
 

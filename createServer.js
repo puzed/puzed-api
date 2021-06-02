@@ -6,7 +6,6 @@ const hint = require('hinton');
 const createHttpsServer = require('./createHttpsServer');
 const proxyToInstance = require('./common/proxyToInstance');
 const proxyToClient = require('./common/proxyToClient');
-const networkProxy = require('./common/networkProxy');
 const handleError = require('./common/handleError');
 const acmeUtilities = require('./common/acmeUtilities');
 
@@ -20,11 +19,6 @@ const performUsageCalculations = require('./jobs/usageCalculations');
 
 async function createServer (scope) {
   const { settings, notify, db, scheduler, config } = scope;
-
-  let networkProxyInstance;
-  if (settings.networkMicroManagement) {
-    networkProxyInstance = networkProxy(scope);
-  }
 
   scheduler.add(() => performHealthchecks(scope), 3000);
   scheduler.add(() => performScaling(scope), 3000);
@@ -101,7 +95,7 @@ async function createServer (scope) {
 
   httpServer.on('close', function () {
     scope.close();
-    networkProxyInstance && networkProxyInstance.close();
+    scope.metrics.stop();
     scheduler.cancelAndStop();
   });
 
