@@ -31,54 +31,93 @@ async function loadSettingsFromDatabase (config, db) {
   return objectifiedSettings;
 }
 
+function wrapMetrics (scope, db) {
+  return {
+    ...db,
+
+    count: (...args) => {
+      scope.metrics && scope.metrics.inc('count:' + args[0]);
+      return db.count(...args);
+    },
+
+    getAll: (...args) => {
+      scope.metrics && scope.metrics.inc('getAll:' + args[0]);
+      return db.getAll(...args);
+    },
+
+    getOne: (...args) => {
+      scope.metrics && scope.metrics.inc('getOne:' + args[0]);
+      return db.getOne(...args);
+    },
+
+    post: (...args) => {
+      scope.metrics && scope.metrics.inc('post:' + args[0]);
+      return db.post(...args);
+    },
+
+    put: (...args) => {
+      scope.metrics && scope.metrics.inc('put:' + args[0]);
+      return db.put(...args);
+    },
+
+    patch: (...args) => {
+      scope.metrics && scope.metrics.inc('patch:' + args[0]);
+      return db.patch(...args);
+    },
+
+    delete: (...args) => {
+      scope.metrics && scope.metrics.inc('delete:' + args[0]);
+      return db.delete(...args);
+    }
+  }
+}
+
 async function createScope (config) {
   process.env.HINT = process.env.HINT || config.hint;
 
-  hint('puzed.db', 'connecting');
+  const scope = {
+    config
+  };
 
-  const dataNode = config.createDataNode
+  hint('puzed.db', 'connecting');
+  scope.dataNode = config.createDataNode
     ? await canhazdbServer({
         host: 'localhost', port: 7061, queryPort: 8061, dataDirectory: config.dataDirectory, single: true, tls
       })
     : null;
 
-  const db = await canhazdbClient(dataNode ? dataNode.url : 'https://localhost:8061', { tls });
+  const dbConnection = await canhazdbClient(scope.dataNode ? scope.dataNode.url : 'https://localhost:8061', { tls });
+  scope.db = wrapMetrics(scope, dbConnection);
 
-  hint('puzed.settings', 'grabbing settings from db');
-  const settings = await loadSettingsFromDatabase(config, db, 'settings');
+  hint('puzed.settings', 'grabbing settings from dbx');
+  scope.settings = await loadSettingsFromDatabase(config, scope.db, 'settings');
 
   hint('puzed.db', 'fetching all servers');
-  const servers = await db.getAll('servers');
+  scope.servers = await scope.db.getAll('servers');
+
+  hint('puzed.metrics', 'starting metrics engine');
+  scope.metrics = createMetricsEngine(scope);
 
   hint('puzed.notify', 'creating notify server');
-  const notify = createNotifyServer({
-    servers: servers
+  scope.notify = createNotifyServer({
+    servers: scope.servers
       .map(server => ({
         url: `https://${server.hostname}:${server.apiPort}/notify`,
         headers: {
-          host: settings.domains.api[0]
+          host: scope.settings.domains.api[0]
         }
       }))
   });
 
-  const scope = {
-    config,
-    settings,
-    notify,
-    dataNode,
-    scheduler: createScheduler(),
-    db,
-    close: () => {
-      return Promise.all([
-        db.close(),
-        scope.scheduler.cancelAndStop(),
-        dataNode && dataNode.close()
-      ]);
-    }
-  };
+  scope.scheduler = createScheduler();
 
-  hint('puzed.metrics', 'starting metrics engine');
-  scope.metrics = createMetricsEngine(scope);
+  scope.close = () => {
+    return Promise.all([
+      db.close(),
+      scope.scheduler.cancelAndStop(),
+      scope.dataNode && scope.dataNode.close()
+    ]);
+  };
 
   scope.reloadSettings = async () => {
     scope.settings = await loadSettingsFromDatabase(config, db, 'settings');
