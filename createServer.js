@@ -6,7 +6,6 @@ const hint = require('hinton');
 const createHttpsServer = require('./createHttpsServer');
 const proxyToInstance = require('./common/proxyToInstance');
 const proxyToClient = require('./common/proxyToClient');
-const networkProxy = require('./common/networkProxy');
 const handleError = require('./common/handleError');
 const acmeUtilities = require('./common/acmeUtilities');
 
@@ -96,7 +95,6 @@ async function createServer (scope) {
 
   httpServer.on('close', function () {
     scope.close();
-    networkProxyInstance && networkProxyInstance.close();
     scheduler.cancelAndStop();
   });
 
