@@ -1,4 +1,5 @@
 const http = require('http');
+const fs = require('fs');
 
 const routemeup = require('routemeup');
 const hint = require('hinton');
@@ -35,6 +36,18 @@ async function createServer (scope) {
 
     if (request.method === 'OPTIONS') {
       response.end();
+      return;
+    }
+
+    if (url === '/stats') {
+      hint('puzed.router:request', 'requesting stats html');
+      fs.createReadStream('./stats.html').pipe(response);
+      return;
+    }
+
+    if (url === '/stats.txt') {
+      hint('puzed.router:request', 'requesting stats data');
+      fs.createReadStream('./stats.txt').pipe(response);
       return;
     }
 
