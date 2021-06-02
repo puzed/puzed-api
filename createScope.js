@@ -120,7 +120,7 @@ async function createScope (config) {
   };
 
   scope.reloadSettings = async () => {
-    scope.settings = await loadSettingsFromDatabase(config, db, 'settings');
+    scope.settings = await loadSettingsFromDatabase(config, scope.db, 'settings');
   };
 
   scope.providers = require('./providers')(scope);
