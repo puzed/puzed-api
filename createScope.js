@@ -113,7 +113,7 @@ async function createScope (config) {
 
   scope.close = () => {
     return Promise.all([
-      db.close(),
+      scope.db.close(),
       scope.scheduler.cancelAndStop(),
       scope.dataNode && scope.dataNode.close()
     ]);
