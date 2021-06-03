@@ -72,7 +72,7 @@ async function createServer (scope) {
 
     hint('puzed.router:respond', `replying with ${hint.redBright('statusCode 404')} as not route for path "${hint.redBright(url)}" was found`);
     response.writeHead(404);
-    response.end(`Path ${url} not found`);
+    response.end(`Path ${escape(url)} not found`);
   }
 
   const controllers = require('./controllers');
