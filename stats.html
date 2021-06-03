@@ -1,0 +1,95 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Statistics</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.1.1/echarts.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.1.1/theme/cool.min.js"></script>
+
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="main" style="width:100vw; height:100vh;"></div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', async function () {
+      const response = await fetch('./stats.txt')
+      const text = await response.text();
+      const json = text
+        .split('\n')
+        .filter(i => !!i)
+        .map(JSON.parse)
+
+      const legend = Array.from(new Set(json.reduce((legend, item) => {
+        return legend.concat(Object.keys(item[1]));
+      }, [])));
+      console.log(legend);
+
+
+        var chartDom = document.getElementById('main');
+        var myChart = echarts.init(chartDom);
+        var option;
+
+        option = {
+          tooltip: {
+              trigger: 'axis',
+              axisPointer: {
+                type: 'shadow'
+              }
+          },
+          legend: {
+              data: legend
+          },
+          grid: {
+              left: '3%',
+              right: '4%',
+              bottom: '3%',
+              containLabel: true
+          },
+          yAxis: {
+              type: 'value'
+          },
+          xAxis: {
+              type: 'category',
+              data: json.map(item => {
+                return item[0]
+              }),
+              axisLabel: {
+                formatter: function (value) {
+                  const date = new Date(parseInt(value))
+                  return date.getHours() + ':' + date.getMinutes()
+                }
+              }
+          },
+          series: legend.map(category => {
+            return {
+              name: category,
+              type: 'bar',
+              stack: 'total',
+              label: {
+                show: true
+              },
+              emphasis: {
+                focus: 'series'
+              },
+              data: json.map(item => {
+                return item[1][category];
+              })
+            }
+          })
+        };
+
+        option && myChart.setOption(option);
+
+    });
+  </script>
+
+</body>
+</html>
