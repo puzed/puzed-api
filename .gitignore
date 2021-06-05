@@ -6,5 +6,5 @@ config/cockroachCa.crt
 config/cockroachNode.crt
 config/cockroachNode.key
 config/index.js
-stats.txt
+stats.*.txt
 

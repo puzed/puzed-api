@@ -1,5 +1,6 @@
 const http = require('http');
 const fs = require('fs');
+const path = require('path');
 
 const routemeup = require('routemeup');
 const hint = require('hinton');
@@ -39,15 +40,18 @@ async function createServer (scope) {
       return;
     }
 
-    if (url === '/stats') {
-      hint('puzed.router:request', 'requesting stats html');
-      fs.createReadStream('./stats.html').pipe(response);
-      return;
-    }
-
-    if (url === '/stats.txt') {
-      hint('puzed.router:request', 'requesting stats data');
-      fs.createReadStream('./stats.txt').pipe(response);
+    if (url.startsWith('/stats')) {
+      const parsedUrl = new URL(url, 'https://example.com')
+      const safeUrl = path.join(process.cwd(), parsedUrl.pathname.replace(/\.\./g, '.'))
+      hint('puzed.router:request', 'requesting ' + safeUrl);
+      fs.stat(safeUrl, function (error) {
+        if (error) {
+          response.writeHead(404);
+          response.end('Not Found');
+          return
+        }
+        fs.createReadStream(safeUrl).pipe(response);
+      });
       return;
     }
 

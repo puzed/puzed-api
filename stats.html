@@ -12,87 +12,143 @@
     body {
       margin: 0;
       padding: 0;
+      width: 100%;
+      height: 100%;
+      font-family: arial;
+    }
+
+    #main > div {
+      height: calc(100vh - 100px);
+      width: 100%;
+    }
+
+    .toolbar {
+      padding: 10px;
+    }
+
+    select {
+      padding: 3px;
+      font-size: 100%;
+      border: 1px solid black;
+      background-color: white;
     }
   </style>
 </head>
 <body>
-  <div id="main" style="width:100vw; height:100vh;"></div>
+  <div class="toolbar">
+    <strong>Type:</strong> 
+    <select id="dataType">
+      <option value='increments' selected>Increments</option>
+      <option value='sets-min'>Sets (min)</option>
+      <option value='sets-average'>Sets (average)</option>
+      <option value='sets-max'>Sets (max)</option>
+    </select>  
+  </div>
+
+  <div id="main">
+  </div>
   
   <script>
-    document.addEventListener('DOMContentLoaded', async function () {
-      const response = await fetch('./stats.txt')
+    const dataType = document.getElementById('dataType');
+    const url = new URL(document.location.href);
+
+    document.getElementById('dataType').value = url.searchParams.get('type') || 'increments';
+
+    function getOption (type, json) {
+      const legend = Array.from(new Set(json.reduce((legend, item) => {
+        return legend.concat(Object.keys(item[1]));
+      }, [])));
+
+      const startPercent = 100 - parseInt(json.length < 10 ? 100 : 10 / json.length * 100);
+      return {
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: {
+            label: {
+              formatter: ({value}) => {
+                const date = new Date(parseInt(value))
+                return date.toString();
+              }
+            }
+          }
+        },
+        dataZoom: [{
+            type: 'inside',
+            start: startPercent,
+            end: 100
+        }, {
+            start: startPercent,
+            end: 100
+        }],
+        yAxis: {
+          type: 'value'
+        },
+        xAxis: {
+          type: 'category',
+          data: json.map(item => {
+            return item[0]
+          }),
+          axisLabel: {
+            formatter: function (value) {
+              const date = new Date(parseInt(value))
+              return date.getHours() + ':' + date.getMinutes()
+            }
+          }
+        },
+        series: legend.map(category => {
+          return {
+            name: category,
+            type: 'bar',
+            stack: 'total',
+            label: {
+              show: true
+            },
+            emphasis: {
+              focus: 'series'
+            },
+            data: json.map(item => {
+              if (type === 'increments') {
+                return item[1][category];
+              }
+              if (type.startsWith('sets-min')) {
+                return item[1][category] && item[1][category][0];
+              }
+              if (type.startsWith('sets-average')) {
+                return item[1][category] && item[1][category][1];
+              }
+              if (type.startsWith('sets-max')) {
+                return item[1][category] && item[1][category][2];
+              }
+            })
+          }
+        })
+      };
+    }
+
+    async function update () {
+      history.pushState(null, 'Statistics', '/stats.html?type=' + dataType.value)
+      document.getElementById('main').innerHTML = '<div></div>';
+      
+      const filename = dataType.value.startsWith('sets-') ? 'sets' : 'increments'
+
+      const response = await fetch('./stats.' + filename + '.txt')
       const text = await response.text();
       const json = text
         .split('\n')
         .filter(i => !!i)
         .map(JSON.parse)
 
-      const legend = Array.from(new Set(json.reduce((legend, item) => {
-        return legend.concat(Object.keys(item[1]));
-      }, [])));
-      console.log(legend);
+      const chartDom = document.querySelector('#main > div');
+      const myChart = echarts.init(chartDom);
 
+      const option = getOption(dataType.value, json);
 
-        var chartDom = document.getElementById('main');
-        var myChart = echarts.init(chartDom);
-        var option;
-        var startPercent = 100 - parseInt(json.length < 10 ? 100 : 10 / json.length * 100);
+      myChart.setOption(option);
+    }
 
-        option = {
-          tooltip: {
-            trigger: 'axis',
-            axisPointer: {
-              label: {
-                formatter: ({value}) => {
-                  const date = new Date(parseInt(value))
-                  return date.toString();
-                }
-              }
-            }
-          },
-          dataZoom: [{
-              type: 'inside',
-              start: startPercent,
-              end: 100
-          }, {
-              start: startPercent,
-              end: 100
-          }],
-          yAxis: {
-            type: 'value'
-          },
-          xAxis: {
-            type: 'category',
-            data: json.map(item => {
-              return item[0]
-            }),
-            axisLabel: {
-              formatter: function (value) {
-                const date = new Date(parseInt(value))
-                return date.getHours() + ':' + date.getMinutes()
-              }
-            }
-          },
-          series: legend.map(category => {
-            return {
-              name: category,
-              type: 'bar',
-              stack: 'total',
-              label: {
-                show: true
-              },
-              emphasis: {
-                focus: 'series'
-              },
-              data: json.map(item => {
-                return item[1][category];
-              })
-            }
-          })
-        };
-
-        option && myChart.setOption(option);
-
+    document.addEventListener('DOMContentLoaded', async function () {
+      update();
+      dataType.addEventListener('change', update);
     });
   </script>
 
