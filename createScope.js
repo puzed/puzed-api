@@ -32,42 +32,47 @@ async function loadSettingsFromDatabase (config, db) {
 }
 
 function wrapMetrics (scope, db) {
+  function wrapCommand (command, args) {
+    const title = 'db.' + command + ':' + args[0]
+    scope.metrics && scope.metrics.inc(title);
+    const startTime = Date.now();
+    return db[command](...args)
+      .then(result => {
+        const duration = Date.now() - startTime;
+        scope.metrics && scope.metrics.set(title, duration);
+        return result;
+      });
+  }
+
   return {
     ...db,
 
     count: (...args) => {
-      scope.metrics && scope.metrics.inc('count:' + args[0]);
-      return db.count(...args);
+      return wrapCommand('count', args)
     },
 
     getAll: (...args) => {
-      scope.metrics && scope.metrics.inc('getAll:' + args[0]);
-      return db.getAll(...args);
+      return wrapCommand('getAll', args)
     },
 
     getOne: (...args) => {
-      scope.metrics && scope.metrics.inc('getOne:' + args[0]);
-      return db.getOne(...args);
+      return wrapCommand('getOne', args)
     },
 
     post: (...args) => {
-      scope.metrics && scope.metrics.inc('post:' + args[0]);
-      return db.post(...args);
+      return wrapCommand('post', args)
     },
 
     put: (...args) => {
-      scope.metrics && scope.metrics.inc('put:' + args[0]);
-      return db.put(...args);
+      return wrapCommand('put', args)
     },
 
     patch: (...args) => {
-      scope.metrics && scope.metrics.inc('patch:' + args[0]);
-      return db.patch(...args);
+      return wrapCommand('patch', args)
     },
 
     delete: (...args) => {
-      scope.metrics && scope.metrics.inc('delete:' + args[0]);
-      return db.delete(...args);
+      return wrapCommand('delete', args)
     }
   }
 }

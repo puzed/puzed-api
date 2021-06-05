@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index",
+    "start": "node --inspect index",
     "setup": "node setup",
     "repl": "node --experimental-repl-await repl",
     "test": "./makeCerts.sh && node test"
@@ -22,7 +22,7 @@
     "crypto-random-string": "^4.0.0",
     "date-fns": "^2.22.1",
     "dockerode": "^3.3.0",
-    "execa": "^5.1.0",
+    "execa": "^5.1.1",
     "final-stream": "^2.0.3",
     "get-port": "^5.1.1",
     "github-username-regex": "^1.0.0",
