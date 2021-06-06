@@ -2,4 +2,4 @@
 
 ## Reporting a Vulnerability
 
-Please report any dangerous security vulnerabilities privatly to me@markwylde.com.
+Please report any dangerous security vulnerabilities privately to me@markwylde.com.
