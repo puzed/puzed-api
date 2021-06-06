@@ -4,6 +4,7 @@ const path = require('path');
 
 const routemeup = require('routemeup');
 const hint = require('hinton');
+const readLastLines = require('read-last-lines');
 
 const createHttpsServer = require('./createHttpsServer');
 const proxyToInstance = require('./common/proxyToInstance');
@@ -44,12 +45,20 @@ async function createServer (scope) {
       const parsedUrl = new URL(url, 'https://example.com');
       const safeUrl = path.join(process.cwd(), parsedUrl.pathname.replace(/\.\./g, '.'));
       hint('puzed.router:request', 'requesting ' + safeUrl);
-      fs.stat(safeUrl, function (error) {
+      fs.stat(safeUrl, async function (error) {
         if (error) {
           response.writeHead(404);
           response.end('Not Found');
           return;
         }
+
+        const lineCount = parsedUrl.searchParams.get('lines');
+        if (lineCount) {
+          const lines = await readLastLines.read(safeUrl, lineCount)
+          response.end(lines)
+          return;
+        }
+
         fs.createReadStream(safeUrl).pipe(response);
       });
       return;
