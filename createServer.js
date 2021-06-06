@@ -41,14 +41,14 @@ async function createServer (scope) {
     }
 
     if (url.startsWith('/stats')) {
-      const parsedUrl = new URL(url, 'https://example.com')
-      const safeUrl = path.join(process.cwd(), parsedUrl.pathname.replace(/\.\./g, '.'))
+      const parsedUrl = new URL(url, 'https://example.com');
+      const safeUrl = path.join(process.cwd(), parsedUrl.pathname.replace(/\.\./g, '.'));
       hint('puzed.router:request', 'requesting ' + safeUrl);
       fs.stat(safeUrl, function (error) {
         if (error) {
           response.writeHead(404);
           response.end('Not Found');
-          return
+          return;
         }
         fs.createReadStream(safeUrl).pipe(response);
       });

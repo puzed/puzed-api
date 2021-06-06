@@ -45,7 +45,6 @@
     "routemeup": "^2.0.1",
     "skeddy": "^1.0.1",
     "socksv5": "file:vendor/socksv5",
-    "stackify-node-apm": "^1.15.0",
     "string-to-color": "^2.2.2",
     "tar-fs": "^2.1.1",
     "tidy-http": "^1.0.2",

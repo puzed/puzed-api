@@ -7,7 +7,7 @@ function createMetricsEngine (context) {
   const data = {
     increments: {},
     sets: {}
-  }
+  };
   let stopping = false;
 
   async function save () {
@@ -19,25 +19,24 @@ function createMetricsEngine (context) {
       const key = Object.keys(data.increments).sort()[0];
       await fs.promises.appendFile('./stats.increments.txt', '\n' + JSON.stringify([key, data.increments[key]]));
       delete data.increments[key];
-      hint('puzed.metrics', `appending to stats.increments.txt`);
+      hint('puzed.metrics', 'appending to stats.increments.txt');
     }
 
     if (Object.keys(data.sets).length > 1) {
       const time = Object.keys(data.sets).sort()[0];
 
-      const sets = Object.keys(data.sets[time]).forEach(metric => {
+      Object.keys(data.sets[time]).forEach(metric => {
         data.sets[time][metric] = [
           Math.min(...data.sets[time][metric]).toFixed(2),
           average(data.sets[time][metric]).toFixed(2),
           Math.max(...data.sets[time][metric]).toFixed(2)
-        ]
+        ];
       });
 
       await fs.promises.appendFile('./stats.sets.txt', '\n' + JSON.stringify([time, data.sets[time]]));
       delete data.sets[time];
-      hint('puzed.metrics', `appending to stats.sets.txt`);
+      hint('puzed.metrics', 'appending to stats.sets.txt');
     }
-
 
     setTimeout(save, 5000);
   }
@@ -65,7 +64,7 @@ function createMetricsEngine (context) {
     stop: () => {
       stopping = true;
     }
-  }
+  };
 }
 
-module.exports = createMetricsEngine
+module.exports = createMetricsEngine;

@@ -7,7 +7,7 @@ const config = require('./config');
 async function main () {
   const scope = await createScope({
     ...config,
-    createDataNode: true
+    createDataNode: false
   });
 
   process.on('unhandledRejection', (error) => {

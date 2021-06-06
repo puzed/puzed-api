@@ -33,7 +33,7 @@ async function loadSettingsFromDatabase (config, db) {
 
 function wrapMetrics (scope, db) {
   function wrapCommand (command, args) {
-    const title = 'db.' + command + ':' + args[0]
+    const title = 'db.' + command + ':' + args[0];
     scope.metrics && scope.metrics.inc(title);
     const startTime = Date.now();
     return db[command](...args)
@@ -48,33 +48,33 @@ function wrapMetrics (scope, db) {
     ...db,
 
     count: (...args) => {
-      return wrapCommand('count', args)
+      return wrapCommand('count', args);
     },
 
     getAll: (...args) => {
-      return wrapCommand('getAll', args)
+      return wrapCommand('getAll', args);
     },
 
     getOne: (...args) => {
-      return wrapCommand('getOne', args)
+      return wrapCommand('getOne', args);
     },
 
     post: (...args) => {
-      return wrapCommand('post', args)
+      return wrapCommand('post', args);
     },
 
     put: (...args) => {
-      return wrapCommand('put', args)
+      return wrapCommand('put', args);
     },
 
     patch: (...args) => {
-      return wrapCommand('patch', args)
+      return wrapCommand('patch', args);
     },
 
     delete: (...args) => {
-      return wrapCommand('delete', args)
+      return wrapCommand('delete', args);
     }
-  }
+  };
 }
 
 async function createScope (config) {

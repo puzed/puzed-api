@@ -10,4 +10,4 @@ exports.config = {
    * Your environment name.
    */
   environment_name: 'Production'
-}
+};
