@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node --inspect index",
+    "start": "node index",
     "setup": "node setup",
     "repl": "node --experimental-repl-await repl",
     "test": "./makeCerts.sh && node test"
