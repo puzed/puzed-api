@@ -33,7 +33,7 @@ async function loadSettingsFromDatabase (config, db) {
 
 function wrapMetrics (scope, db) {
   function wrapCommand (command, args) {
-    const title = 'db.' + command + ':' + args[0];
+    const title = 'db.' + command + ':' + args[0].split('-')[0];
     scope.metrics && scope.metrics.inc(title);
     const startTime = Date.now();
     return db[command](...args)
