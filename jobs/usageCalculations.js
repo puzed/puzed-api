@@ -152,5 +152,3 @@ async function performUsageCalculations (scope, instanceId) {
 }
 
 module.exports = performUsageCalculations;
-
-

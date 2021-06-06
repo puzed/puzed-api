@@ -1,5 +1,3 @@
-require('stackify-node-apm')
-
 const createScope = require('./createScope');
 const createServer = require('./createServer');
 
