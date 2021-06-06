@@ -12,18 +12,37 @@
     body {
       margin: 0;
       padding: 0;
-      width: 100%;
-      height: 100%;
       font-family: arial;
     }
 
+    body {
+      padding: 10px;
+    }
+
     #main > div {
-      height: calc(100vh - 100px);
+      height: calc(100vh - 150px);
       width: 100%;
     }
 
     .toolbar {
       padding: 10px;
+      display: flex;
+      align-items: center;
+      background-color: rgb(233 233 233);
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+    }
+
+    .toolbar > * {
+      margin-right: 20px;
+    }
+
+    button {
+      padding: 3px 6px 3px 6px;
+      font-size: 100%;
+      border: 1px solid rgb(58, 58, 58);
+      background-color: white;
+      cursor: pointer;
     }
 
     select {
@@ -32,17 +51,57 @@
       border: 1px solid black;
       background-color: white;
     }
+
+    .logo {
+      display: flex;
+    }
+
+    .logo > span {
+      align-self: center;
+      font-size: 40px;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+
+    .logo > img {
+      width: 50px;
+      z-index: 100;
+    }
   </style>
 </head>
 <body>
   <div class="toolbar">
-    <strong>Type:</strong> 
-    <select id="dataType">
-      <option value='increments' selected>Increments</option>
-      <option value='sets-min'>Sets (min)</option>
-      <option value='sets-average'>Sets (average)</option>
-      <option value='sets-max'>Sets (max)</option>
-    </select>  
+    <div class="logo">
+      <img src="https://puzed.net/logo.svg" />
+      <span>Statistics</span>
+    </div>
+
+    <div>
+      <strong>Type:</strong> 
+      <select id="dataType">
+        <option value='increments' selected>Increments</option>
+        <option value='sets-min'>Sets (min)</option>
+        <option value='sets-average'>Sets (average)</option>
+        <option value='sets-max'>Sets (max)</option>
+      </select>  
+    </div>
+
+    <div>
+      <strong>Range:</strong> 
+      <select id="range">
+        <option value='15'>last 15 minutes</option>
+        <option value='60' selected>last hour</option>
+        <option value='240'>last 4 hours</option>
+        <option value='720'>last 12 hours</option>
+        <option value='1440'>last day</option>
+        <option value='2880'>last 2 days</option>
+        <option value='all'>all available data</option>
+      </select>  
+    </div>
+
+    <div>
+      <button id="refreshData">Refresh Data</button>
+    </div>
   </div>
 
   <div id="main">
@@ -50,16 +109,18 @@
   
   <script>
     const dataType = document.getElementById('dataType');
+    const refreshData = document.getElementById('refreshData');
+    const range = document.getElementById('range');
     const url = new URL(document.location.href);
 
     document.getElementById('dataType').value = url.searchParams.get('type') || 'increments';
 
     function getOption (type, json) {
-      const legend = Array.from(new Set(json.reduce((legend, item) => {
+      let legend = Array.from(new Set(json.reduce((legend, item) => {
         return legend.concat(Object.keys(item[1]));
       }, [])));
 
-      const startPercent = 100 - parseInt(json.length < 10 ? 100 : 10 / json.length * 100);
+      const startPercent = 100 - (json.length < 10 ? 100 : 10 / json.length * 100);
       return {
         tooltip: {
           trigger: 'axis',
@@ -91,7 +152,7 @@
           axisLabel: {
             formatter: function (value) {
               const date = new Date(parseInt(value))
-              return date.getHours() + ':' + date.getMinutes()
+              return ('0' + date.getHours()).slice(-2) + ':' + ('0' + date.getMinutes()).slice(-2)
             }
           }
         },
@@ -137,6 +198,7 @@
         .split('\n')
         .filter(i => !!i)
         .map(JSON.parse)
+        .slice(-parseInt(range.value))
 
       const chartDom = document.querySelector('#main > div');
       const myChart = echarts.init(chartDom);
@@ -149,6 +211,8 @@
     document.addEventListener('DOMContentLoaded', async function () {
       update();
       dataType.addEventListener('change', update);
+      range.addEventListener('change', update);
+      refreshData.addEventListener('click', update);
     });
   </script>
 
