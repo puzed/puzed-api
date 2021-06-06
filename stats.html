@@ -105,6 +105,7 @@
   </div>
 
   <div id="main">
+    <div></div>
   </div>
   
   <script>
@@ -186,10 +187,9 @@
       };
     }
 
+    let myChart;
     async function update () {
       history.pushState(null, 'Statistics', '/stats.html?type=' + dataType.value)
-      document.getElementById('main').innerHTML = '<div></div>';
-      
       const filename = dataType.value.startsWith('sets-') ? 'sets' : 'increments'
 
       const response = await fetch('./stats.' + filename + '.txt')
@@ -200,12 +200,22 @@
         .map(JSON.parse)
         .slice(-parseInt(range.value))
 
-      const chartDom = document.querySelector('#main > div');
-      const myChart = echarts.init(chartDom);
+      if (!myChart) {
+        const chartDom = document.querySelector('#main > div');
+        myChart = echarts.init(chartDom);
 
-      const option = getOption(dataType.value, json);
+        const option = getOption(dataType.value, json);
 
-      myChart.setOption(option);
+        myChart.setOption(option);
+      } else {
+        const option = getOption(dataType.value, json);
+
+        myChart.setOption({
+          series: option.series,
+          xAxis: option.xAxis,
+          yAxis: option.yAxis
+        });
+      }
     }
 
     document.addEventListener('DOMContentLoaded', async function () {
