@@ -27,7 +27,8 @@
     .toolbar {
       padding: 10px;
       display: flex;
-      align-items: center;
+      flex-direction: column;
+      align-items: flex-start;
       background-color: rgb(233 233 233);
       border-top-left-radius: 20px;
       border-top-right-radius: 20px;
@@ -35,6 +36,7 @@
 
     .toolbar > * {
       margin-right: 20px;
+      margin-bottom: 5px;
     }
 
     button {
@@ -66,6 +68,13 @@
     .logo > img {
       width: 50px;
       z-index: 100;
+    }
+
+    @media only screen and (min-width: 800px) {
+      .toolbar {
+        flex-direction: row;
+        align-items: center;
+      }
     }
   </style>
 </head>
@@ -188,17 +197,18 @@
     }
 
     let myChart;
+    let json;
+    let filename;
     async function update () {
       history.pushState(null, 'Statistics', '/stats.html?type=' + dataType.value)
-      const filename = dataType.value.startsWith('sets-') ? 'sets' : 'increments'
+      filename = dataType.value.startsWith('sets-') ? 'sets' : 'increments'
 
-      const response = await fetch('./stats.' + filename + '.txt')
+      const response = await fetch('./stats.' + filename + '.txt?lines=' + parseInt(range.value))
       const text = await response.text();
-      const json = text
+      json = text
         .split('\n')
         .filter(i => !!i)
         .map(JSON.parse)
-        .slice(-parseInt(range.value))
 
       if (!myChart) {
         const chartDom = document.querySelector('#main > div');
@@ -224,6 +234,16 @@
       range.addEventListener('change', update);
       refreshData.addEventListener('click', update);
     });
+
+    setInterval(async function () {
+      const response = await fetch('./stats.' + filename + '.txt?lines=1')
+      const lastJson = await response.json();
+      const lastTimestamp = json[json.length - 1][0];
+      if (lastTimestamp !== lastJson[0]) {
+        json.push(lastJson);
+        update();
+      }
+    }, 10000);
   </script>
 
 </body>
